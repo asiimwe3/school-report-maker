@@ -18,6 +18,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: 8.9
+      - name: Run core calculation tests
+        run: gradle :core:test
       - name: Build desktop app
         run: gradle :desktop-admin:build
       - name: Upload jar
