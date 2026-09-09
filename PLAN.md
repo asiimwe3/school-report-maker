@@ -13,6 +13,8 @@ A school report making system that works **100% offline** and serves **every Uga
 - **Class teachers** enter marks on a Kotlin Android app on their phones — no data bundles, no accounts.
 - When there is a connection, the teacher app **automatically sends** new marks to the admin console (cloud relay). When there is no connection, the same data moves with a small **bundle file** (USB, Bluetooth). Works offline, syncs itself online.
 
+Built for many schools: each school creates its own offline account (name, level, logo, motto, colors, signatures), picks its own report card design from a template library, and keeps its own data in its own file.
+
 Target market: Ugandan primary and secondary schools, starting with Kyenjojo and western Uganda.
 
 ## 2. Grading: three UNEB-aligned schemes, all admin-adjustable
@@ -63,7 +65,10 @@ teacher-app/     Android app: Home, Marks entry per subject/assessment, Export b
 - SchoolClass: name, stream, level, class teacher.
 - Student: names, sex, student number, guardian name + phone, level, active flag.
 - Subject: code + name, principal/subsidiary flag (A-level), compulsory flag.
-- MarkEntry: student + subject + term (1-3) + assessment (BOT / MID / EOT / continuous-assessment weight) + score 0-100.
+- MarkEntry: student + subject + term (1-3) + assessment type + score. Assessment types, covering secondary continuous assessment and integration activities: EXAM (BOT / MID / EOT), CA (Continuous Assessment, 20% of the UCE final grade), AOI (Activity of Integration), PROJECT (Project Work — certificate completion requirement). Primary uses EXAM only; the type list per level is admin-editable.
+- SchoolAccount: offline-created school profile — name, level, logo image, motto, colors, head-teacher + class-teacher signature images, grading scheme, chosen report template, school data file. Many schools per install, each fully independent.
+- ReportTemplate: library of card designs per level (PLE / UCE / UACE x multiple layouts: Classic, Modern, Compact, Plain). Each school picks one and customizes (logo size, colors, header layout, comments position).
+- Comments & Signatures: class-teacher and head-teacher comment boxes per student per term (typed or auto-suggested), plus signature images uploaded or drawn in-app; rendered on the report card.
 - GradingScheme: per-level boundaries, labels, points, aggregate rules, result rules — fully editable by admin.
 
 Everything serializes into one JSON file (school-data.json), atomic-write protected.
@@ -94,10 +99,12 @@ Both sides keep their local file as the primary database. The cloud is only a re
 - Marks entry grid in desktop (bulk, keyboard-first, paste-from-spreadsheet)
 - Import teacher bundle, merge marks (newest wins, everything logged)
 - Backup/restore with auto-rotating backups
-- School setup: name, motto, emblem, signatures
+- School setup: OFFLINE school account creation — name, level, logo upload, motto, colors, signature images; multiple schools per install with a school switcher
+- Class-teacher + head-teacher comments and signature capture (upload or draw), printed on every report card
 
 ### Phase 2 — Report polish (target: week 3)
-- Report templates per level: PLE aggregate/division card, UCE A-E competency card, UACE points card
+- Template LIBRARY: multiple designs per level (PLE / UCE / UACE x Classic, Modern, Compact, Plain) — each school selects and customizes its own report design, so every school's cards look different
+- Reports show: logo, comments, signatures, CA/AoI/Project marks, and the level's grading summary
 - Emblem + head-teacher signature on cards, term dates
 - Print directly to PDF from desktop, no browser step
 - Batch ZIP export for a whole class
@@ -106,6 +113,7 @@ Both sides keep their local file as the primary database. The cloud is only a re
 
 ### Phase 3 — Teacher app + automatic sync (target: week 4)
 - Class/subject picker wired to bundle import from admin
+- Secondary assessment entry: Exams (BOT/MID/EOT) + Continuous Assessment (20%) + Activity of Integration + Project Work — all four recorded per student per subject
 - AUTO-SEND: when online, queued marks upload to the cloud relay automatically (WorkManager, retry on failure)
 - Admin console AUTO-PULL: desktop fetches waiting teacher bundles on launch + periodic refresh, merges newest-wins
 - Report preview on phone (same HTML templates in WebView)
@@ -146,3 +154,21 @@ Both sides keep their local file as the primary database. The cloud is only a re
 - desktop-admin job: builds JAR, uploads artifact.
 - teacher-app job: builds debug APK, uploads artifact.
 - Both run on every push to main; release tags come in Phase 4.
+
+## 11. Screen inventory (mockups in design/)
+
+ADMIN CONSOLE (design/screens-admin.html):
+1. School Setup — offline account creation with logo, level, motto, colors, signatures
+2. Dashboard
+3. Students
+4. Marks Grid — Exams (BOT/MID/EOT) + CA + AoI + Project columns
+5. Grading Scheme Editor — admin-adjustable boundaries, labels, points
+6. Report Template Library — multiple designs, per-school customization
+7. Report Preview — logo, grading table, comments, signature lines
+8. Sync & Backup — auto-pull status, bundle import, backups
+
+TEACHER APP (design/screens-teacher.html):
+1. Home — class summary + auto-send status
+2. Marks Entry — Exams | CA | AoI | Project tabs
+3. Comments & Signature — per-student term comments, drawn signatures
+4. Report Preview & Send — card preview, auto-send status, USB export

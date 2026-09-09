@@ -1,0 +1,99 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>School Report Maker — Teacher App Screens</title>
+<style>
+*{box-sizing:border-box;margin:0}
+body{background:#0e1f17;font-family:Arial,Helvetica,sans-serif;padding:16px;zoom:.62}
+h1{color:#E8C97A;font-size:30px;margin:4px 0 2px}
+p{color:#b9cfc4;font-size:14px;margin-bottom:12px}
+.wrap{display:flex;flex-wrap:wrap;gap:22px;align-items:flex-start}
+.cell{display:flex;flex-direction:column}
+.cap{color:#E8C97A;font-size:13px;font-weight:bold;margin-top:8px}
+.phone{width:236px;border:9px solid #1a1a1a;border-radius:20px;background:#fff;overflow:hidden;box-shadow:0 10px 34px rgba(0,0,0,.45)}
+.ptop{background:#1B3A2A;color:#fff;font-size:9px;padding:5px 10px;display:flex;justify-content:space-between}
+.pbody{padding:10px;font-size:9px;color:#333;min-height:340px}
+.pnav{display:flex;background:#1B3A2A;color:#cfdecf;font-size:8px}
+.pnav div{flex:1;text-align:center;padding:6px 0;border-top:2px solid #E8C97A}
+h3{font-size:11px;margin-bottom:6px;color:#1B3A2A}
+.card{border:1px solid #ddd;border-radius:5px;padding:6px;margin:4px 0}
+.card b{font-size:13px;color:#1B3A2A;display:block}
+.row{display:flex;gap:5px;margin:5px 0;align-items:center;flex-wrap:wrap}
+.inp{border:1px solid #bbb;border-radius:4px;padding:3px 5px;background:#fafafa;color:#555;display:inline-block}
+.btn{background:#1B3A2A;color:#fff;border-radius:4px;padding:4px 9px;font-size:9px;display:inline-block}
+.btn.g{background:#E8C97A;color:#1B3A2A;font-weight:bold}
+.tabs{display:flex;gap:3px;margin:4px 0}
+.tab{border:1px solid #ccc;border-radius:4px;padding:2px 6px;font-size:8px}
+.tab.on{background:#1B3A2A;color:#fff}
+table{width:100%;border-collapse:collapse;font-size:8px}
+th{background:#eef1ef;padding:3px;border:1px solid #ccc;text-align:left}
+td{padding:3px;border:1px solid #e2e2e2}
+.note{background:#f4f8f4;border-left:3px solid #1B3A2A;padding:3px 6px;color:#555;margin-top:5px;font-size:8px}
+.logo{width:30px;height:30px;background:#E8C97A;border-radius:50%;color:#1B3A2A;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:7px}
+.cmt{border:1px dashed #999;padding:5px;margin:4px 0;font-size:8px}
+.sig{border-top:1px solid #333;padding-top:2px;text-align:center;width:60%;font-size:7px;margin-top:6px}
+.report{border:2px solid #1B3A2A;padding:6px;font-size:7.5px}
+.report th,.report td{text-align:center;font-size:7px;padding:1.5px}
+.srow{display:flex;justify-content:space-between;align-items:center;margin:5px 0;border-bottom:1px solid #eee;padding-bottom:4px}
+.score{border:1px solid #1B3A2A;border-radius:4px;width:40px;text-align:center;padding:3px 0;color:#1B3A2A;font-weight:bold;background:#f2f7f2}
+</style></head><body>
+<h1>School Report Maker — Teacher App Screens</h1>
+<p>Kotlin Android · marks for Exams, Continuous Assessment, Activity of Integration &amp; Project Work · comments, signatures, auto-send</p>
+<div class="wrap">
+
+<div class="cell"><div class="phone">
+<div class="ptop"><span>⚡ SRS Teacher</span><span>○ Offline</span></div>
+<div class="pbody">
+<div class="row" style="gap:7px"><div class="logo">L</div><div><b>Tooro Secondary</b><br>My class: S4 East · 45 students<br>Scheme: O-Level (UCE)</div></div>
+<div class="card"><b>12</b>CA entries pending today</div>
+<div class="card"><b>3</b>Activity of Integration marks missing</div>
+<div class="card"><b>45/45</b>Exams done ✓</div>
+<div class="note">Auto-send: ON (Wi-Fi only) · last sent 09:41 · 0 queued</div>
+<div class="row"><span class="btn g" style="flex:1;text-align:center">Enter Marks</span><span class="btn" style="flex:1;text-align:center">Comments</span></div>
+</div>
+<div class="pnav"><div>Home</div><div>Marks</div><div>Comments</div><div>Send</div></div>
+</div><div class="cap">1. Home — class status + auto-send</div></div>
+
+<div class="cell"><div class="phone">
+<div class="ptop"><span>⚡ Marks</span><span>S4 · MTC · T3</span></div>
+<div class="pbody">
+<h3>Mathematics — S4 East</h3>
+<div class="tabs"><span class="tab on">Exams</span><span class="tab">CA 20%</span><span class="tab">AoI</span><span class="tab">Project</span></div>
+<div class="tabs"><span class="tab on">EOT</span><span class="tab">BOT</span><span class="tab">MID</span></div>
+<div class="srow"><span>Mary Aine</span><span class="score">88</span></div>
+<div class="srow"><span>Peter Kato</span><span class="score">58</span></div>
+<div class="srow"><span>Grace Ninsiima</span><span class="score">79</span></div>
+<div class="srow"><span>Eric Mugisha</span><span class="score">—</span></div>
+<div class="srow"><span>Sarah Atuha</span><span class="score">91</span></div>
+<div class="row" style="margin-top:8px"><span class="btn g" style="flex:1;text-align:center">Save (auto-sends online)</span></div>
+<div class="note">Missing entry flagged for teacher — UCE final auto-computed as 20% CA + 80% EOT.</div>
+</div>
+<div class="pnav"><div>Home</div><div>Marks</div><div>Comments</div><div>Send</div></div>
+</div><div class="cap">2. Marks — Exams | CA | AoI | Project tabs</div></div>
+
+<div class="cell"><div class="phone">
+<div class="ptop"><span>⚡ Comments</span><span>Term 3</span></div>
+<div class="pbody">
+<h3>Mary Aine — Term 3</h3>
+<div class="cmt"><b>Class Teacher's comment</b><br>Mary is a disciplined and creative learner. Excellent application of knowledge.<div class="sig">✓ signed (drawn)</div></div>
+<div class="cmt"><b>Head Teacher's comment</b><br><span style="color:#999">Set by admin console — read only on phone</span></div>
+<div class="row"><span class="btn" style="flex:1;text-align:center">Draw signature</span><span class="btn" style="flex:1;text-align:center">Use saved</span></div>
+<div class="note">Comments + signature print on the report card. Suggested text available based on grades.</div>
+<div class="row"><span class="btn g" style="flex:1;text-align:center">Save comment</span></div>
+</div>
+<div class="pnav"><div>Home</div><div>Marks</div><div>Comments</div><div>Send</div></div>
+</div><div class="cap">3. Comments &amp; signature per student</div></div>
+
+<div class="cell"><div class="phone">
+<div class="ptop"><span>⚡ Report &amp; Send</span><span>Auto-send ON</span></div>
+<div class="pbody">
+<h3>Preview — S4 East card</h3>
+<div class="report"><div style="text-align:center"><b>TOORO SECONDARY SCHOOL</b><br>Term 3 · 2026</div>
+<div style="margin:2px 0">Mary Aine · S4 East · Pos 1/45</div>
+<table><tr><th>Subj</th><th>CA</th><th>Exam</th><th>G</th></tr><tr><td>MTC</td><td>80</td><td>88</td><td>A</td></tr><tr><td>ENG</td><td>77</td><td>84</td><td>A</td></tr><tr><td>PHY</td><td>68</td><td>72</td><td>B</td></tr></table>
+<div style="font-size:7px;margin-top:2px">Avg 83% · Result 1 — Qualified ✓</div></div>
+<div class="row" style="margin-top:8px"><span class="btn g" style="flex:1;text-align:center">Send now (online)</span></div>
+<div class="row"><span class="btn" style="flex:1;text-align:center">Export bundle (USB)</span></div>
+<div class="note">Sent 09:41 · 0 queued · works fully offline forever.</div>
+</div>
+<div class="pnav"><div>Home</div><div>Marks</div><div>Comments</div><div>Send</div></div>
+</div><div class="cap">4. Report preview + auto-send to admin</div></div>
+
+</div></body></html>

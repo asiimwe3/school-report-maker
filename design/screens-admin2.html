@@ -1,0 +1,113 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>School Report Maker — Admin Screens 2</title>
+<style>
+*{box-sizing:border-box;margin:0}
+body{background:#0e1f17;font-family:Arial,Helvetica,sans-serif;padding:16px;zoom:.52}
+h1{color:#E8C97A;font-size:34px;margin:4px 0 2px}
+p{color:#b9cfc4;font-size:15px;margin-bottom:12px}
+.wrap{display:flex;flex-wrap:wrap;gap:22px;align-items:flex-start}
+.cell{display:flex;flex-direction:column}
+.cap{color:#E8C97A;font-size:14px;font-weight:bold;margin-top:8px}
+.frame{background:#fff;border-radius:8px;box-shadow:0 10px 34px rgba(0,0,0,.45);overflow:hidden}
+.win{width:560px}
+.tbar{background:#1B3A2A;color:#E8C97A;font-size:12px;padding:6px 12px;display:flex;justify-content:space-between}
+.wbody{display:flex}
+.side{width:118px;background:#1B3A2A;color:#e8efe9;font-size:10px;padding:8px 0}
+.side div{padding:6px 10px}
+.side .on{background:#E8C97A;color:#1B3A2A;font-weight:bold}
+.main{flex:1;padding:10px;font-size:10px;color:#333}
+h3{font-size:13px;margin-bottom:6px;color:#1B3A2A}
+.card{border:1px solid #ddd;border-radius:5px;padding:6px 10px}
+.card b{font-size:15px;display:block;color:#1B3A2A}
+.row{display:flex;gap:6px;margin:6px 0;align-items:center;flex-wrap:wrap}
+.inp{border:1px solid #bbb;border-radius:4px;padding:4px 6px;background:#fafafa;color:#555}
+.btn{background:#1B3A2A;color:#fff;border-radius:4px;padding:4px 10px;font-size:10px;display:inline-block}
+.btn.g{background:#E8C97A;color:#1B3A2A;font-weight:bold}
+table{width:100%;border-collapse:collapse;font-size:9px}
+th{background:#eef1ef;padding:4px;border:1px solid #ccc;text-align:left}
+td{padding:4px;border:1px solid #e2e2e2}
+.tabs{display:flex;gap:4px;margin:4px 0}
+.tab{border:1px solid #ccc;border-radius:4px;padding:3px 8px;font-size:9px}
+.tab.on{background:#1B3A2A;color:#fff}
+.note{background:#f4f8f4;border-left:3px solid #1B3A2A;padding:4px 8px;color:#555;margin-top:6px}
+.report{border:2px solid #1B3A2A;padding:8px;font-size:8px}
+.report th,.report td{text-align:center;font-size:7.5px;padding:2px}
+.rt{display:flex;gap:6px;align-items:stretch}
+.rt .report{flex:1}
+.lbl{font-size:9px;text-align:center;margin-top:4px;color:#1B3A2A;font-weight:bold}
+.sig{display:flex;justify-content:space-between;margin-top:8px;font-size:7.5px}
+.sig div{border-top:1px solid #333;padding-top:2px;text-align:center;width:30%}
+.cmt{border:1px dashed #999;padding:4px;margin:3px 0;font-size:8px;color:#333}
+.logo{width:36px;height:36px;background:#E8C97A;border-radius:50%;color:#1B3A2A;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:8px;flex-shrink:0}
+</style></head><body>
+<h1>School Report Maker — Admin Console Screens (2 of 4)</h1>
+<p>Admin-adjustable grading schemes, report template library, report preview with comments + signatures, sync &amp; backup</p>
+<div class="wrap">
+
+<div class="cell"><div class="frame win">
+<div class="tbar"><span>School Report Maker</span><span>Grading Schemes</span></div>
+<div class="wbody"><div class="side"><div>School Setup</div><div>Dashboard</div><div>Students</div><div>Classes</div><div>Subjects</div><div>Marks</div><div class="on">Grading</div><div>Templates</div><div>Reports</div><div>Sync</div></div>
+<div class="main"><h3>Grading Scheme Editor — O-Level (UNEB 2025)</h3>
+<div class="tabs"><span class="tab">Primary · PLE</span><span class="tab on">O-Level · UCE</span><span class="tab">A-Level · UACE</span><span class="tab">+ New scheme</span></div>
+<table><tr><th>Grade</th><th>Min %</th><th>Max %</th><th>Label</th><th>Renders as</th></tr>
+<tr><td><b>A</b></td><td class="inp">80</td><td class="inp">100</td><td class="inp">Exceptional</td><td>Pass with Distinction</td></tr>
+<tr><td><b>B</b></td><td class="inp">70</td><td class="inp">79</td><td class="inp">Outstanding</td><td>Pass with Credit</td></tr>
+<tr><td><b>C</b></td><td class="inp">60</td><td class="inp">69</td><td class="inp">Satisfactory</td><td>Pass with Credit</td></tr>
+<tr><td><b>D</b></td><td class="inp">50</td><td class="inp">59</td><td class="inp">Basic</td><td>Pass</td></tr>
+<tr><td><b>E</b></td><td class="inp">0</td><td class="inp">49</td><td class="inp">Elementary</td><td>Result 3 if all E</td></tr></table>
+<div class="row"><span>CA weight: <span class="inp" style="width:36px">20%</span> Exam: <span class="inp" style="width:36px">80%</span></span><span class="btn g">Save scheme</span><span class="btn">Duplicate</span></div>
+<div class="note">Admin can adjust any boundary or label — old report cards keep the scheme they were printed with.</div>
+</div></div></div><div class="cap">5. Grading Scheme Editor — every boundary admin-adjustable</div></div>
+
+<div class="cell"><div class="frame win">
+<div class="tbar"><span>School Report Maker</span><span>Report Templates</span></div>
+<div class="wbody"><div class="side"><div>School Setup</div><div>Dashboard</div><div>Students</div><div>Classes</div><div>Subjects</div><div>Marks</div><div>Grading</div><div class="on">Templates</div><div>Reports</div><div>Sync</div></div>
+<div class="main"><h3>Report Template Library — each school picks its own design</h3>
+<div class="rt">
+<div><div class="report"><div style="text-align:center;border-bottom:2px solid #1B3A2A"><b>TOORO SECONDARY SCHOOL</b><br>Kyenjojo · Knowledge is Light<br>TERM 3 REPORT</div>
+<div class="row" style="font-size:7px;margin:2px 0">Name: Mary Aine · S4 East</div>
+<table><tr><th>Subject</th><th>CA</th><th>EOT</th><th>Grade</th></tr><tr><td>Maths</td><td>80</td><td>88</td><td>A</td></tr><tr><td>English</td><td>77</td><td>84</td><td>A</td></tr></table>
+<div class="sig"><div>Teacher</div><div>Head</div><div>Parent</div></div></div><div class="lbl">Classic Gold</div></div>
+<div><div class="report" style="border-color:#0a7; border-radius:6px"><div style="display:flex;gap:4px"><div class="logo" style="width:20px;height:20px;font-size:5px">L</div><b style="font-size:7px">TOORO SEC · TERM 3</b></div>
+<div style="background:#0a7;color:#fff;font-size:7px;padding:2px;margin:2px 0">MARY AINE — S4 EAST</div>
+<table><tr><th>Subj</th><th>CA</th><th>Exam</th><th>G</th></tr><tr><td>MTC</td><td>80</td><td>88</td><td>A</td></tr><tr><td>ENG</td><td>77</td><td>84</td><td>A</td></tr></table>
+<div style="font-size:6.5px;color:#555;margin-top:2px">Result 1 — Qualified</div></div><div class="lbl">Modern Green</div></div>
+<div><div class="report" style="border:1px solid #666"><div style="text-align:center;font-size:7px"><b>TOORO SECONDARY SCHOOL</b><br>TERMINAL REPORT — TERM 3</div>
+<table style="margin-top:2px"><tr><td style="text-align:left;width:40%">Name: M. Aine<br>Class: S4 East<br>Pos: 1/45</td><td style="text-align:left">Avg: 84% (A)<br>CA ✓ · AoI ✓ · Proj ✓<br>Result 1</td></tr></table>
+<div class="sig"><div>Teacher</div><div>Head</div><div>Parent</div></div></div><div class="lbl">Compact A4</div></div>
+<div><div class="report" style="border:1.5px solid #000"><div style="text-align:center;font-size:7px"><b>TOORO SECONDARY SCHOOL</b><br>End of Term 3 Report — 2026</div>
+<table style="margin-top:2px"><tr><th style="text-align:left">Subject</th><th>CA</th><th>Exam</th><th>Total</th><th>Grade</th><th>Remark</th></tr><tr><td style="text-align:left">Mathematics</td><td>80</td><td>88</td><td>86</td><td>A</td><td>Exc.</td></tr><tr><td style="text-align:left">English</td><td>77</td><td>84</td><td>83</td><td>A</td><td>Exc.</td></tr></table>
+<div class="sig"><div>Class Teacher</div><div>Head Teacher</div><div>Guardian</div></div></div><div class="lbl">Plain B/W</div></div>
+</div>
+<div class="row" style="margin-top:8px"><span class="btn g">Use for this school</span><span class="btn">Customize…</span><span class="note" style="border:none;padding:0">PLE / UCE / UACE versions of every design · logos, colors &amp; comments position editable</span></div>
+</div></div></div><div class="cap">6. Report Template Library — one design per school, many to choose from</div></div>
+
+<div class="cell"><div class="frame win">
+<div class="tbar"><span>School Report Maker</span><span>Report Preview — Mary Aine (S4 East, Term 3)</span></div>
+<div class="wbody"><div class="side"><div>School Setup</div><div>Dashboard</div><div>Students</div><div>Classes</div><div>Subjects</div><div>Marks</div><div>Grading</div><div>Templates</div><div class="on">Reports</div><div>Sync</div></div>
+<div class="main"><h3>Report Card Preview</h3>
+<div class="report"><div style="display:flex;gap:6px;align-items:center;border-bottom:2px solid #1B3A2A;padding-bottom:4px"><div class="logo">LOGO</div><div><b style="font-size:9px">TOORO SECONDARY SCHOOL</b><br>Kyenjojo, Uganda · Knowledge is Light<br><b>End of Term 3 Report · 2026</b></div></div>
+<div style="font-size:7.5px;margin:3px 0">Name: <b>Mary Aine</b> · Class: S4 East · Position: 1/45 · Result: <b>1 — Qualified</b></div>
+<table><tr><th>Subject</th><th>CA 20%</th><th>Exam 80%</th><th>AoI</th><th>Project</th><th>Final</th><th>Grade</th><th>Remark</th></tr>
+<tr><td>Mathematics</td><td>80</td><td>88</td><td>77</td><td>85</td><td><b>86</b></td><td>A</td><td>Exceptional</td></tr>
+<tr><td>English</td><td>77</td><td>84</td><td>81</td><td>82</td><td><b>83</b></td><td>A</td><td>Exceptional</td></tr>
+<tr><td>Physics</td><td>68</td><td>72</td><td>70</td><td>74</td><td><b>71</b></td><td>B</td><td>Outstanding</td></tr></table>
+<div class="cmt"><b>Class Teacher's comment:</b> Mary is a disciplined and creative learner. Excellent application of knowledge. Keep it up! <span style="color:#888">— signed by signature image</span></div>
+<div class="cmt"><b>Head Teacher's comment:</b> Outstanding performance. We are proud of her. <span style="color:#888">— signature + school stamp</span></div>
+<div class="sig"><div>Class Teacher</div><div>Head Teacher</div><div>Parent / Guardian</div></div></div>
+<div class="row" style="margin-top:8px"><span class="btn g">Print to PDF</span><span class="btn">Batch all class (ZIP)</span><span class="btn">Send SMS summary</span></div>
+</div></div></div><div class="cap">7. Report Preview — logo, CA/AoI/Project, comments + signatures</div></div>
+
+<div class="cell"><div class="frame win">
+<div class="tbar"><span>School Report Maker</span><span>Sync &amp; Backup</span></div>
+<div class="wbody"><div class="side"><div>School Setup</div><div>Dashboard</div><div>Students</div><div>Classes</div><div>Subjects</div><div>Marks</div><div>Grading</div><div>Templates</div><div>Reports</div><div class="on">Sync</div></div>
+<div class="main"><h3>Sync &amp; Backup — offline first</h3>
+<div class="row"><div class="card"><b>ON</b>Auto-pull (every 5 min)</div><div class="card"><b>09:41</b>Last bundle received</div><div class="card"><b>12</b>Bundles today</div></div>
+<table style="margin-top:6px"><tr><th>Time</th><th>Teacher</th><th>Class · Subject</th><th>Entries</th><th>Status</th></tr>
+<tr><td>09:41</td><td>P. Mugisha</td><td>S4 East · MTC</td><td>45</td><td>✓ Merged</td></tr>
+<tr><td>09:12</td><td>J. Kabarole</td><td>P7 · ENG</td><td>52</td><td>✓ Merged</td></tr>
+<tr><td>08:55</td><td>S. Nyakato</td><td>S3 · SCI</td><td>40</td><td>⚠ 2 conflicts (newest kept)</td></tr></table>
+<div class="row" style="margin-top:8px"><span class="btn g">Backup now</span><span class="btn">Restore…</span><span class="btn">Import bundle file (USB)…</span></div>
+<div class="note">No internet? USB bundle import does the same job. Backups rotate daily — power-cut safe.</div>
+</div></div></div><div class="cap">8. Sync &amp; Backup — auto-pull when online, USB when not</div></div>
+
+</div></body></html>
