@@ -61,10 +61,11 @@ teacher-app/     Android app: Home, Marks entry per subject/assessment, Export b
 ## 5. Data model (v1)
 
 - School: name, address, motto, head teacher, emblem.
-- Level: Primary | O-Level | A-Level (with attached GradingScheme).
-- SchoolClass: name, stream, level, class teacher.
-- Student: names, sex, student number, guardian name + phone, level, active flag.
-- Subject: code + name, principal/subsidiary flag (A-level), compulsory flag.
+- Level: Primary | O-Level | A-Level (each with attached GradingScheme).
+- SchoolClass: class (S4, P7…) + STREAM (East, West…), level, class teacher, and its CLASS LIST (register of students). Both admin and teacher apps work in class + stream + level terms everywhere.
+- Combination: an A-level offering — 3 principal subjects + subsidiary (GP, Sub-ICT, SRE…); schools create their own combinations (PCM, HEG, ECB…), and each A-level class/stream follows one.
+- Student: names, sex, student number, guardian name + phone, level, class + stream, active flag.
+- Subject: fully editable — schools ADD or remove ANY subjects they offer, per level (default subject list preloaded); principal/subsidiary flag (A-level, per combination) and compulsory flag.
 - MarkEntry: student + subject + term (1-3) + assessment type + score. Assessment types, covering secondary continuous assessment and integration activities: EXAM (BOT / MID / EOT), CA (Continuous Assessment, 20% of the UCE final grade), AOI (Activity of Integration), PROJECT (Project Work — certificate completion requirement). Primary uses EXAM only; the type list per level is admin-editable.
 - SchoolAccount: offline-created school profile — name, level, logo image, motto, colors, head-teacher + class-teacher signature images, grading scheme, chosen report template, school data file. Many schools per install, each fully independent.
 - ReportTemplate: library of card designs per level (PLE / UCE / UACE x multiple layouts: Classic, Modern, Compact, Plain). Each school picks one and customizes (logo size, colors, header layout, comments position).
@@ -95,7 +96,7 @@ Both sides keep their local file as the primary database. The cloud is only a re
 - GRADING SCHEMES: implement the three UNEB schemes (PLE 1-9/divisions; UCE A-E competency-based with 20/80 CA/exam weighting and Result 1-3 indicators; UACE points) as data, not code
 - Grading scheme editor screen — admin adjusts boundaries, labels, points; scheme history kept
 - Levels: classes/students attached to Primary / O-Level / A-Level; reports render per scheme
-- Classes, Subjects, Teachers CRUD screens
+- Classes & Streams screens — class + stream + level on both apps; A-level COMBINATIONS (PCM, HEG, ECB… = 3 principals + subsidiary); schools can add more subjects offered at each level; Teachers CRUD screens
 - Marks entry grid in desktop (bulk, keyboard-first, paste-from-spreadsheet)
 - Import teacher bundle, merge marks (newest wins, everything logged)
 - Backup/restore with auto-rotating backups
@@ -160,7 +161,8 @@ Both sides keep their local file as the primary database. The cloud is only a re
 ADMIN CONSOLE (design/screens-admin.html):
 1. School Setup — offline account creation with logo, level, motto, colors, signatures
 2. Dashboard
-3. Students
+3. Students — class list by class + stream + level
+3b. Classes & Streams — levels, A-level combinations, add subjects offered
 4. Marks Grid — Exams (BOT/MID/EOT) + CA + AoI + Project columns
 5. Grading Scheme Editor — admin-adjustable boundaries, labels, points
 6. Report Template Library — multiple designs, per-school customization
@@ -168,7 +170,7 @@ ADMIN CONSOLE (design/screens-admin.html):
 8. Sync & Backup — auto-pull status, bundle import, backups
 
 TEACHER APP (design/screens-teacher.html):
-1. Home — class summary + auto-send status
-2. Marks Entry — Exams | CA | AoI | Project tabs
+1. Home — class + stream + level summary, auto-send status
+2. Marks Entry — pick class + stream + subject; Exams | CA | AoI | Project tabs
 3. Comments & Signature — per-student term comments, drawn signatures
 4. Report Preview & Send — card preview, auto-send status, USB export

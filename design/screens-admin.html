@@ -43,7 +43,7 @@ td{padding:4px;border:1px solid #e2e2e2}
 .cmt{border:1px dashed #999;padding:4px;margin:3px 0;font-size:8px;color:#333}
 </style></head><body>
 <h1>School Report Maker — Admin Console Screens (1 of 4)</h1>
-<p>Offline account creation, dashboard, students, marks grid with Exams + CA + AoI + Project</p>
+<p>Offline account creation, dashboard, students with class + stream + level, classes &amp; streams with A-level combinations, marks grid</p>
 <div class="wrap">
 
 <div class="cell"><div class="frame win">
@@ -75,17 +75,32 @@ td{padding:4px;border:1px solid #e2e2e2}
 <div class="tbar"><span>School Report Maker</span><span>Students</span></div>
 <div class="wbody"><div class="side"><div>School Setup</div><div>Dashboard</div><div class="on">Students</div><div>Classes</div><div>Subjects</div><div>Marks</div><div>Grading</div><div>Templates</div><div>Reports</div><div>Sync</div></div>
 <div class="main"><h3>Students</h3>
-<div class="row"><span class="inp" style="width:130px">🔍 Search name…</span><span class="inp">Class: S4 East ▾</span><span class="inp">Level: O-Level ▾</span><span class="btn">+ Add Student</span><span class="btn">Import CSV</span></div>
-<table><tr><th>#</th><th>Name</th><th>Class</th><th>Sex</th><th>Guardian</th><th>Phone</th></tr>
-<tr><td>001</td><td>Mary Aine</td><td>S4 East</td><td>F</td><td>John Aine</td><td>077…</td></tr>
-<tr><td>002</td><td>Peter Kato</td><td>S4 East</td><td>M</td><td>Jane Kato</td><td>070…</td></tr>
-<tr><td>003</td><td>Grace Ninsiima</td><td>S4 East</td><td>F</td><td>Rose N.</td><td>075…</td></tr>
-<tr><td>004</td><td>Eric Mugisha</td><td>P7</td><td>M</td><td>P. Mugisha</td><td>078…</td></tr></table>
-<div class="note">Bulk add supported — paste from spreadsheet. Guardian SMS summaries optional.</div>
-</div></div></div><div class="cap">3. Students</div></div>
+<div class="row"><span class="inp" style="width:130px">🔍 Search name…</span><span class="inp">Class: S4 ▾</span><span class="inp">Stream: East ▾</span><span class="inp">Level: O-Level ▾</span><span class="btn">+ Add Student</span><span class="btn">Import CSV</span></div>
+<table><tr><th>#</th><th>Name</th><th>Class</th><th>Stream</th><th>Level</th><th>Guardian</th><th>Phone</th></tr>
+<tr><td>001</td><td>Mary Aine</td><td>S4</td><td>East</td><td>O-Level</td><td>John Aine</td><td>077…</td></tr>
+<tr><td>002</td><td>Peter Kato</td><td>S4</td><td>West</td><td>O-Level</td><td>Jane Kato</td><td>070…</td></tr>
+<tr><td>003</td><td>Grace Ninsiima</td><td>S6</td><td>North</td><td>A-Level · PCM</td><td>Rose N.</td><td>075…</td></tr>
+<tr><td>004</td><td>Eric Mugisha</td><td>P7</td><td>—</td><td>Primary</td><td>P. Mugisha</td><td>078…</td></tr></table>
+<div class="note">Class list = class + stream + level. Bulk add supported — paste from spreadsheet. Guardian SMS summaries optional.</div>
+</div></div></div><div class="cap">3. Students — class, stream, level</div></div>
 
 <div class="cell"><div class="frame win">
-<div class="tbar"><span>School Report Maker</span><span>Marks — S4 East · Mathematics · Term 3</span></div>
+<div class="tbar"><span>School Report Maker</span><span>Classes &amp; Streams</span></div>
+<div class="wbody"><div class="side"><div>School Setup</div><div>Dashboard</div><div>Students</div><div class="on">Classes</div><div>Subjects</div><div>Marks</div><div>Grading</div><div>Templates</div><div>Reports</div><div>Sync</div></div>
+<div class="main"><h3>Classes &amp; Streams — levels &amp; A-level combinations</h3>
+<div class="tabs"><span class="tab">Primary</span><span class="tab on">O-Level</span><span class="tab">A-Level</span></div>
+<table><tr><th>Class</th><th>Stream</th><th>Level</th><th>Combination</th><th>Class teacher</th><th>Students</th></tr>
+<tr><td>S4</td><td>East</td><td>O-Level</td><td>—</td><td>P. Mugisha</td><td>45</td></tr>
+<tr><td>S4</td><td>West</td><td>O-Level</td><td>—</td><td>J. Kabarole</td><td>44</td></tr>
+<tr><td>S6</td><td>North</td><td>A-Level</td><td>PCM + Sub-ICT</td><td>A. Derick</td><td>22</td></tr>
+<tr><td>S6</td><td>South</td><td>A-Level</td><td>HEG + GP</td><td>S. Nyakato</td><td>19</td></tr>
+<tr><td>P7</td><td>—</td><td>Primary</td><td>—</td><td>R. Kyomuhendo</td><td>52</td></tr></table>
+<div class="row"><span class="btn">+ Add class / stream</span><span class="btn">+ Add subject offered</span><span class="btn">Edit combination…</span></div>
+<div class="note">Schools can add ANY subjects they offer per level (e.g. + Luganda, + Agriculture, + ICT). A-level classes pick a combination — 3 principal subjects + subsidiary (GP, Sub-ICT, SRE…). Every class list = class + stream + level.</div>
+</div></div></div><div class="cap">3b. Classes &amp; Streams — streams, levels, A-level combinations, subjects offered</div></div>
+
+<div class="cell"><div class="frame win">
+<div class="tbar"><span>School Report Maker</span><span>Marks — S4 · East · Mathematics · Term 3</span></div>
 <div class="wbody"><div class="side"><div>School Setup</div><div>Dashboard</div><div>Students</div><div>Classes</div><div>Subjects</div><div class="on">Marks</div><div>Grading</div><div>Templates</div><div>Reports</div><div>Sync</div></div>
 <div class="main"><h3>Enter Marks — S4 Mathematics, Term 3</h3>
 <div class="tabs"><span class="tab on">EXAM (BOT/MID/EOT)</span><span class="tab">CA · 20%</span><span class="tab">AOI</span><span class="tab">PROJECT</span></div>
