@@ -1,5 +1,3 @@
-import org.jetbrains.compose.desktop.application.dsl.TargetFormat
-
 plugins {
     id("org.jetbrains.kotlin.jvm")
     id("org.jetbrains.kotlin.plugin.compose")
@@ -16,14 +14,6 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 }
 
-compose.desktop {
-    application {
-        mainClass = "com.derycode.srs.admin.MainKt"
-        nativeDistributions {
-            packageName = "SchoolReportMaker"
-            packageVersion = "0.1.0"
-            targetFormats(TargetFormat.Deb, TargetFormat.Msi, TargetFormat.Exe)
-            description = "Offline school report making console for administrators"
-        }
-    }
+application {
+    mainClass = "com.derycode.srs.admin.MainKt"
 }
