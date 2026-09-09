@@ -11,7 +11,7 @@ A school report making system that works **100% offline**:
 
 - The **administrator** uses a fast desktop application (Compose Desktop, JVM) — instant startup, no browser, no server, no internet. Generates professional, print-ready report cards for an entire school in seconds.
 - **Class teachers** enter marks on a Kotlin Android app on their phones — no data bundles, no internet permission, no accounts.
-- The two sides exchange data with a small **bundle file** (USB, Bluetooth, file share). No cloud. No subscriptions. Nothing to break.
+- When there is a connection, the teacher app **automatically sends** new marks to the admin console (cloud relay). When there is no connection, the same data moves with a small **bundle file** (USB, Bluetooth, file share). Works offline, syncs itself online. Nothing to pay for at school scale.
 
 Target market: Ugandan primary and secondary schools (PLE/UEB grading), starting with Kyenjojo and western Uganda.
 
@@ -22,10 +22,10 @@ Target market: Ugandan primary and secondary schools (PLE/UEB grading), starting
 - Shared logic: `core` Kotlin JVM module — one grading + report engine for both platforms; a rule change happens once.
 - Storage: single JSON file with atomic writes — whole database fits on a USB stick, trivially backed up, no DB admin.
 - Reports: HTML template → print to PDF from any machine; template fully customizable.
-- Sync: bundle file export/import — no internet, no server cost, school controls the data.
+- Sync: automatic cloud relay (Firebase) whenever online + bundle file export/import as the offline fallback — school controls the data either way.
 - CI: GitHub Actions builds the desktop JAR and Android APK on every push to main.
 
-Non-goals for v1: cloud sync, multi-user logins, fees/payroll (that's School Sync Manager's territory), online portals.
+Non-goals for v1: multi-user logins, fees/payroll (that's School Sync Manager's territory), public online portals. (Automatic online sync IS a goal — see Phase 3.)
 
 ## 3. Module layout
 
@@ -47,6 +47,18 @@ teacher-app/     Android app, no INTERNET permission: Home, Marks entry per subj
 - Grading: A-E grades, 1-7 aggregate points, Division 1-U, auto remarks, class positions.
 
 Everything serializes into one JSON file (school-data.json), atomic-write protected.
+
+## 5. Sync design — "offline first, auto-send when online"
+
+Both sides keep their local file as the primary database. The cloud is only a relay:
+
+1. Teacher app: marks save instantly to local storage, then queue for sending.
+2. When the phone detects a connection (WorkManager + connectivity check), it auto-uploads queued bundles to the school's Firebase/Firestore space in the background. No teacher action needed.
+3. Admin console: on launch and every few minutes while online, it pulls waiting bundles and merges them (newest-wins conflict rule, every merge logged).
+4. If no internet ever: the manual bundle file (USB/Bluetooth) still works exactly the same.
+5. Sync is opt-in per school and each school's space is separate; data stays primary on local devices.
+
+This keeps the system fully usable offline while making the normal case hands-free.
 
 ## 5. Roadmap
 
@@ -89,21 +101,22 @@ Everything serializes into one JSON file (school-data.json), atomic-write protec
 - LAN sync (desktop + phone on same Wi-Fi, still no internet)
 - Per-teacher PIN lock on the phone app
 
-## 6. Performance targets
+## 7. Performance targets
 
 - Desktop cold start: under 2 s
 - Full class (60 students x 8 subjects) reports: under 3 s
 - Whole school (1000 students) batch: under 30 s
 - Teacher APK cold start: under 1.5 s on low-end Android
 
-## 7. Security and privacy
+## 8. Security and privacy
 
-- Teacher APK has no INTERNET permission — data physically cannot leave the phone.
+- v1 teacher APK ships without the INTERNET permission — data physically cannot leave the phone. In Phase 3, auto-sync builds add internet permission strictly for the school's own relay space; schools that want zero internet can keep the offline-only build.
+- Local files remain the primary database on both sides; the cloud relay holds copies of bundles only, per school space.
 - Desktop stores everything locally in the user's home folder.
 - School can move/encrypt its own data; we hold nothing.
-- No student data ever sent to any third party.
+- No student data ever sent to any third party; no ads, no analytics in either app.
 
-## 8. CI pipeline (live)
+## 9. CI pipeline (live)
 
 - desktop-admin job: builds JAR, uploads artifact.
 - teacher-app job: builds debug APK, uploads artifact.
