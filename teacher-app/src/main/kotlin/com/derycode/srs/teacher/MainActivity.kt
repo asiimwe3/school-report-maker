@@ -5,28 +5,28 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.derycode.srs.core.model.*
-import com.derycode.srs.core.results.ResultEngine
 import com.derycode.srs.core.seed.Seeds
 import com.derycode.srs.core.store.JsonStore
 import com.derycode.srs.core.support.UpdateInfo
-import com.derycode.srs.core.support.parseVersionJson
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
-import kotlin.random.Random
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,7 +34,7 @@ class MainActivity : ComponentActivity() {
         CrashTracker.install(this)
         val state = TeacherState(this)
         state.checkForUpdate()   // auto-check on every launch; only asks GitHub, never sends data
-        setContent { MaterialTheme { TeacherApp(state) } }
+        setContent { MaterialTheme(colorScheme = darkColorScheme(background = NAVY, surface = CARD)) { TeacherApp(state) } }
     }
 }
 
@@ -50,7 +50,7 @@ class TeacherState(context: Context) {
     var data by mutableStateOf(SchoolData())
         private set
 
-    private val meFile = java.io.File(context.filesDir, "teacher-id.txt")
+    private val meFile = File(context.filesDir, "teacher-id.txt")
 
     /** The teacher using this phone — picked once, remembered. */
     var meId by mutableStateOf<String?>(if (meFile.exists() && meFile.readText().isNotBlank()) meFile.readText().trim() else null)
@@ -63,6 +63,7 @@ class TeacherState(context: Context) {
     }
 
     val me: Teacher? get() = meId?.let { id -> data.teachers.firstOrNull { it.id == id } }
+    val myFirstName: String get() = me?.name?.split(" ")?.firstOrNull { it.isNotBlank() } ?: "Teacher"
 
     /** ALL classes this teacher is assigned to — a teacher can have multiple classes. */
     val myClasses: List<SchoolClass>
@@ -73,12 +74,38 @@ class TeacherState(context: Context) {
 
     /** Subjects this teacher teaches in a given class (null subject assignment = class teacher → all). */
     fun mySubjectsFor(classId: String): List<Subject> {
-        if (meId == null) return data.subjects
+        val cls = data.classes.firstOrNull { it.id == classId }
+        val base = data.subjects.filter { it.level == cls?.level && it.active }
+        if (meId == null) return base
         val mine = data.assignments.filter { it.teacherId == meId && it.classId == classId }
-        if (mine.any { it.subjectId == null }) return data.subjects   // class teacher sees all
+        if (mine.any { it.subjectId == null }) return base   // class teacher sees all
         val ids = mine.mapNotNull { it.subjectId }.toSet()
-        return data.subjects.filter { it.id in ids && it.active }
+        return base.filter { it.id in ids }
     }
+
+    fun studentsIn(classId: String): List<Student> =
+        data.enrollments.filter { it.classId == classId }
+            .mapNotNull { e -> data.students.firstOrNull { s -> s.id == e.studentId && s.status == StudentStatus.ACTIVE } }
+            .sortedBy { it.admissionNo }
+
+    fun classOf(studentId: String): SchoolClass? {
+        val e = data.enrollments.lastOrNull { it.studentId == studentId } ?: return null
+        return data.classes.firstOrNull { it.id == e.classId }
+    }
+
+    val currentTermId: String get() = data.academicYears.firstOrNull()?.currentTermId
+        ?: data.academicYears.firstOrNull()?.terms?.firstOrNull()?.id ?: ""
+
+    /** A light, deterministic timetable preview built from real assignments (no separate timetable entity yet). */
+    data class ScheduleItem(val time: String, val subject: String, val classLabel: String)
+    val todaysSchedule: List<ScheduleItem>
+        get() {
+            val slots = listOf("08:00 – 09:00", "10:00 – 11:00", "11:15 – 12:15", "13:00 – 14:00")
+            return myClasses.take(slots.size).mapIndexedNotNull { i, c ->
+                val subj = mySubjectsFor(c.id).firstOrNull() ?: return@mapIndexedNotNull null
+                ScheduleItem(slots[i], subj.name, classLabel(c))
+            }
+        }
 
     /** Import the school setup exported by the admin (structure only — local marks/comments are kept). */
     fun importSchoolData(): String {
@@ -138,73 +165,219 @@ class TeacherState(context: Context) {
         return target.toString()
     }
 
-    /** Marks entered but not yet bundled — simple local status (Section 36). */
+    /** Marks entered but not yet bundled — simple local status. */
     val pendingCount: Int get() = data.marks.count { it.updatedAt > 0 && it.sheetState == MarkSheetState.DRAFT }
 }
 
-/** Usable demo school on first open, so the app is never a blank screen. */
+fun classLabel(c: SchoolClass): String = if (c.stream.isBlank()) c.name else "${c.name} – ${c.stream}"
+fun classShort(c: SchoolClass): String {
+    val n = c.name.replace(Regex("[^0-9]"), "")
+    val prefix = when (c.level) { Level.PRIMARY -> "P"; Level.A_LEVEL -> "S"; else -> "S" }
+    return "$prefix${n.ifBlank { "?" }}${c.stream.take(1).uppercase()}"
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
-// UI theme helpers
+// Theme — dark navy dashboard, colored accent system
 // ─────────────────────────────────────────────────────────────────────────────
 
-internal val NAVY = Color(0xFF0B1220)
-internal val CARD = Color(0xFF111A2E)
-internal val ACCENT = Color(0xFF4F8CFF)
-internal val MUTED = Color(0xFF8B98B4)
-internal val GOOD = Color(0xFF3FCF8E)
+internal val NAVY = Color(0xFF0A0E1A)
+internal val CARD = Color(0xFF141B2E)
+internal val CARD_ALT = Color(0xFF1B2438)
+internal val STROKE = Color(0xFF232C42)
+internal val BLUE = Color(0xFF3B82F6)
+internal val PURPLE = Color(0xFF8B5CF6)
+internal val TEAL = Color(0xFF14B8A6)
+internal val ORANGE = Color(0xFFF59E0B)
+internal val GREEN = Color(0xFF22C55E)
+internal val RED = Color(0xFFEF4444)
+internal val PINK = Color(0xFFEC4899)
+internal val MUTED = Color(0xFF8B96AC)
+internal val GOOD = GREEN
+internal val ACCENT = BLUE
 
-enum class Screen { HOME, MARKS, COMMENTS, SEND, SUPPORT }
+internal val AVATAR_PALETTE = listOf(BLUE, PINK, PURPLE, GREEN, RED, ORANGE, TEAL, Color(0xFF6366F1))
+internal fun avatarColor(seed: String) = AVATAR_PALETTE[kotlin.math.abs(seed.hashCode()) % AVATAR_PALETTE.size]
+
+/** Display-only quick grade band for dashboard color coding (NOT the official PLE/UCE/UACE grading — reports use ResultEngine + the school's real grading scheme). */
+internal fun quickBandColor(pct: Double): Color = when {
+    pct >= 80 -> GREEN
+    pct >= 70 -> TEAL
+    pct >= 60 -> ORANGE
+    else -> RED
+}
+internal fun quickLetter(pct: Double): String = when {
+    pct >= 90 -> "A"; pct >= 80 -> "B+"; pct >= 70 -> "B"; pct >= 60 -> "C"; pct >= 50 -> "D"; else -> "F"
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Navigation
+// ─────────────────────────────────────────────────────────────────────────────
+
+sealed class Route {
+    object Home : Route()
+    object Classes : Route()
+    data class ClassDetail(val classId: String) : Route()
+    data class EnterMarks(val classId: String, val subjectId: String? = null) : Route()
+    object Assessments : Route()
+    data class Students(val classId: String? = null) : Route()
+    data class StudentDetail(val studentId: String) : Route()
+    object More : Route()
+    object Comments : Route()
+    object Sync : Route()
+    object Support : Route()
+}
+
+private enum class Tab(val route: Route, val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
+    HOME(Route.Home, "Home", Icons.Filled.Home),
+    CLASSES(Route.Classes, "Classes", Icons.Filled.MenuBook),
+    ASSESSMENTS(Route.Assessments, "Assessments", Icons.Filled.Assignment),
+    STUDENTS(Route.Students(null), "Students", Icons.Filled.People),
+    MORE(Route.More, "More", Icons.Filled.MoreHoriz)
+}
 
 @Composable
 fun TeacherApp(state: TeacherState) {
-    var screen by remember { mutableStateOf(Screen.HOME) }
-    Column(Modifier.fillMaxSize().background(NAVY).padding(14.dp)) {
-        Text("SRS Teacher", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-        Text("100% offline — marks stay on this phone", color = MUTED, fontSize = 11.sp)
-        Spacer(Modifier.height(10.dp))
-        when (screen) {
-            Screen.HOME -> HomeScreen(state)
-            Screen.MARKS -> MarksScreen(state)
-            Screen.COMMENTS -> CommentsScreen(state)
-            Screen.SEND -> SendScreen(state)
-            Screen.SUPPORT -> SupportScreen(state)
-        }
-        state.updateAvailable?.let { u ->
-            Spacer(Modifier.height(6.dp))
-            Row(Modifier.fillMaxWidth().background(Color(0xFF1B2A4A), RoundedCornerShape(8.dp)).padding(10.dp)) {
-                Column(Modifier.weight(1f)) {
-                    Text("Update ${u.versionName} available", color = GOOD, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    Text("Open Support to download & install.", color = MUTED, fontSize = 10.sp)
-                }
-                Button(onClick = { screen = Screen.SUPPORT }, colors = ButtonDefaults.buttonColors(containerColor = GOOD)) {
-                    Text("Get it", color = NAVY, fontSize = 11.sp)
+    val stack = remember { mutableStateListOf<Route>(Route.Home) }
+    val current = stack.last()
+    fun push(r: Route) { stack.add(r) }
+    fun pop() { if (stack.size > 1) stack.removeAt(stack.size - 1) }
+    fun switchTab(r: Route) { stack.clear(); stack.add(r) }
+
+    val activeTab = when (current) {
+        is Route.Home -> Tab.HOME
+        is Route.Classes, is Route.ClassDetail, is Route.EnterMarks -> Tab.CLASSES
+        is Route.Assessments -> Tab.ASSESSMENTS
+        is Route.Students, is Route.StudentDetail -> Tab.STUDENTS
+        is Route.More, is Route.Comments, is Route.Sync, is Route.Support -> Tab.MORE
+    }
+
+    Column(Modifier.fillMaxSize().background(NAVY)) {
+        Column(Modifier.weight(1f).padding(horizontal = 14.dp)) {
+            Spacer(Modifier.height(10.dp))
+            TopBar(state, current, onBack = { pop() })
+            Spacer(Modifier.height(10.dp))
+            state.updateAvailable?.let { u ->
+                UpdateBanner(u) { push(Route.More) }
+                Spacer(Modifier.height(8.dp))
+            }
+            Box(Modifier.weight(1f)) {
+                when (val r = current) {
+                    is Route.Home -> HomeScreen(state, onOpenClass = { push(Route.ClassDetail(it)) }, onQuickAction = { push(it) })
+                    is Route.Classes -> ClassesListScreen(state, onOpenClass = { push(Route.ClassDetail(it)) })
+                    is Route.ClassDetail -> ClassDetailScreen(state, r.classId,
+                        onEnterMarks = { subj -> push(Route.EnterMarks(r.classId, subj)) },
+                        onViewStudents = { push(Route.Students(r.classId)) })
+                    is Route.EnterMarks -> EnterMarksScreen(state, r.classId, r.subjectId, onDone = { pop() })
+                    is Route.Assessments -> AssessmentsOverviewScreen(state, onOpenClass = { push(Route.ClassDetail(it)) })
+                    is Route.Students -> StudentsListScreen(state, r.classId, onOpenStudent = { push(Route.StudentDetail(it)) })
+                    is Route.StudentDetail -> StudentDetailScreen(state, r.studentId)
+                    is Route.More -> MoreScreen(state, onOpen = { push(it) })
+                    is Route.Comments -> CommentsScreen(state)
+                    is Route.Sync -> SyncScreen(state)
+                    is Route.Support -> SupportScreen(state)
                 }
             }
         }
-        Spacer(Modifier.weight(1f))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            listOf(
-                Screen.HOME to "Home", Screen.MARKS to "Marks",
-                Screen.COMMENTS to "Comments", Screen.SEND to "Export", Screen.SUPPORT to "Support"
-            ).forEach { (s, label) ->
-                Button(
-                    onClick = { screen = s },
-                    shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (screen == s) ACCENT else CARD,
-                        contentColor = Color.White
-                    ),
-                    modifier = Modifier.weight(1f)
-                ) { Text(label, fontSize = 11.sp, maxLines = 1) }
+        BottomNav(activeTab) { tab -> switchTab(tab.route) }
+    }
+}
+
+@Composable
+private fun TopBar(state: TeacherState, route: Route, onBack: () -> Unit) {
+    val (title, showBack) = titleFor(state, route)
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        if (showBack) {
+            IconButton(onClick = onBack, modifier = Modifier.size(34.dp)) {
+                Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+            }
+            Spacer(Modifier.width(4.dp))
+        } else {
+            Box(Modifier.size(34.dp).clip(RoundedCornerShape(9.dp)).background(BLUE), contentAlignment = Alignment.Center) {
+                Icon(Icons.Filled.School, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+            }
+            Spacer(Modifier.width(8.dp))
+        }
+        Column(Modifier.weight(1f)) {
+            Text(title, color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+            if (!showBack) Text(state.data.school.name.ifBlank { "SRS Teacher" }, color = MUTED, fontSize = 10.sp, maxLines = 1)
+        }
+        if (!showBack) {
+            Box {
+                IconButton(onClick = {}, modifier = Modifier.size(34.dp)) {
+                    Icon(Icons.Filled.Notifications, contentDescription = "Notifications", tint = Color.White)
+                }
+                if (state.updateAvailable != null) {
+                    Box(Modifier.size(8.dp).align(Alignment.TopEnd).clip(CircleShape).background(RED))
+                }
+            }
+        }
+    }
+}
+
+private fun titleFor(state: TeacherState, route: Route): Pair<String, Boolean> = when (route) {
+    is Route.Home -> "SRS Teacher" to false
+    is Route.Classes -> "My Classes" to false
+    is Route.ClassDetail -> {
+        val c = state.data.classes.firstOrNull { it.id == route.classId }
+        val subj = state.mySubjectsFor(route.classId).firstOrNull()?.name ?: ""
+        (if (subj.isNotBlank()) "$subj – ${c?.let { classShort(it) } ?: ""}" else c?.let { classLabel(it) } ?: "Class") to true
+    }
+    is Route.EnterMarks -> "Enter Marks" to true
+    is Route.Assessments -> "Assessments" to false
+    is Route.Students -> "Students" to false
+    is Route.StudentDetail -> "Student Details" to true
+    is Route.More -> "More" to false
+    is Route.Comments -> "Class Comments" to true
+    is Route.Sync -> "Sync & Support Data" to true
+    is Route.Support -> "Support & Licence" to true
+}
+
+@Composable
+private fun BottomNav(active: Tab, onSelect: (Tab) -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().background(CARD).padding(vertical = 8.dp, horizontal = 6.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
+        Tab.values().forEach { tab ->
+            val selected = tab == active
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.clip(RoundedCornerShape(10.dp))
+                    .let { if (selected) it.background(BLUE.copy(alpha = 0.15f)) else it }
+                    .clickable { onSelect(tab) }
+                    .padding(horizontal = 10.dp, vertical = 4.dp)
+            ) {
+                Icon(tab.icon, contentDescription = tab.label, tint = if (selected) BLUE else MUTED, modifier = Modifier.size(21.dp))
+                Text(tab.label, color = if (selected) BLUE else MUTED, fontSize = 9.sp, maxLines = 1)
             }
         }
     }
 }
 
 @Composable
-internal fun CardBox(content: @Composable ColumnScope.() -> Unit) {
+private fun UpdateBanner(u: UpdateInfo, onOpen: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().background(Color(0xFF14304F), RoundedCornerShape(10.dp)).padding(10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text("Update ${u.versionName} available", color = GREEN, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text("Open More \u2192 Support to install.", color = MUTED, fontSize = 10.sp)
+        }
+        Button(onClick = onOpen, colors = ButtonDefaults.buttonColors(containerColor = GREEN), modifier = Modifier.height(32.dp)) {
+            Text("Get it", color = NAVY, fontSize = 11.sp)
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared UI atoms
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+internal fun CardBox(padding: Int = 14, content: @Composable ColumnScope.() -> Unit) {
     Column(
-        Modifier.fillMaxWidth().background(CARD, RoundedCornerShape(14.dp)).padding(14.dp),
+        Modifier.fillMaxWidth().background(CARD, RoundedCornerShape(16.dp)).padding(padding.dp),
         content = content
     )
 }
@@ -214,302 +387,21 @@ internal fun Cell(text: String, color: Color = Color.White, bold: Boolean = fals
     Text(text, color = color, fontSize = 13.sp,
          fontWeight = if (bold) FontWeight.SemiBold else FontWeight.Normal, modifier = modifier)
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Home (Section 45.1)
-// ─────────────────────────────────────────────────────────────────────────────
-
 @Composable
-fun HomeScreen(state: TeacherState) {
-    val d = state.data
-    val term = d.academicYears.firstOrNull()?.terms?.firstOrNull { it.id == d.academicYears.firstOrNull()?.currentTermId }
-        ?: d.academicYears.firstOrNull()?.terms?.firstOrNull()
-    val entered = d.marks.size
-
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        CardBox {
-            Cell("Welcome", MUTED)
-            Cell(d.school.name, bold = true)
-            Text("Term ${term?.number ?: 1} · ${d.academicYears.firstOrNull()?.year ?: ""}", color = MUTED, fontSize = 12.sp)
-        }
-        CardBox {
-            Cell("Teaching as", MUTED, true)
-            Spacer(Modifier.height(4.dp))
-            if (d.teachers.isEmpty()) {
-                Cell("No teachers yet — import school data (Export tab) or ask the admin to add you.", MUTED)
-            } else {
-                Row(Modifier.horizontalScrollEnabled(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    d.teachers.forEach { t ->
-                        Button(onClick = { state.setMe(t.id) },
-                            colors = ButtonDefaults.buttonColors(containerColor = if (state.meId == t.id) ACCENT else CARD)) {
-                            Text(t.name, fontSize = 10.sp, color = Color.White)
-                        }
-                    }
-                }
-                if (state.meId != null) {
-                    Spacer(Modifier.height(4.dp))
-                    Cell("My classes (${state.myClasses.size}): " + state.myClasses.joinToString { if (it.stream.isBlank()) it.name else "${it.name} ${it.stream}" }.ifBlank { "none assigned yet" }, GOOD)
-                } else {
-                    Cell("Not selected — you will see every class in the school.", MUTED)
-                }
-            }
-        }
-        CardBox {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Column(Modifier.weight(1f)) { Cell("${d.students.size}", ACCENT, true); Cell("students", MUTED) }
-                Column(Modifier.weight(1f)) { Cell("$entered", ACCENT, true); Cell("marks entered", MUTED) }
-                Column(Modifier.weight(1f)) { Cell("${d.subjects.size}", ACCENT, true); Cell("subjects", MUTED) }
-            }
-        }
-        CardBox {
-            Cell("Sync status", MUTED, true)
-            Spacer(Modifier.height(4.dp))
-            Cell(if (state.pendingCount > 0) "↑ ${state.pendingCount} changes waiting to export" else "✓ All changes saved", GOOD)
-            Cell("Marks never leave this phone. Internet is only used to check for app updates.", MUTED)
-        }
+internal fun Avatar(text: String, color: Color, size: Int = 40) {
+    Box(Modifier.size(size.dp).clip(CircleShape).background(color.copy(alpha = 0.22f)), contentAlignment = Alignment.Center) {
+        Text(text.take(2).uppercase(), color = color, fontWeight = FontWeight.Bold, fontSize = (size * 0.32).sp)
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Marks entry (Sections 14–16): class → subject → assessment → grid
-// ─────────────────────────────────────────────────────────────────────────────
-
 @Composable
-fun MarksScreen(state: TeacherState) {
-    val d = state.data
-    var classId by remember { mutableStateOf(state.myClasses.firstOrNull()?.id ?: "") }
-    var subjectId by remember { mutableStateOf(d.subjects.firstOrNull()?.id ?: "") }
-    var componentId by remember { mutableStateOf(d.components.firstOrNull()?.id ?: "") }
-    val edits = remember { mutableStateMapOf<String, String>() }
-    var msg by remember { mutableStateOf("") }
-
-    val termId = d.academicYears.firstOrNull()?.currentTermId ?: d.academicYears.firstOrNull()?.terms?.firstOrNull()?.id ?: ""
-    val cls = d.classes.firstOrNull { it.id == classId }
-    val students = d.enrollments.filter { it.classId == classId }
-        .mapNotNull { e -> d.students.firstOrNull { s -> s.id == e.studentId && s.status == StudentStatus.ACTIVE } }
-
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        // pickers
-        CardBox {
-            Cell("Class", MUTED, true)
-            Row(Modifier.horizontalScrollEnabled(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                state.myClasses.forEach { c ->
-                    Button(onClick = { classId = c.id },
-                        colors = ButtonDefaults.buttonColors(containerColor = if (classId == c.id) ACCENT else CARD)) {
-                        Text(if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}", fontSize = 10.sp, color = Color.White)
-                    }
-                }
-            }
-            Spacer(Modifier.height(8.dp))
-            Cell("Subject", MUTED, true)
-            Row(Modifier.horizontalScrollEnabled(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                state.mySubjectsFor(classId).filter { it.level == cls?.level }.forEach { s ->
-                    Button(onClick = { subjectId = s.id },
-                        colors = ButtonDefaults.buttonColors(containerColor = if (subjectId == s.id) ACCENT else CARD)) {
-                        Text(s.name, fontSize = 10.sp, color = Color.White)
-                    }
-                }
-            }
-            Spacer(Modifier.height(8.dp))
-            Cell("Assessment", MUTED, true)
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                d.components.filter { it.levels.contains(cls?.level ?: Level.O_LEVEL) && it.active }.forEach { c ->
-                    Button(onClick = { componentId = c.id },
-                        colors = ButtonDefaults.buttonColors(containerColor = if (componentId == c.id) ACCENT else CARD)) {
-                        Text(c.code, fontSize = 10.sp, color = Color.White)
-                    }
-                }
-            }
-        }
-
-        // entry grid (Section 14: keyboard-friendly)
-        CardBox {
-            Cell("Students (${students.size}) — type a value; ABS = absent", MUTED, true)
-            Spacer(Modifier.height(6.dp))
-            LazyColumn(Modifier.height(260.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                items(students) { s ->
-                    val key = "${s.id}|$subjectId|$termId|$componentId"
-                    val existing = d.marks.firstOrNull {
-                        "${it.studentId}|${it.subjectId}|${it.termId}|${it.componentId}" == key
-                    }
-                    val field = edits[key] ?: (existing?.let {
-                        when (it.type) {
-                            MarkType.ABS -> "ABS"; MarkType.EXEMPT -> "EXEMPT"
-                            else -> if (it.score == it.score.toLong().toDouble()) it.score.toLong().toString() else it.score.toString()
-                        }
-                    } ?: "")
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Cell(s.fullName, modifier = Modifier.weight(1f))
-                        OutlinedTextField(
-                            value = field,
-                            onValueChange = { edits[key] = it },
-                            modifier = Modifier.width(110.dp),
-                            singleLine = true,
-                            textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 13.sp)
-                        )
-                    }
-                }
-            }
-            Spacer(Modifier.height(8.dp))
-            Button(
-                onClick = {
-                    var saved = 0
-                    val max = d.subjects.firstOrNull { it.id == subjectId }?.maxMarks ?: 100
-                    edits.forEach { (key, text) ->
-                        val (sid, subj, tid, cid) = key.split("|")
-                        val t = text.trim()
-                        if (t.isEmpty()) return@forEach
-                        val type: MarkType; val score: Double
-                        when (t.uppercase()) {
-                            "ABS" -> { type = MarkType.ABS; score = 0.0 }
-                            "EXEMPT" -> { type = MarkType.EXEMPT; score = 0.0 }
-                            else -> {
-                                if (ResultEngine.validateMark(t, max, allowBlank = false) != null) return@forEach
-                                type = MarkType.VALUE; score = t.toDouble()
-                            }
-                        }
-                        state.upsertMark(Mark(
-                            id = "m-$key", studentId = sid, subjectId = subj, termId = tid,
-                            componentId = cid, score = score, type = type, maxScore = max
-                        ))
-                        saved++
-                    }
-                    edits.clear()
-                    msg = if (saved > 0) "Saved $saved marks ✓" else "Nothing to save"
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = ACCENT)
-            ) { Text("Save marks", color = Color.White) }
-            if (msg.isNotEmpty()) Cell(msg, GOOD)
-        }
+internal fun ScoreBadge(pct: Double) {
+    Box(
+        Modifier.clip(RoundedCornerShape(8.dp)).background(quickBandColor(pct).copy(alpha = 0.18f))
+            .padding(horizontal = 10.dp, vertical = 5.dp)
+    ) {
+        Text(pct.toInt().toString(), color = quickBandColor(pct), fontWeight = FontWeight.Bold, fontSize = 13.sp)
     }
 }
 
-private fun Modifier.horizontalScrollEnabled(): Modifier = this  // compact: row wraps are acceptable on phones
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Comments (Section 23)
-// ─────────────────────────────────────────────────────────────────────────────
-
-@Composable
-fun CommentsScreen(state: TeacherState) {
-    val d = state.data
-    var studentId by remember { mutableStateOf(d.students.firstOrNull()?.id ?: "") }
-    var text by remember { mutableStateOf("") }
-    var msg by remember { mutableStateOf("") }
-    val termId = d.academicYears.firstOrNull()?.currentTermId ?: ""
-
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        CardBox {
-            Cell("Class teacher comments — pick student, write, save", MUTED, true)
-            Spacer(Modifier.height(6.dp))
-            // horizontal picker of students (first 12)
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                d.students.take(6).forEach { s ->
-                    Button(onClick = { studentId = s.id },
-                        colors = ButtonDefaults.buttonColors(containerColor = if (studentId == s.id) ACCENT else CARD)) {
-                        Text(s.firstName, fontSize = 9.sp, color = Color.White)
-                    }
-                }
-            }
-            val student = d.students.firstOrNull { it.id == studentId }
-            if (student != null && d.students.size > 6) {
-                Spacer(Modifier.height(6.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    d.students.drop(6).take(6).forEach { s ->
-                        Button(onClick = { studentId = s.id },
-                            colors = ButtonDefaults.buttonColors(containerColor = if (studentId == s.id) ACCENT else CARD)) {
-                            Text(s.firstName, fontSize = 9.sp, color = Color.White)
-                        }
-                    }
-                }
-            }
-            Spacer(Modifier.height(8.dp))
-            OutlinedTextField(
-                value = text, onValueChange = { text = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Comment for ${d.students.firstOrNull { it.id == studentId }?.fullName ?: "student"}…", color = MUTED, fontSize = 12.sp) },
-                textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 13.sp)
-            )
-            Spacer(Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Button(onClick = {
-                    if (text.isNotBlank() && studentId.isNotBlank()) {
-                        state.addComment(Comment(
-                            id = "cm-${System.currentTimeMillis()}", studentId = studentId, termId = termId,
-                            type = CommentType.CLASS_TEACHER, text = text
-                        ))
-                        text = ""; msg = "Comment saved ✓"
-                    }
-                }, colors = ButtonDefaults.buttonColors(containerColor = ACCENT)) { Text("Save comment", color = Color.White, fontSize = 12.sp) }
-                // predefined comment shortcuts (Section 23)
-                listOf("Excellent performance.", "Good improvement.", "Needs more effort.").forEach { pc ->
-                    Button(onClick = { text = pc }, colors = ButtonDefaults.buttonColors(containerColor = CARD)) {
-                        Text(pc.take(11) + "…", fontSize = 9.sp, color = Color.White)
-                    }
-                }
-            }
-            if (msg.isNotEmpty()) Cell(msg, GOOD)
-        }
-        CardBox {
-            Cell("Saved comments this term", MUTED, true)
-            Spacer(Modifier.height(4.dp))
-            d.comments.takeLast(8).reversed().forEach { c ->
-                val s = d.students.firstOrNull { it.id == c.studentId }
-                Cell("• ${s?.fullName ?: c.studentId}: ${c.text}", MUTED)
-            }
-            if (d.comments.isEmpty()) Cell("None yet.", MUTED)
-        }
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Export / auto-send staging (Sections 39, 47)
-// ─────────────────────────────────────────────────────────────────────────────
-
-@Composable
-fun SendScreen(state: TeacherState) {
-    val d = state.data
-    var path by remember { mutableStateOf<String?>(null) }
-    var importMsg by remember { mutableStateOf("") }
-
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        CardBox {
-            Cell("Export marks bundle", MUTED, true)
-            Spacer(Modifier.height(4.dp))
-            Cell("Copy this file to the admin computer via USB or Bluetooth and import it in Sync & Backup.", MUTED)
-            Spacer(Modifier.height(8.dp))
-            Button(onClick = { path = state.exportBundle() }, colors = ButtonDefaults.buttonColors(containerColor = ACCENT)) {
-                Text("Export ${d.marks.size} marks", color = Color.White)
-            }
-            if (path != null) {
-                Spacer(Modifier.height(6.dp))
-                Cell("✓ Saved:", GOOD, true)
-                Cell(path ?: "", MUTED)
-            }
-        }
-        CardBox {
-            Cell("Import school data from admin", MUTED, true)
-            Spacer(Modifier.height(4.dp))
-            Cell("Copy school-data-from-admin.json here via USB/Bluetooth, then tap Import. Your own marks and comments are always kept. Teacher: " + (state.me?.name ?: "not selected"), MUTED)
-            Spacer(Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Button(onClick = { importMsg = state.importSchoolData() }, colors = ButtonDefaults.buttonColors(containerColor = ACCENT)) {
-                    Text("Import", color = Color.White, fontSize = 11.sp)
-                }
-                Button(onClick = { state.setMe(null) }, colors = ButtonDefaults.buttonColors(containerColor = CARD)) {
-                    Text("Change teacher", color = Color.White, fontSize = 11.sp)
-                }
-            }
-            if (importMsg.isNotEmpty()) {
-                Spacer(Modifier.height(6.dp))
-                Cell(importMsg, if (importMsg.startsWith("✓")) GOOD else Color(0xFFFFB84D))
-            }
-        }
-        CardBox {
-            Cell("How offline sync works", MUTED, true)
-            Spacer(Modifier.height(4.dp))
-            Cell("1. Marks save instantly to this phone.", MUTED)
-            Cell("2. Export creates a validated bundle file.", MUTED)
-            Cell("3. Admin imports it — newest-wins merge, everything logged.", MUTED)
-        }
-    }
-}
+internal fun fmt1(d: Double): String = if (d == d.toLong().toDouble()) d.toLong().toString() else String.format("%.1f", d)
