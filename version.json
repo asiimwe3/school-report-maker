@@ -1,7 +1,7 @@
 {
   "versionCode": 3,
-  "versionName": "1.2.3",
+  "versionName": "1.3.0",
   "apkUrl": "https://github.com/asiimwe3/school-report-maker/releases/download/v1.1.0/srs-teacher-1.1.0.apk",
-  "msiUrl": "https://github.com/asiimwe3/school-report-maker/releases/download/v1.2.3/SchoolReportMaker-1.2.3.msi",
-  "releaseNotes": "New: Reset all data (Settings, Danger zone) — erases everything and restores a brand-new install state."
+  "msiUrl": "https://github.com/asiimwe3/school-report-maker/releases/download/v1.3.0/SchoolReportMaker-1.3.0.msi",
+  "releaseNotes": "New: printable Fee Defaulters List (Word) per class with expected/collected/outstanding totals."
 }

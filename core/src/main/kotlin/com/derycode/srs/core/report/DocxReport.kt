@@ -102,6 +102,32 @@ object DocxReport {
         }
     }
 
+    // ── fee defaulter list ─────────────────────────────────────────────────
+    /** Word document: fee defaulters for one class & term, with class totals. */
+    fun writeDefaulterList(out: Path, data: SchoolData, classLabel: String, termLabel: String,
+                           currency: String, rows: List<List<String>>, totals: List<String>): Path {
+        val doc = Doc()
+        val s = data.school
+        doc.p(s.name, bold = true, size = 32, align = "center", spacingAfter = 20)
+        val contact = listOf(s.address, s.phone).filter { it.isNotBlank() }.joinToString(" • ")
+        if (contact.isNotBlank()) doc.p(contact, size = 18, align = "center", color = "666666", spacingAfter = 20)
+        doc.p("FEE DEFAULTERS LIST", bold = true, size = 26, align = "center", spacingAfter = 40)
+        doc.p("$classLabel — $termLabel", size = 20, align = "center", color = "444444", spacingAfter = 200)
+        if (rows.isEmpty()) {
+            doc.p("All students in this class have cleared their fees. No defaulters.", size = 22, align = "center", color = "2E7D32")
+        } else {
+            doc.table(listOf("Student", "Term fee ($currency)", "Paid ($currency)", "Balance ($currency)"), rows)
+            doc.p("Students on the list: ${rows.size}", bold = true, size = 20, spacingAfter = 20)
+            doc.p("Expected: $currency ${totals[0]}    Collected: $currency ${totals[1]}    Outstanding: $currency ${totals[2]}",
+                size = 20, spacingAfter = 60)
+            doc.p("Signature (Bursar): ..............................        Date: ..............................",
+                size = 18, color = "666666", spacingAfter = 0)
+        }
+        Files.createDirectories(out.toAbsolutePath().parent)
+        Files.write(out, doc.toBytes())
+        return out
+    }
+
     // ── report card content ────────────────────────────────────────────────
 
     fun writeStudentReport(out: Path, data: SchoolData, result: TermResult, layout: TemplateLayout = TemplateLayout.CLASSIC): Path {

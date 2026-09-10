@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.derycode.srs.core.model.*
+import com.derycode.srs.core.report.DocxReport
 import java.text.SimpleDateFormat
 import java.util.Date
 
@@ -158,7 +159,22 @@ fun FeesScreen(state: AppState) {
                     }
                 }
                 Spacer(Modifier.height(8.dp))
-                Text("Collected this term: $cur ${totalPaid.toLong()}", color = GOOD, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                val expected = structure.amount * students.size
+                val outstanding = students.sumOf { s -> (structure.amount - d.feePayments.filter { it.studentId == s.id && it.termId == term?.id }.sumOf { it.amount }).coerceAtLeast(0.0) }
+                Text("Expected: $cur ${expected.toLong()}    Collected: $cur ${totalPaid.toLong()}    Outstanding: $cur ${outstanding.toLong()}", color = GOOD, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(10.dp))
+                Btn("Print defaulter list (Word)", primary = false, onClick = {
+                    val rows = students.mapNotNull { s ->
+                        val paid = d.feePayments.filter { it.studentId == s.id && it.termId == term?.id }.sumOf { it.amount }
+                        val bal = structure.amount - paid
+                        if (bal > 0) listOf(s.fullName, structure.amount.toLong().toString(), paid.toLong().toString(), bal.toLong().toString()) else null
+                    }
+                    val label = cls?.let { if (it.stream.isBlank()) it.name else "${it.name} ${it.stream}" } ?: "Class"
+                    val f = dataDir.resolve("reports").resolve("defaulters-${label.replace(" ", "")}-term${term?.number}.docx")
+                    DocxReport.writeDefaulterList(f, d, label, "Term ${term?.number} ${year?.year ?: ""}",
+                        cur, rows, listOf(expected.toLong().toString(), totalPaid.toLong().toString(), outstanding.toLong().toString()))
+                    try { java.awt.Desktop.getDesktop().open(f.toFile()) } catch (_: Exception) { }
+                })
             }
         }
     }
