@@ -52,7 +52,7 @@ object DesktopCrashTracker {
 // ─────────────────────────────────────────────────────────────────────────────
 
 object DesktopUpdateChecker {
-    const val CURRENT_VERSION = "1.1.1"
+    const val CURRENT_VERSION = "1.1.2"
 
     fun check(): UpdateInfo? = try {
         val conn = URL(Support.VERSION_URL).openConnection()
@@ -67,8 +67,19 @@ object DesktopUpdateChecker {
             Files.createDirectories(dir)
             val out = dir.resolve("SchoolReportMaker-update.msi")
             URL(url).openStream().use { input -> Files.copy(input, out) }
-            try { Desktop.getDesktop().open(out.toFile()); "Installer downloaded — follow the setup wizard." }
-            catch (_: Exception) { "Downloaded to ${out.toAbsolutePath()}. Run it to update." }
+            if (System.getProperty("os.name").lowercase().contains("win")) {
+                // Launch the installer, then close THIS console so Windows can replace
+                // files that are locked while the app is running (broken-install fix).
+                ProcessBuilder("msiexec", "/i", out.toAbsolutePath().toString()).start()
+                Thread {
+                    Thread.sleep(1200)
+                    Runtime.getRuntime().halt(0)
+                }.start()
+                "Installer launched — this console is closing. Follow the setup wizard; your data is safe."
+            } else {
+                try { Desktop.getDesktop().open(out.toFile()); "Installer downloaded — close this app, then follow the setup wizard." }
+                catch (_: Exception) { "Downloaded to ${out.toAbsolutePath()}. Run it to update." }
+            }
         } catch (_: Exception) { "Download failed — check internet, or grab it from the releases page." }
     }
 }

@@ -21,7 +21,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Msi, TargetFormat.Exe, TargetFormat.Deb)
             packageName = "SchoolReportMaker"
-            packageVersion = "1.1.1"
+            packageVersion = "1.1.2"
             description = "DeryCode School Report Maker — offline report cards for Ugandan schools"
             vendor = "DeryCode"
             windows {
