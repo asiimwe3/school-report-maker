@@ -45,7 +45,7 @@ fun FeesScreen(state: AppState) {
     val cur = d.settings.currencySymbol
 
     ScreenTitle("School Fees", "Set the fee per class and term, record payments, see balances — appears on report cards.")
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.verticalScroll(rememberScrollState())) {
         // ── Fee structure ──
         CardBox {
             Text("Fee structure (${term?.let { "Term ${it.number} ${year?.year}" } ?: "no term"})", color = TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)

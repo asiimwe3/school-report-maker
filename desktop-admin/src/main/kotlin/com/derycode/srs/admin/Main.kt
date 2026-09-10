@@ -150,7 +150,7 @@ fun App(state: AppState) {
         }
 
         // ── Content ──
-        Box(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()).padding(24.dp)) {
+        Box(Modifier.weight(1f).fillMaxHeight().padding(24.dp)) {
             when (state.screen) {
                 "dashboard" -> DashboardScreen(state)
                 "setup" -> SetupScreen(state)
@@ -377,7 +377,7 @@ fun DashboardScreen(state: AppState) {
     val pendingSync = d.syncQueue.count { it.status == "PENDING" }
 
     ScreenTitle("Dashboard", "Everything below works 100% offline")
-    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.verticalScroll(rememberScrollState())) {
         Row3 {
             StatCard("Academic year", year?.year ?: "—")
             StatCard("Students", activeStudents.toString(), GOOD)

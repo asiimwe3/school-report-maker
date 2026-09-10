@@ -3,6 +3,7 @@ package com.derycode.srs.admin
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -37,7 +38,7 @@ fun TemplatesScreen(state: AppState) {
     var layout by remember { mutableStateOf(TemplateLayout.CLASSIC) }
 
     ScreenTitle("Report Template Library", "Designs for report cards — create, duplicate, set a default.")
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.verticalScroll(rememberScrollState())) {
         CardBox {
             Text("Create / duplicate a template", color = TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
