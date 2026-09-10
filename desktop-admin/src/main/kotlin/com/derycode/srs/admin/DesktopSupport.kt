@@ -36,7 +36,7 @@ object DesktopCrashTracker {
             try {
                 Files.createDirectories(dataDir)
                 val entry = "\n=== CRASH ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Date())} ===\n" +
-                    "App: Admin Console 1.0.0\nOS: ${System.getProperty("os.name")} ${System.getProperty("os.version")}\n" +
+                    "App: Admin Console 1.2.0\nOS: ${System.getProperty("os.name")} ${System.getProperty("os.version")}\n" +
                     "Thread: ${thread.name}\n${throwable.stackTraceToString().take(3500)}\n"
                 Files.writeString(logFile, Files.exists(logFile).let { if (it) Files.readString(logFile) else "" } + entry)
             } catch (_: Exception) { }
@@ -52,7 +52,7 @@ object DesktopCrashTracker {
 // ─────────────────────────────────────────────────────────────────────────────
 
 object DesktopUpdateChecker {
-    const val CURRENT_VERSION = "1.1.2"
+    const val CURRENT_VERSION = "1.2.0"
 
     fun check(): UpdateInfo? = try {
         val conn = URL(Support.VERSION_URL).openConnection()

@@ -192,6 +192,20 @@ object DocxReport {
             listOf(listOf(overall, posLine.ifBlank { "—" }, fmt(result.averagePercent) + "%"))
         )
 
+        // school fees summary (only when a fee structure exists for this class/term)
+        val enrollment = data.enrollments.lastOrNull { it.studentId == student.id }
+        val fee = enrollment?.let { e -> data.feeStructures.firstOrNull { it.classId == e.classId && it.termId == result.termId } }
+        if (fee != null && fee.amount > 0) {
+            val paid = data.feePayments.filter { it.studentId == student.id && it.termId == result.termId }.sumOf { it.amount }
+            val balance = fee.amount - paid
+            doc.p("School Fees (${data.settings.currencySymbol})", bold = true, size = 22, color = accent, spacingAfter = 40)
+            doc.table(
+                listOf("Term fees", "Paid to date", "Balance"),
+                listOf(listOf(fmt(fee.amount), fmt(paid), fmt(balance)))
+            )
+            doc.p("", size = 10, spacingAfter = 60)
+        }
+
         // comments
         val classComments = data.comments
             .filter { it.studentId == student.id && it.termId == result.termId }

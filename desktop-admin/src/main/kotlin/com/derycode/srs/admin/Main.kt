@@ -6,6 +6,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -90,21 +92,25 @@ fun main() = application {
 
 @Composable
 fun App(state: AppState) {
-    val screens = listOf(
-        "dashboard" to "Dashboard", "setup" to "School Setup", "students" to "Students",
-        "classes" to "Classes & Streams", "subjects" to "Subjects", "teachers" to "Teachers",
-        "marks" to "Marks Grid", "grading" to "Grading Schemes", "results" to "Results Review",
-        "reports" to "Reports", "sync" to "Sync & Backup",
-        "templates" to "Templates", "preview" to "Report Preview",
-        "audit" to "Audit Log", "archive" to "Report Archive", "backups" to "Backup History",
-        "users" to "Users", "notifications" to "Notifications", "calendar" to "Calendar",
-        "importexport" to "Import / Export", "settings" to "Settings",
-        "support" to "Support & Licence"
+    val navGroups = listOf(
+        "OVERVIEW" to listOf("dashboard" to "Dashboard"),
+        "SCHOOL" to listOf("setup" to "School Setup", "students" to "Students",
+            "classes" to "Classes & Streams", "subjects" to "Subjects", "teachers" to "Teachers"),
+        "ACADEMICS" to listOf("marks" to "Marks Grid", "grading" to "Grading Schemes",
+            "results" to "Results Review", "fees" to "School Fees", "calendar" to "Calendar"),
+        "REPORTS" to listOf("reports" to "Reports", "templates" to "Templates",
+            "preview" to "Report Preview", "archive" to "Report Archive"),
+        "PLANS" to listOf("plans" to "Plans & Pricing"),
+        "SYSTEM" to listOf("sync" to "Sync & Backup", "users" to "Users",
+            "notifications" to "Notifications", "backups" to "Backup History",
+            "importexport" to "Import / Export", "audit" to "Audit Log", "settings" to "Settings"),
+        "HELP" to listOf("docs" to "Help & Documentation", "support" to "Support & Licence")
     )
     Row(Modifier.fillMaxSize().background(NAVY)) {
         // ── Navigation rail ──
         Column(
             Modifier.width(210.dp).fillMaxHeight().background(Color(0xFF0A0F1C))
+                .verticalScroll(rememberScrollState())
                 .padding(vertical = 14.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
@@ -117,18 +123,22 @@ fun App(state: AppState) {
                 }
             }
             HorizontalDivider(color = Color(0xFF1B2540), modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
-            screens.forEach { (key, label) ->
-                val selected = state.screen == key
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                        .background(if (selected) ACCENT_SOFT else Color.Transparent, RoundedCornerShape(8.dp))
-                        .clickable { state.screen = key }
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                ) {
-                    Box(Modifier.width(3.dp).height(18.dp).background(if (selected) ACCENT else Color.Transparent, RoundedCornerShape(2.dp)))
-                    Spacer(Modifier.width(10.dp))
-                    Text(label, color = if (selected) TEXT else MUTED, fontSize = 13.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal)
+            navGroups.forEach { (group, entries) ->
+                Text(group, color = Color(0xFF5A6B8C), fontSize = 10.sp, fontWeight = FontWeight.Black,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp))
+                entries.forEach { (key, label) ->
+                    val selected = state.screen == key
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                            .background(if (selected) ACCENT_SOFT else Color.Transparent, RoundedCornerShape(8.dp))
+                            .clickable { state.screen = key }
+                            .padding(horizontal = 16.dp, vertical = 7.dp)
+                    ) {
+                        Box(Modifier.width(3.dp).height(16.dp).background(if (selected) ACCENT else Color.Transparent, RoundedCornerShape(2.dp)))
+                        Spacer(Modifier.width(10.dp))
+                        Text(label, color = if (selected) TEXT else MUTED, fontSize = 12.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal)
+                    }
                 }
             }
             Spacer(Modifier.weight(1f))
@@ -140,7 +150,7 @@ fun App(state: AppState) {
         }
 
         // ── Content ──
-        Box(Modifier.weight(1f).fillMaxHeight().padding(24.dp)) {
+        Box(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()).padding(24.dp)) {
             when (state.screen) {
                 "dashboard" -> DashboardScreen(state)
                 "setup" -> SetupScreen(state)
@@ -149,6 +159,7 @@ fun App(state: AppState) {
                 "subjects" -> SubjectsScreen(state)
                 "teachers" -> TeachersScreen(state)
                 "marks" -> MarksScreen(state)
+                "fees" -> FeesScreen(state)
                 "grading" -> GradingScreen(state)
                 "results" -> ResultsScreen(state)
                 "reports" -> ReportsScreen(state)
@@ -163,6 +174,8 @@ fun App(state: AppState) {
                 "calendar" -> CalendarScreen(state)
                 "importexport" -> ImportExportScreen(state)
                 "settings" -> SettingsScreen(state)
+                "plans" -> PlansScreen(state)
+                "docs" -> HelpDocsScreen(state)
                 "support" -> SupportScreenDesktop(state)
             }
         }
@@ -356,6 +369,8 @@ fun AcademicYearsSection(state: AppState) {
 fun DashboardScreen(state: AppState) {
     val d = state.data
     val year = d.academicYears.firstOrNull { y -> y.currentTermId != null }
+    val term = year?.terms?.firstOrNull { it.id == year.currentTermId } ?: year?.terms?.firstOrNull()
+    val cur = d.settings.currencySymbol
     val activeStudents = d.students.count { it.status == StudentStatus.ACTIVE }
     val classes = d.classes.count { it.active }
     val locked = d.markSheets.count { it.state == MarkSheetState.LOCKED }
@@ -376,18 +391,46 @@ fun DashboardScreen(state: AppState) {
             StatCard("Pending sync", pendingSync.toString(), WARN)
         }
         Spacer(Modifier.height(0.dp))
+        Row3 {
+            StatCard("Fees collected", cur + " " + d.feePayments.filter { term != null && it.termId == term.id }.sumOf { it.amount }.toLong().toString(), GOOD)
+            StatCard("Reports generated", d.reports.size.toString())
+            StatCard("Licence", d.settings.licencePlan, if (d.settings.licencePlan == "Trial") WARN else GOOD)
+        }
+        // ── Setup checklist ──
         CardBox {
             Text("Getting started", color = TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(6.dp))
             val steps = listOf(
-                "1. School Setup — enter the school profile and create an academic year with 3 terms",
-                "2. Classes & Streams — add classes (S1, P7…) and streams (East, West…)",
-                "3. Subjects — adjust the preloaded subjects to match what your school offers",
-                "4. Students — add or import students and enroll them in classes",
-                "5. Marks Grid — enter marks per class and subject",
-                "6. Reports — generate printable report cards"
+                ("School profile saved" to (d.school.name.isNotBlank() && d.school.name != "My School")) to "setup",
+                ("Academic year with terms" to (term != null)) to "setup",
+                ("Classes created" to (d.classes.count { it.active } > 0)) to "classes",
+                ("Students enrolled" to (d.students.count { it.status == StudentStatus.ACTIVE } > 0)) to "students",
+                ("Marks entered this term" to (d.marks.count { term != null && it.termId == term.id } > 0)) to "marks",
+                ("Fee structure set" to (d.feeStructures.isNotEmpty())) to "fees",
+                ("Report generated" to (d.reports.isNotEmpty())) to "reports"
             )
-            steps.forEach { Text(it, color = MUTED, fontSize = 12.sp, modifier = Modifier.padding(vertical = 3.dp)) }
+            steps.forEach { (step, target) ->
+                val (label, done) = step
+                Row(verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().clickable { state.screen = target }.padding(vertical = 4.dp)) {
+                    Text(if (done) "✓" else "○", color = if (done) GOOD else MUTED, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.width(10.dp))
+                    Text(label, color = if (done) TEXT else MUTED, fontSize = 12.sp,
+                        fontWeight = if (done) FontWeight.Normal else FontWeight.Medium,
+                        textDecoration = if (done) androidx.compose.ui.text.style.TextDecoration.LineThrough else null)
+                }
+            }
+        }
+        // ── Recent activity ──
+        CardBox {
+            Text("Recent activity", color = TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(6.dp))
+            val recent = d.auditLog.takeLast(6).reversed()
+            if (recent.isEmpty()) Text("Nothing yet — every change you make appears here.", color = MUTED, fontSize = 12.sp)
+            recent.forEach { a ->
+                val t = java.text.SimpleDateFormat("d MMM HH:mm").format(java.util.Date(a.timestamp))
+                Text("$t  ·  ${a.action}  ${a.newValue.take(40)}", color = MUTED, fontSize = 11.sp, modifier = Modifier.padding(vertical = 2.dp))
+            }
         }
     }
 }

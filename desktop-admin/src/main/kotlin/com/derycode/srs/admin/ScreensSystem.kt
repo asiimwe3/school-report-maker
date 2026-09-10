@@ -1,6 +1,9 @@
 package com.derycode.srs.admin
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -56,44 +59,116 @@ fun TemplatesScreen(state: AppState) {
                 }
             }
         }
+        // ── Template gallery: visual preview cards ──
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
+            d.templates.filter { !it.archived }.forEach { t ->
+                TemplateCard(state, t)
+            }
+        }
         CardBox {
-            Text("Templates (${d.templates.size})", color = TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(8.dp))
-            listOf(
-                "Name" to 220, "Layout" to 110, "Level" to 120, "Default" to 80, "Status" to 90, "Actions" to 260
-            )
-            d.templates.forEach { t ->
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    modifier = Modifier.padding(vertical = 4.dp)) {
-                    Text(t.name, color = TEXT, fontSize = 12.sp, modifier = Modifier.width(210.dp))
-                    Text(t.layout.name.lowercase().replaceFirstChar { it.uppercase() }, color = MUTED, fontSize = 12.sp, modifier = Modifier.width(100.dp))
-                    Text(t.level?.let { levelLabel(it) } ?: "Any level", color = MUTED, fontSize = 12.sp, modifier = Modifier.width(110.dp))
-                    Text(if (t.isDefault) "✓ default" else "", color = GOOD, fontSize = 12.sp, modifier = Modifier.width(80.dp))
-                    Text(if (t.archived) "archived" else "active", color = if (t.archived) MUTED else GOOD, fontSize = 12.sp, modifier = Modifier.width(70.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        if (!t.isDefault) Btn("Make default", primary = false, onClick = {
-                            state.repo.mutate("TEMPLATE_DEFAULT_CHANGED", "ReportTemplate", t.id, new = t.name) { dd ->
-                                dd.copy(templates = dd.templates.map { x -> x.copy(isDefault = x.id == t.id) })
-                            }
-                            state.refresh()
-                        })
-                        Btn("Duplicate", primary = false, onClick = {
-                            val id = state.repo.nextId()
-                            state.repo.mutate("TEMPLATE_DUPLICATED", "ReportTemplate", id, new = "${t.name} copy") { dd ->
-                                dd.copy(templates = dd.templates + t.copy(id = id, name = "${t.name} copy", isDefault = false))
-                            }
-                            state.refresh()
-                        })
-                        Btn(if (t.archived) "Restore" else "Archive", primary = false, onClick = {
-                            state.repo.mutate("TEMPLATE_ARCHIVED", "ReportTemplate", t.id, new = (!t.archived).toString()) { dd ->
-                                dd.copy(templates = dd.templates.map { if (it.id == t.id) it.copy(archived = !it.archived) else it })
-                            }
-                            state.refresh()
-                        })
-                    }
+            Text("Archived templates", color = TEXT, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(6.dp))
+            val archived = d.templates.filter { it.archived }
+            if (archived.isEmpty()) Text("None.", color = MUTED, fontSize = 12.sp)
+            archived.forEach { t ->
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(vertical = 3.dp)) {
+                    Text(t.name, color = MUTED, fontSize = 12.sp, modifier = Modifier.width(220.dp))
+                    Btn("Restore", primary = false, onClick = {
+                        state.repo.mutate("TEMPLATE_RESTORED", "ReportTemplate", t.id) { dd ->
+                            dd.copy(templates = dd.templates.map { if (it.id == t.id) it.copy(archived = false) else it })
+                        }
+                        state.refresh()
+                    })
                 }
             }
-            if (d.templates.isEmpty()) Text("No templates yet — add one above (seeded defaults appear after first run).", color = MUTED, fontSize = 12.sp)
+        }
+    }
+}
+
+@Composable
+private fun TemplateCard(state: AppState, t: ReportTemplate) {
+    Column(
+        Modifier.width(230.dp).background(CARD, RoundedCornerShape(14.dp))
+            .border(1.dp, if (t.isDefault) ACCENT else Color(0xFF1E2A47), RoundedCornerShape(14.dp)).padding(12.dp)
+    ) {
+        if (t.isDefault) Text("DEFAULT", color = ACCENT, fontSize = 9.sp, fontWeight = FontWeight.Black)
+        Text(t.name, color = TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+        Text(t.layout.name.lowercase().replaceFirstChar { it.uppercase() } + " layout", color = MUTED, fontSize = 10.sp)
+        Spacer(Modifier.height(8.dp))
+        TemplatePreview(t.layout)
+        Spacer(Modifier.height(10.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            if (!t.isDefault) Btn("Default", primary = false, onClick = {
+                state.repo.mutate("TEMPLATE_DEFAULT_CHANGED", "ReportTemplate", t.id, new = t.name) { dd ->
+                    dd.copy(templates = dd.templates.map { x -> x.copy(isDefault = x.id == t.id) })
+                }
+                state.refresh()
+            })
+            Btn("Duplicate", primary = false, onClick = {
+                val id = state.repo.nextId()
+                state.repo.mutate("TEMPLATE_DUPLICATED", "ReportTemplate", id, new = "${t.name} copy") { dd ->
+                    dd.copy(templates = dd.templates + t.copy(id = id, name = "${t.name} copy", isDefault = false))
+                }
+                state.refresh()
+            })
+            Btn("Archive", primary = false, onClick = {
+                state.repo.mutate("TEMPLATE_ARCHIVED", "ReportTemplate", t.id) { dd ->
+                    dd.copy(templates = dd.templates.map { if (it.id == t.id) it.copy(archived = true) else it })
+                }
+                state.refresh()
+            })
+        }
+    }
+}
+
+/** Miniature visual mock of a report card per layout. */
+@Composable
+private fun TemplatePreview(layout: TemplateLayout) {
+    val bg = Color(0xFF0E1526)
+    Column(
+        Modifier.fillMaxWidth().height(150.dp).background(bg, RoundedCornerShape(8.dp))
+            .border(1.dp, Color(0xFF223054), RoundedCornerShape(8.dp)).padding(8.dp)
+    ) {
+        when (layout) {
+            TemplateLayout.CLASSIC -> {
+                Box(Modifier.fillMaxWidth().height(16.dp).background(Color(0xFF1F4E79), RoundedCornerShape(3.dp)))
+                Spacer(Modifier.height(6.dp))
+                Box(Modifier.fillMaxWidth(0.5f).height(7.dp).background(Color(0xFF3A4763), RoundedCornerShape(2.dp)))
+                Spacer(Modifier.height(6.dp))
+                repeat(5) {
+                    Box(Modifier.fillMaxWidth().height(8.dp).border(1.dp, Color(0xFF2C3B5E), RoundedCornerShape(2.dp)))
+                    Spacer(Modifier.height(4.dp))
+                }
+            }
+            TemplateLayout.MODERN -> {
+                Box(Modifier.fillMaxWidth().height(26.dp).background(Color(0xFF4F8CFF), RoundedCornerShape(6.dp)))
+                Spacer(Modifier.height(6.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    repeat(3) { Box(Modifier.weight(1f).height(16.dp).background(Color(0xFF1B2A4A), RoundedCornerShape(3.dp))) }
+                }
+                Spacer(Modifier.height(6.dp))
+                repeat(4) {
+                    Box(Modifier.fillMaxWidth(0.8f).height(6.dp).background(Color(0xFF3A4763), RoundedCornerShape(2.dp)))
+                    Spacer(Modifier.height(5.dp))
+                }
+            }
+            TemplateLayout.COMPACT -> {
+                Box(Modifier.fillMaxWidth().height(10.dp).background(Color(0xFF2C3B5E), RoundedCornerShape(2.dp)))
+                Spacer(Modifier.height(5.dp))
+                repeat(9) {
+                    Box(Modifier.fillMaxWidth().height(5.dp).background(Color(0xFF243355), RoundedCornerShape(2.dp)))
+                    Spacer(Modifier.height(3.dp))
+                }
+            }
+            TemplateLayout.PLAIN -> {
+                Box(Modifier.fillMaxWidth(0.6f).height(9.dp).background(Color(0xFF4E5D7E), RoundedCornerShape(2.dp)))
+                Spacer(Modifier.height(8.dp))
+                repeat(5) {
+                    Box(Modifier.fillMaxWidth(0.9f).height(6.dp).background(Color(0xFF3A4763), RoundedCornerShape(2.dp)))
+                    Spacer(Modifier.height(6.dp))
+                }
+                Box(Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF2C3B5E)))
+            }
         }
     }
 }

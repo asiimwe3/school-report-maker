@@ -1,7 +1,7 @@
 {
   "versionCode": 3,
-  "versionName": "1.1.2",
+  "versionName": "1.2.0",
   "apkUrl": "https://github.com/asiimwe3/school-report-maker/releases/download/v1.1.0/srs-teacher-1.1.0.apk",
-  "msiUrl": "https://github.com/asiimwe3/school-report-maker/releases/download/v1.1.2/SchoolReportMaker-1.1.2.msi",
-  "releaseNotes": "Admin console: updater now closes the app before installing, preventing broken updates caused by files in use."
+  "msiUrl": "https://github.com/asiimwe3/school-report-maker/releases/download/v1.2.0/SchoolReportMaker-1.2.0.msi",
+  "releaseNotes": "Admin console v1.2.0: School Fees module (fees on report cards), Plans & Pricing, Help & Documentation with privacy policy and terms, visual template gallery, redesigned dashboard and navigation."
 }

@@ -120,7 +120,7 @@ class JsonStore(
         val config = data.copy(
             marks = emptyList(), markSheets = emptyList(), termResults = emptyList(),
             comments = emptyList(), reports = emptyList(), auditLog = emptyList(),
-            syncQueue = emptyList(), conflicts = emptyList()
+            syncQueue = emptyList(), conflicts = emptyList(), feePayments = emptyList()
         )
         Files.createDirectories(path.toAbsolutePath().parent)
         Files.writeString(path, cfgJson.encodeToString(SchoolData.serializer(), config))

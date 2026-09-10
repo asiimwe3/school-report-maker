@@ -365,7 +365,34 @@ data class AppSettings(
     val autoSyncEnabled: Boolean = false,
     val autoBackupEnabled: Boolean = true,
     val autoBackupFrequencyDays: Int = 7,
-    val backupsToKeep: Int = 10
+    val backupsToKeep: Int = 10,
+    val licencePlan: String = "Trial",
+    val licenceRef: String = ""
+)
+
+// ── School fees (structure per class/term + payments per student) ──
+
+@Serializable
+data class FeeStructure(
+    val id: String = "",
+    val classId: String = "",
+    val academicYearId: String = "",
+    val termId: String = "",
+    val name: String = "School fees",
+    val amount: Double = 0.0
+)
+
+@Serializable
+data class FeePayment(
+    val id: String = "",
+    val studentId: String = "",
+    val academicYearId: String = "",
+    val termId: String = "",
+    val amount: Double = 0.0,
+    val date: Long = 0,
+    val method: String = "Cash",
+    val receipt: String = "",
+    val note: String = ""
 )
 
 enum class CalendarEventType { TERM_START, TERM_END, EXAM, HOLIDAY, MEETING, DEADLINE, OTHER }
@@ -409,5 +436,7 @@ data class SchoolData(
     val conflicts: List<ConflictRecord> = emptyList(),
     val lastSyncAt: Long = 0,
     val settings: AppSettings = AppSettings(),
-    val calendarEvents: List<CalendarEvent> = emptyList()
+    val calendarEvents: List<CalendarEvent> = emptyList(),
+    val feeStructures: List<FeeStructure> = emptyList(),
+    val feePayments: List<FeePayment> = emptyList()
 )
