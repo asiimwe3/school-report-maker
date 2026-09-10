@@ -13,7 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.derycode.srs.core.model.*
-import com.derycode.srs.core.report.ReportEngine
+import com.derycode.srs.core.report.DocxReport
 import com.derycode.srs.core.results.ResultEngine
 import java.awt.Desktop
 import java.nio.file.Files
@@ -363,12 +363,11 @@ fun ReportsScreen(state: AppState) {
                     Text("Each student gets one A4 card: school header, marks, grades, aggregate/division, comments, signature lines, grading key.", color = MUTED, fontSize = 12.sp)
                     Spacer(Modifier.height(10.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Btn("Generate & open in browser") {
-                            val html = ReportEngine.classReports(d, results, layout)
+                        Btn("Generate Word documents (.docx)") {
                             val outDir = dataDir.resolve("reports")
                             Files.createDirectories(outDir)
-                            val f = outDir.resolve("class-${cls.name.replace(" ", "")}-${term.number}-${layout.name.lowercase()}.html")
-                            Files.writeString(f, html)
+                            val f = outDir.resolve("class-${cls.name.replace(" ", "")}-${term.number}-reports.docx")
+                            DocxReport.writeClassReport(f, d, results)
                             // record generated reports with frozen scheme version
                             state.repo.mutate("REPORTS_GENERATED", "Report", classId) { dd ->
                                 dd.copy(reports = results.map { r ->
@@ -381,15 +380,14 @@ fun ReportsScreen(state: AppState) {
                                 } + dd.reports)
                             }
                             state.refresh()
-                            Desktop.getDesktop().browse(f.toUri())
+                            try { Desktop.getDesktop().open(f.toFile()) } catch (_: Exception) { }
                         }
                         Btn("Generate single (first student)", primary = false) {
-                            val html = ReportEngine.studentReport(d, results.first(), layout)
                             val outDir = dataDir.resolve("reports")
                             Files.createDirectories(outDir)
-                            val f = outDir.resolve("student-${results.first().studentId}.html")
-                            Files.writeString(f, html)
-                            Desktop.getDesktop().browse(f.toUri())
+                            val f = outDir.resolve("student-${results.first().studentId}-report.docx")
+                            DocxReport.writeStudentReport(f, d, results.first(), layout)
+                            try { Desktop.getDesktop().open(f.toFile()) } catch (_: Exception) { }
                         }
                     }
                 }
@@ -454,6 +452,25 @@ fun SyncScreen(state: AppState) {
                         TextButton(onClick = { message = if (state.repo.restore(b)) "Restored from ${b.fileName}" else "Restore failed" }) { Text("Restore", color = WARN, fontSize = 11.sp) }
                     }
                 }
+            }
+        }
+        CardBox {
+            Text("Export school setup for teacher phones", color = TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(6.dp))
+            Text("Creates school-data-from-admin.json (classes, students, subjects, schemes — no marks). Copy it to each teacher's phone, then tap Import on the Export tab there.", color = MUTED, fontSize = 11.sp)
+            Spacer(Modifier.height(6.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Btn("Export school setup") {
+                    val out = dataDir.resolve("exports").resolve("school-data-from-admin.json")
+                    state.repo.store.exportSchoolConfig(out, state.repo.data)
+                    state.repo.audit("SCHOOL_CONFIG_EXPORTED", "SchoolData", new = out.toString())
+                    message = "Saved: ${out.toAbsolutePath()}"
+                }
+                Btn("Open exports folder", primary = false, onClick = {
+                    val dir = dataDir.resolve("exports").toFile()
+                    if (!dir.exists()) dir.mkdirs()
+                    try { java.awt.Desktop.getDesktop().open(dir) } catch (_: Exception) { }
+                })
             }
         }
         CardBox {

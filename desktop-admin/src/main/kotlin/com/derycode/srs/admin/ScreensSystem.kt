@@ -14,7 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.derycode.srs.core.model.*
-import com.derycode.srs.core.report.ReportEngine
+import com.derycode.srs.core.report.DocxReport
 import com.derycode.srs.core.results.ResultEngine
 import java.awt.Desktop
 import java.io.File
@@ -149,9 +149,9 @@ fun PreviewScreen(state: AppState) {
             Text("No active students in this class.", color = MUTED, fontSize = 12.sp)
         } else {
             CardBox {
-                Text("Open preview in browser", color = TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                Text("Preview as Word document", color = TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(6.dp))
-                Text("The preview uses the exact same engine as batch printing — what you see is what prints.", color = MUTED, fontSize = 12.sp)
+                Text("The preview uses the exact same engine as batch printing — it opens in Word (.docx), exactly as it will print.", color = MUTED, fontSize = 12.sp)
                 Spacer(Modifier.height(10.dp))
                 Btn("Preview selected student") {
                     val sid = studentId.ifBlank { classStudents.first().id }
@@ -160,12 +160,11 @@ fun PreviewScreen(state: AppState) {
                         principalSubjectIds = emptyList(),
                         compulsorySubjectIds = emptySet()
                     )
-                    val html = ReportEngine.studentReport(d, result, layout)
                     val outDir = dataDir.resolve("reports")
                     Files.createDirectories(outDir)
-                    val f = outDir.resolve("preview-${sid}-${layout.name.lowercase()}.html")
-                    Files.writeString(f, html)
-                    try { Desktop.getDesktop().browse(f.toUri()) } catch (_: Exception) { }
+                    val f = outDir.resolve("preview-${sid}.docx")
+                    DocxReport.writeStudentReport(f, d, result, layout)
+                    try { Desktop.getDesktop().open(f.toFile()) } catch (_: Exception) { }
                     msg = "Saved to ${f.fileName}"
                 }
                 if (msg.isNotEmpty()) Text(msg, color = GOOD, fontSize = 12.sp)

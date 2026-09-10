@@ -50,17 +50,20 @@ internal val dataFile: Path = dataDir.resolve("school-data.json")
 class AppState(val repo: SchoolRepository) {
     var screen by mutableStateOf("dashboard")
     var refreshTick by mutableStateOf(0)
+    var updateAvailable by mutableStateOf<com.derycode.srs.core.support.UpdateInfo?>(null)
     fun refresh() { refreshTick++ }
 
     val data: SchoolData get() = repo.data
 }
 
 fun main() = application {
+    DesktopCrashTracker.install()
     val store = JsonStore()
     val repo = SchoolRepository(store, dataFile, deviceId = "admin-desktop")
     repo.seedIfNeeded(Seeds.ALL_SUBJECTS, Seeds.COMPONENTS)
 
     val state = remember { AppState(repo) }
+    Thread { state.updateAvailable = DesktopUpdateChecker.check() }.start()   // auto-check on launch
     val windowIcon = remember {
         try {
             val bytes = Thread.currentThread().contextClassLoader?.getResourceAsStream("icon.png")?.readBytes()
@@ -87,7 +90,8 @@ fun App(state: AppState) {
         "templates" to "Templates", "preview" to "Report Preview",
         "audit" to "Audit Log", "archive" to "Report Archive", "backups" to "Backup History",
         "users" to "Users", "notifications" to "Notifications", "calendar" to "Calendar",
-        "importexport" to "Import / Export", "settings" to "Settings"
+        "importexport" to "Import / Export", "settings" to "Settings",
+        "support" to "Support & Licence"
     )
     Row(Modifier.fillMaxSize().background(NAVY)) {
         // ── Navigation rail ──
@@ -151,6 +155,7 @@ fun App(state: AppState) {
                 "calendar" -> CalendarScreen(state)
                 "importexport" -> ImportExportScreen(state)
                 "settings" -> SettingsScreen(state)
+                "support" -> SupportScreenDesktop(state)
             }
         }
     }

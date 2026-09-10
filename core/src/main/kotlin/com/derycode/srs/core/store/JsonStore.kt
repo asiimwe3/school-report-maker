@@ -114,6 +114,28 @@ class JsonStore(
         }
         return result.ifEmpty { emptyList() }.also { /* merged list used for audit */ }
     }
+    private val cfgJson = Json { ignoreUnknownKeys = true }
+
+    fun exportSchoolConfig(path: Path, data: SchoolData) {
+        val config = data.copy(
+            marks = emptyList(), markSheets = emptyList(), termResults = emptyList(),
+            comments = emptyList(), reports = emptyList(), auditLog = emptyList(),
+            syncQueue = emptyList(), conflicts = emptyList()
+        )
+        Files.createDirectories(path.toAbsolutePath().parent)
+        Files.writeString(path, cfgJson.encodeToString(SchoolData.serializer(), config))
+    }
+
+    /** Teacher phone loads a school config; keeps its own marks, comments and audit log. */
+    fun loadSchoolConfig(path: Path, keep: SchoolData): SchoolData {
+        val imported = cfgJson.decodeFromString<SchoolData>(Files.readString(path))
+        return imported.copy(
+            marks = keep.marks, comments = keep.comments, markSheets = keep.markSheets,
+            auditLog = keep.auditLog, syncQueue = keep.syncQueue, conflicts = keep.conflicts,
+            reports = keep.reports, settings = keep.settings
+        )
+    }
+
 }
 
 /** Report shown to the admin after a bundle import. */
@@ -199,6 +221,10 @@ class SchoolRepository(
             save()
         }
     }
+
+    // ── School config for teacher phones (Section 45: teacher gets structure, admin gets marks) ──
+
+    /** Admin exports the school setup (classes, students, subjects, schemes — NO marks) for teacher phones. */
 
     // ── Marks helpers with audit trail (Rules 4–5) ───────────────────────────
 
