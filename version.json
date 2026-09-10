@@ -1,7 +1,7 @@
 {
   "versionCode": 3,
-  "versionName": "1.4.0",
+  "versionName": "1.5.0",
   "apkUrl": "https://github.com/asiimwe3/school-report-maker/releases/download/v1.1.0/srs-teacher-1.1.0.apk",
-  "msiUrl": "https://github.com/asiimwe3/school-report-maker/releases/download/v1.4.0/SchoolReportMaker-1.4.0.msi",
-  "releaseNotes": "New: 4 themes for the console — Dark, Light, Emerald, Sunset — switchable in Settings."
+  "msiUrl": "https://github.com/asiimwe3/school-report-maker/releases/download/v1.5.0/SchoolReportMaker-1.5.0.msi",
+  "releaseNotes": "New: 5-tier pricing scaled to student numbers — Starter 100k, Standard 180k, Growth 300k, School 450k, Multi-Branch 600k UGX/yr."
 }

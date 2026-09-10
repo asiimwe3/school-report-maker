@@ -192,12 +192,26 @@ fun PlansScreen(state: AppState) {
     val plan = d.settings.licencePlan
     val cur = d.settings.currencySymbol
 
-    ScreenTitle("Plans & Pricing", "One licence covers the whole school — offline forever, updates included.")
+    val n = d.students.size
+    val rec = when { n <= 100 -> "Starter"; n <= 300 -> "Standard"; n <= 800 -> "Growth"; n <= 2000 -> "School" ; else -> "Multi-Branch" }
+    val plans = listOf(
+        "STARTER" to listOf("Up to 100 students", "$cur 100,000 / year", "Everything in Trial", "Full marks & reports"),
+        "STANDARD" to listOf("Up to 300 students", "$cur 180,000 / year", "Everything in Starter", "Priority WhatsApp support"),
+        "GROWTH" to listOf("Up to 800 students", "$cur 300,000 / year", "Everything in Standard", "Free updates all year"),
+        "SCHOOL" to listOf("Up to 2,000 students", "$cur 450,000 / year", "Everything in Growth", "Report branding"),
+        "MULTI-BRANCH" to listOf("Unlimited students & branches", "$cur 600,000 / year", "Central templates & schemes", "Onboarding call"))
+
+    ScreenTitle("Plans & Pricing", "Pick the tier that fits your school — pricing scales with student numbers.")
     Column(verticalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.verticalScroll(rememberScrollState())) {
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            PlanCard("TRIAL", "Free", "30 days", listOf("All 25+ screens", "Full marks & reports", "No card required"), plan == "Trial", Modifier.weight(1f))
-            PlanCard("SCHOOL LICENCE", "$cur 250,000", "per year", listOf("Everything in Trial", "Priority WhatsApp support", "Free updates all year", "Report branding"), plan == "School Licence", Modifier.weight(1f))
-            PlanCard("MULTI-BRANCH", "$cur 600,000", "per year", listOf("Everything in School", "Unlimited branches", "Central templates & schemes", "Onboarding call"), plan == "Multi-Branch", Modifier.weight(1f))
+        CardBox {
+            Text("Your school: $n students → recommended plan: $rec", color = Theme.ACCENT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
+            plans.forEach { (name, feats) ->
+                val pretty = name.lowercase().replaceFirstChar { it.uppercase() }.replace("-", " ")
+                val isTrial = plan == "Trial"
+                PlanCard(name, feats[1], feats[0], feats, plan.equals(pretty, true), Modifier.width(240.dp))
+            }
         }
         CardBox {
             Text("Current plan: $plan", color = if (plan == "Trial") Theme.WARN else Theme.GOOD, fontSize = 14.sp, fontWeight = FontWeight.Bold)
@@ -211,7 +225,14 @@ fun PlansScreen(state: AppState) {
                 Btn("Activate") {
                     if (ref.isBlank()) msg = "Paste the licence reference DeryCode sent you."
                     else {
-                        val p = if (ref.contains("MB", true)) "Multi-Branch" else "School Licence"
+                        val p = when {
+                            ref.contains("MB", true) -> "Multi-Branch"
+                            ref.contains("SC", true) -> "School"
+                            ref.contains("GR", true) -> "Growth"
+                            ref.contains("SD", true) -> "Standard"
+                            ref.contains("ST", true) -> "Starter"
+                            else -> rec
+                        }
                         state.repo.mutate("LICENCE_ACTIVATED", "AppSettings", "licence", new = p) { dd ->
                             dd.copy(settings = dd.settings.copy(licencePlan = p, licenceRef = ref.trim()))
                         }
