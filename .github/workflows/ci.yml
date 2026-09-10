@@ -48,3 +48,24 @@ jobs:
         with:
           name: teacher-app-debug-apk
           path: teacher-app/build/outputs/apk/debug/*.apk
+
+  desktop-installer-windows:
+    name: Windows installer (MSI, with desktop icon)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.9
+      - name: Package MSI installer
+        run: gradle :desktop-admin:packageMsi
+        shell: bash
+      - name: Upload MSI
+        uses: actions/upload-artifact@v4
+        with:
+          name: school-report-maker-windows-msi
+          path: desktop-admin/build/compose/binaries/main/msi/*.msi

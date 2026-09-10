@@ -494,6 +494,6 @@ fun SyncScreen(state: AppState) {
 private fun countBackups(dir: Path): Int =
     if (java.nio.file.Files.exists(dir)) dir.toFile().listFiles { f -> f.name.startsWith("backup-") }?.size ?: 0 else 0
 
-private fun listBackups(dir: Path): List<Path> =
+internal fun listBackups(dir: Path): List<Path> =
     if (java.nio.file.Files.exists(dir)) dir.toFile().listFiles { f -> f.name.startsWith("backup-") }?.map { it.toPath() }?.sortedBy { it.fileName.toString() } ?: emptyList()
     else emptyList()

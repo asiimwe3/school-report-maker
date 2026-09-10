@@ -195,20 +195,30 @@ CSV import (students, teachers, subjects, marks) with preview → validate → s
 
 Every sensitive operation (mark entered/changed, unlock, transfer, scheme change, report approved, restore) records user, action, entity, old/new value, timestamp, device. Security: secure authentication, role-based permissions, encrypted sensitive local data where practical, secure backups, no plaintext passwords, safe file validation, protection against unauthorized import.
 
-## 44. Admin Console (design/screens-admin.html)
+## 44. Admin Console (design/screens-admin.html) — 20 screens total
 
 1. School Setup — offline school account: name, logo, levels, motto, colors, address, contacts, signatures, stamp, academic year, current term
 2. Dashboard — year/term, totals by class/stream, teachers, subjects, marks completion, reports ready, pending sync, backup status
 3. Students — list, filters (level/class/stream), search, add/edit/archive, import/export, enrollment history
 4. Classes & Streams — levels, classes, streams, A-level combinations, subject/student/teacher assignment
-5. Subjects — add/edit, code, level, class, teacher, compulsory flag, assessment components
-6. Teachers — list, add/edit, assign subjects/classes/streams/role, signatures, activation
-7. Marks Grid — year/term/level/class/stream/subject selection, assessment columns, bulk entry, validation, missing marks, submission, locking
-8. Grading Scheme Editor — create schemes, edit boundaries/labels/points/remarks, preview, assign to level/class/subject
-9. Report Template Library — designs, create, duplicate, edit, preview, default, assign
-10. Report Preview — logo, student details, results, grading table, comments, signatures, stamp, attendance
+4b. Subjects — add/edit, code, level, class, teacher, compulsory flag, assessment components
+4c. Teachers — list, add/edit, assign subjects/classes/streams/role, signatures, activation
+5. Marks Grid — year/term/level/class/stream/subject selection, assessment columns, bulk entry, validation, missing marks, submission, locking
+6. Grading Scheme Editor — create schemes, edit boundaries/labels/points/remarks, preview, assign to level/class/subject
+7. Report Template Library — designs, create, duplicate, edit, preview, default, assign
+8. Report Preview — pick one student/term/template, preview before batch generation
+9. Sync & Backup — online/offline status, last sync, pending, conflicts, create/restore backup, export/import bundle
+10. Settings — language, theme, currency, notifications, auto-sync, auto-backup frequency, backups to keep
 11. Results Review — class/student results, missing marks, calculation review, approve, lock, reopen with permission
-12. Sync & Backup — online/offline status, last sync, pending, conflicts, backup history, create/restore backup, export/import bundle
+12. Report Generation — batch-generate report cards for a class/term/template, tracks frozen scheme version per report
+13. Import Data — bring in students (CSV) without leaving the admin console
+14. Export Data — export students, marks or results (CSV) for external use
+15. Audit Log — full filterable history of every mutation (who/what/when/old→new)
+16. Reports — browse previously generated reports (student, term, template, scheme version, approval state)
+17. Backup History — list of local rotating backups, restore any of them (auto safety-backup before restore)
+18. User Management — accounts/roles for everyone who can log into the admin console or teacher app (uses the Teacher/Role model — a "user" IS a teacher/admin account)
+19. Notifications — in-app alerts (missing marks, sync failures, backup reminders) — surfaced from settings.notificationsEnabled
+20. School Calendar — term dates, exams, holidays, meetings, deadlines
 
 ## 45. Teacher App (design/screens-teacher.html)
 

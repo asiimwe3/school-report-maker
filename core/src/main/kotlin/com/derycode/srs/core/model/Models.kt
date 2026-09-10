@@ -353,6 +353,34 @@ data class ConflictRecord(
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
+// App settings & calendar (Admin screens: Settings, School Calendar)
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Serializable
+data class AppSettings(
+    val language: String = "English",
+    val theme: String = "Dark",
+    val currencySymbol: String = "UGX",
+    val notificationsEnabled: Boolean = true,
+    val autoSyncEnabled: Boolean = false,
+    val autoBackupEnabled: Boolean = true,
+    val autoBackupFrequencyDays: Int = 7,
+    val backupsToKeep: Int = 10
+)
+
+enum class CalendarEventType { TERM_START, TERM_END, EXAM, HOLIDAY, MEETING, DEADLINE, OTHER }
+
+@Serializable
+data class CalendarEvent(
+    val id: String,
+    val title: String,
+    val date: String,          // ISO yyyy-MM-dd
+    val type: CalendarEventType = CalendarEventType.OTHER,
+    val termId: String? = null,
+    val notes: String = ""
+)
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Root database (Section 31–32) — everything in one JSON file, atomic writes
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -379,5 +407,7 @@ data class SchoolData(
     val auditLog: List<AuditEntry> = emptyList(),
     val syncQueue: List<SyncItem> = emptyList(),
     val conflicts: List<ConflictRecord> = emptyList(),
-    val lastSyncAt: Long = 0
+    val lastSyncAt: Long = 0,
+    val settings: AppSettings = AppSettings(),
+    val calendarEvents: List<CalendarEvent> = emptyList()
 )

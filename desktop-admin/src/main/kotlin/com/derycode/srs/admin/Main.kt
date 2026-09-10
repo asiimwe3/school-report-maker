@@ -16,7 +16,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.window.Window
+import org.jetbrains.skia.Image
 import androidx.compose.ui.window.application
 import com.derycode.srs.core.model.*
 import com.derycode.srs.core.seed.Seeds
@@ -58,9 +61,16 @@ fun main() = application {
     repo.seedIfNeeded(Seeds.ALL_SUBJECTS, Seeds.COMPONENTS)
 
     val state = remember { AppState(repo) }
+    val windowIcon = remember {
+        try {
+            val bytes = Thread.currentThread().contextClassLoader?.getResourceAsStream("icon.png")?.readBytes()
+            if (bytes != null) BitmapPainter(Image.makeFromEncoded(bytes).toComposeImageBitmap()) else null
+        } catch (_: Exception) { null }
+    }
 
     Window(
         title = "DeryCode School Report Maker — Admin Console",
+        icon = windowIcon,
         onCloseRequest = ::exitApplication
     ) {
         App(state)
@@ -73,7 +83,11 @@ fun App(state: AppState) {
         "dashboard" to "Dashboard", "setup" to "School Setup", "students" to "Students",
         "classes" to "Classes & Streams", "subjects" to "Subjects", "teachers" to "Teachers",
         "marks" to "Marks Grid", "grading" to "Grading Schemes", "results" to "Results Review",
-        "reports" to "Reports", "sync" to "Sync & Backup"
+        "reports" to "Reports", "sync" to "Sync & Backup",
+        "templates" to "Templates", "preview" to "Report Preview",
+        "audit" to "Audit Log", "archive" to "Report Archive", "backups" to "Backup History",
+        "users" to "Users", "notifications" to "Notifications", "calendar" to "Calendar",
+        "importexport" to "Import / Export", "settings" to "Settings"
     )
     Row(Modifier.fillMaxSize().background(NAVY)) {
         // ── Navigation rail ──
@@ -127,6 +141,16 @@ fun App(state: AppState) {
                 "results" -> ResultsScreen(state)
                 "reports" -> ReportsScreen(state)
                 "sync" -> SyncScreen(state)
+                "templates" -> TemplatesScreen(state)
+                "preview" -> PreviewScreen(state)
+                "audit" -> AuditScreen(state)
+                "archive" -> ReportsArchiveScreen(state)
+                "backups" -> BackupHistoryScreen(state)
+                "users" -> UsersScreen(state)
+                "notifications" -> NotificationsScreen(state)
+                "calendar" -> CalendarScreen(state)
+                "importexport" -> ImportExportScreen(state)
+                "settings" -> SettingsScreen(state)
             }
         }
     }

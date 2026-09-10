@@ -188,7 +188,13 @@ class SchoolRepository(
             data = data.copy(
                 subjects = defaultSubjects,
                 components = defaultComponents,
-                gradingSchemes = com.derycode.srs.core.grading.GradingSchemes.ALL
+                gradingSchemes = com.derycode.srs.core.grading.GradingSchemes.ALL,
+                templates = listOf(
+                    com.derycode.srs.core.model.ReportTemplate(id = "tpl-classic", name = "Classic", layout = com.derycode.srs.core.model.TemplateLayout.CLASSIC, isDefault = true),
+                    com.derycode.srs.core.model.ReportTemplate(id = "tpl-modern", name = "Modern", layout = com.derycode.srs.core.model.TemplateLayout.MODERN),
+                    com.derycode.srs.core.model.ReportTemplate(id = "tpl-compact", name = "Compact", layout = com.derycode.srs.core.model.TemplateLayout.COMPACT),
+                    com.derycode.srs.core.model.ReportTemplate(id = "tpl-plain", name = "Plain", layout = com.derycode.srs.core.model.TemplateLayout.PLAIN)
+                )
             )
             save()
         }
