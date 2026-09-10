@@ -204,6 +204,21 @@ class SchoolRepository(
 
     // ── Seed data on first run (Section 59) ────────────────────────────────
 
+    /** Factory reset: delete the entire data folder (data, backups, audit trail,
+     *  crash logs, update downloads) and reseed fresh defaults. */
+    fun wipeAndReseed(defaultSubjects: List<com.derycode.srs.core.model.Subject>,
+                      defaultComponents: List<com.derycode.srs.core.model.AssessmentComponent>) {
+        try {
+            val dir = file.toAbsolutePath().parent
+            if (java.nio.file.Files.exists(dir)) {
+                java.nio.file.Files.walk(dir).sorted(java.util.Comparator.reverseOrder())
+                    .forEach { java.nio.file.Files.deleteIfExists(it) }
+            }
+        } catch (_: Exception) { }
+        data = store.load(file)
+        seedIfNeeded(defaultSubjects, defaultComponents)
+    }
+
     fun seedIfNeeded(defaultSubjects: List<com.derycode.srs.core.model.Subject>,
                      defaultComponents: List<com.derycode.srs.core.model.AssessmentComponent>) {
         if (data.students.isEmpty() && data.academicYears.isEmpty() && data.gradingSchemes.isEmpty()) {

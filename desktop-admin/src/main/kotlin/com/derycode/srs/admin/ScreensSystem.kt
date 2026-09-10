@@ -266,8 +266,30 @@ fun SettingsScreen(state: AppState) {
     var keep by remember(s) { mutableStateOf(s.backupsToKeep.toString()) }
     var saved by remember { mutableStateOf(false) }
 
+    var confirmTxt by remember { mutableStateOf("") }
+    var wiped by remember { mutableStateOf(false) }
+
     ScreenTitle("Settings", "App-wide preferences — stored in the same offline database.")
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // ── Danger zone: factory reset ──
+        CardBox {
+            Text("Danger zone — Reset all data", color = Color(0xFFFF6B6B), fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(4.dp))
+            Text("Erases EVERYTHING: school profile, students, marks, fees, backups and audit trail — restores the app to a clean, brand-new state. Use before transferring or reinstalling the console.", color = MUTED, fontSize = 12.sp)
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                TextField(confirmTxt, { confirmTxt = it }, Modifier.width(200.dp), "Type RESET to confirm")
+                Btn("Erase all data", primary = false, onClick = {
+                    if (confirmTxt.trim() == "RESET") {
+                        state.repo.wipeAndReseed(com.derycode.srs.core.seed.Seeds.ALL_SUBJECTS, com.derycode.srs.core.seed.Seeds.COMPONENTS)
+                        confirmTxt = ""
+                        wiped = true
+                        state.refresh()
+                    }
+                })
+                if (wiped) Text("✓ All data erased — the console is clean.", color = GOOD, fontSize = 12.sp)
+            }
+        }
         CardBox {
             Text("General", color = TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))

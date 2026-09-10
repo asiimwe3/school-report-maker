@@ -1,7 +1,7 @@
 {
   "versionCode": 3,
-  "versionName": "1.2.1",
+  "versionName": "1.2.3",
   "apkUrl": "https://github.com/asiimwe3/school-report-maker/releases/download/v1.1.0/srs-teacher-1.1.0.apk",
-  "msiUrl": "https://github.com/asiimwe3/school-report-maker/releases/download/v1.2.1/SchoolReportMaker-1.2.1.msi",
-  "releaseNotes": "Critical fix: v1.2.0 crashed on startup/Help screen with a scrolling-layout error. Fixed in v1.2.1 — please update."
+  "msiUrl": "https://github.com/asiimwe3/school-report-maker/releases/download/v1.2.3/SchoolReportMaker-1.2.3.msi",
+  "releaseNotes": "New: Reset all data (Settings, Danger zone) — erases everything and restores a brand-new install state."
 }
