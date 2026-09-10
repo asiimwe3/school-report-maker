@@ -51,9 +51,17 @@ class AppState(val repo: SchoolRepository) {
     var screen by mutableStateOf("dashboard")
     var refreshTick by mutableStateOf(0)
     var updateAvailable by mutableStateOf<com.derycode.srs.core.support.UpdateInfo?>(null)
-    fun refresh() { refreshTick++ }
 
-    val data: SchoolData get() = repo.data
+    // Observable snapshot of repo.data — every screen reading state.data
+    // recomposes whenever refresh() is called. Without this, saves were
+    // written to disk but screens never re-read them (the "not taking data" bug).
+    var data by mutableStateOf(repo.data)
+        private set
+
+    fun refresh() {
+        data = repo.data
+        refreshTick++
+    }
 }
 
 fun main() = application {
@@ -241,6 +249,7 @@ fun SetupScreen(state: AppState) {
     val d = state.data
     var school by remember { mutableStateOf(d.school) }
     var error by remember { mutableStateOf("") }
+    var savedMsg by remember { mutableStateOf("") }
 
     ScreenTitle("School Setup", "Offline school account — everything stays on this computer")
     LazyColumn(verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -268,7 +277,9 @@ fun SetupScreen(state: AppState) {
                     Btn("Save school profile") {
                         state.repo.mutate("SCHOOL_UPDATED", "School") { it.copy(school = school) }
                         state.refresh()
+                        savedMsg = "School profile saved \u2713"
                     }
+                    if (savedMsg.isNotBlank()) Text(savedMsg, color = GOOD, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     if (error.isNotBlank()) ErrorText(error)
                 }
             }

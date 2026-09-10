@@ -1,7 +1,7 @@
 {
   "versionCode": 3,
-  "versionName": "1.1.0",
+  "versionName": "1.1.1",
   "apkUrl": "https://github.com/asiimwe3/school-report-maker/releases/download/v1.1.0/srs-teacher-1.1.0.apk",
-  "msiUrl": "https://github.com/asiimwe3/school-report-maker/releases/download/v1.0.0/SchoolReportMaker-1.0.0.msi",
-  "releaseNotes": "Teacher app redesigned: dark dashboard with bottom navigation, student profiles with performance scores, class detail with marks tracking, and full marks entry flow."
+  "msiUrl": "https://github.com/asiimwe3/school-report-maker/releases/download/v1.1.1/SchoolReportMaker-1.1.1.msi",
+  "releaseNotes": "Admin console fixed: data entry now updates the screen instantly after every save (school profile, marks, archive, restore, grading schemes)."
 }

@@ -52,7 +52,7 @@ object DesktopCrashTracker {
 // ─────────────────────────────────────────────────────────────────────────────
 
 object DesktopUpdateChecker {
-    const val CURRENT_VERSION = "1.0.0"
+    const val CURRENT_VERSION = "1.1.1"
 
     fun check(): UpdateInfo? = try {
         val conn = URL(Support.VERSION_URL).openConnection()

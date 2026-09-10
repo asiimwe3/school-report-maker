@@ -449,7 +449,10 @@ fun SyncScreen(state: AppState) {
                 items(backups.takeLast(10).reversed()) { b ->
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 2.dp)) {
                         Cell(b.fileName.toString(), color = MUTED)
-                        TextButton(onClick = { message = if (state.repo.restore(b)) "Restored from ${b.fileName}" else "Restore failed" }) { Text("Restore", color = WARN, fontSize = 11.sp) }
+                        TextButton(onClick = {
+                                    message = if (state.repo.restore(b)) "Restored from ${b.fileName}" else "Restore failed"
+                                    state.refresh()
+                                }) { Text("Restore", color = WARN, fontSize = 11.sp) }
                     }
                 }
             }
