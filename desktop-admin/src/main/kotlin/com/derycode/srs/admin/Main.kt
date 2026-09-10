@@ -33,14 +33,43 @@ import java.nio.file.Path
 // Theme
 // ─────────────────────────────────────────────────────────────────────────────
 
-internal val NAVY = Color(0xFF0B1220)
-internal val CARD = Color(0xFF111A2E)
-internal val ACCENT = Color(0xFF4F8CFF)
-internal val ACCENT_SOFT = Color(0xFF1B2A4A)
-internal val TEXT = Color(0xFFE8EDF7)
-internal val MUTED = Color(0xFF8B98B4)
-internal val GOOD = Color(0xFF3FCF8E)
-internal val WARN = Color(0xFFF5A623)
+internal object Theme {
+    var NAVY by mutableStateOf(Color(0xFF0B1220))
+    var CARD by mutableStateOf(Color(0xFF111A2E))
+    var ACCENT by mutableStateOf(Color(0xFF4F8CFF))
+    var ACCENT_SOFT by mutableStateOf(Color(0xFF1B2A4A))
+    var TEXT by mutableStateOf(Color(0xFFE8EDF7))
+    var MUTED by mutableStateOf(Color(0xFF8B98B4))
+    var GOOD by mutableStateOf(Color(0xFF3FCF8E))
+    var WARN by mutableStateOf(Color(0xFFF5A623))
+
+    val THEMES = listOf("Dark", "Light", "Emerald", "Sunset")
+
+    fun apply(name: String) {
+        when (name.lowercase()) {
+            "light" -> {
+                NAVY = Color(0xFFF2F5FA); CARD = Color(0xFFFFFFFF); ACCENT = Color(0xFF1F6FEB)
+                ACCENT_SOFT = Color(0xFFDCE7FA); TEXT = Color(0xFF16233A); MUTED = Color(0xFF5A6B84)
+                GOOD = Color(0xFF1B8A5A); WARN = Color(0xFFB87700)
+            }
+            "emerald" -> {
+                NAVY = Color(0xFF0A1712); CARD = Color(0xFF10251C); ACCENT = Color(0xFF2ED573)
+                ACCENT_SOFT = Color(0xFF153526); TEXT = Color(0xFFE6F5EC); MUTED = Color(0xFF84A895)
+                GOOD = Color(0xFF3FCF8E); WARN = Color(0xFFF5A623)
+            }
+            "sunset" -> {
+                NAVY = Color(0xFF1B1220); CARD = Color(0xFF291B33); ACCENT = Color(0xFFFF7A59)
+                ACCENT_SOFT = Color(0xFF3E2438); TEXT = Color(0xFFF7EDF3); MUTED = Color(0xFFB392AE)
+                GOOD = Color(0xFF3FCF8E); WARN = Color(0xFFF5A623)
+            }
+            else -> {  // Dark
+                NAVY = Color(0xFF0B1220); CARD = Color(0xFF111A2E); ACCENT = Color(0xFF4F8CFF)
+                ACCENT_SOFT = Color(0xFF1B2A4A); TEXT = Color(0xFFE8EDF7); MUTED = Color(0xFF8B98B4)
+                GOOD = Color(0xFF3FCF8E); WARN = Color(0xFFF5A623)
+            }
+        }
+    }
+}
 
 internal val dataDir: Path = Path.of(System.getProperty("user.home"), "SchoolReportMaker")
 internal val dataFile: Path = dataDir.resolve("school-data.json")
@@ -72,6 +101,7 @@ fun main() = application {
     val repo = SchoolRepository(store, dataFile, deviceId = "admin-desktop")
     repo.seedIfNeeded(Seeds.ALL_SUBJECTS, Seeds.COMPONENTS)
 
+    Theme.apply(repo.data.settings.theme.ifBlank { "Dark" })
     val state = remember { AppState(repo) }
     Thread { state.updateAvailable = DesktopUpdateChecker.check() }.start()   // auto-check on launch
     val windowIcon = remember {
@@ -106,7 +136,7 @@ fun App(state: AppState) {
             "importexport" to "Import / Export", "audit" to "Audit Log", "settings" to "Settings"),
         "HELP" to listOf("docs" to "Help & Documentation", "support" to "Support & Licence")
     )
-    Row(Modifier.fillMaxSize().background(NAVY)) {
+    Row(Modifier.fillMaxSize().background(Theme.NAVY)) {
         // ── Navigation rail ──
         Column(
             Modifier.width(210.dp).fillMaxHeight().background(Color(0xFF0A0F1C))
@@ -115,11 +145,11 @@ fun App(state: AppState) {
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
-                Text("SRM", color = ACCENT, fontWeight = FontWeight.Black, fontSize = 20.sp)
+                Text("SRM", color = Theme.ACCENT, fontWeight = FontWeight.Black, fontSize = 20.sp)
                 Spacer(Modifier.width(8.dp))
                 Column {
-                    Text("School Report", color = TEXT, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                    Text("Maker", color = MUTED, fontSize = 11.sp)
+                    Text("School Report", color = Theme.TEXT, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text("Maker", color = Theme.MUTED, fontSize = 11.sp)
                 }
             }
             HorizontalDivider(color = Color(0xFF1B2540), modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
@@ -131,21 +161,21 @@ fun App(state: AppState) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxWidth()
-                            .background(if (selected) ACCENT_SOFT else Color.Transparent, RoundedCornerShape(8.dp))
+                            .background(if (selected) Theme.ACCENT_SOFT else Color.Transparent, RoundedCornerShape(8.dp))
                             .clickable { state.screen = key }
                             .padding(horizontal = 16.dp, vertical = 7.dp)
                     ) {
-                        Box(Modifier.width(3.dp).height(16.dp).background(if (selected) ACCENT else Color.Transparent, RoundedCornerShape(2.dp)))
+                        Box(Modifier.width(3.dp).height(16.dp).background(if (selected) Theme.ACCENT else Color.Transparent, RoundedCornerShape(2.dp)))
                         Spacer(Modifier.width(10.dp))
-                        Text(label, color = if (selected) TEXT else MUTED, fontSize = 12.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal)
+                        Text(label, color = if (selected) Theme.TEXT else Theme.MUTED, fontSize = 12.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal)
                     }
                 }
             }
             Spacer(Modifier.weight(1f))
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 16.dp)) {
-                Box(Modifier.width(8.dp).height(8.dp).background(GOOD, RoundedCornerShape(4.dp)))
+                Box(Modifier.width(8.dp).height(8.dp).background(Theme.GOOD, RoundedCornerShape(4.dp)))
                 Spacer(Modifier.width(8.dp))
-                Text("Offline · saved locally", color = MUTED, fontSize = 10.sp)
+                Text("Offline · saved locally", color = Theme.MUTED, fontSize = 10.sp)
             }
         }
 
@@ -189,25 +219,25 @@ fun App(state: AppState) {
 @Composable
 fun ScreenTitle(title: String, subtitle: String = "") {
     Column(Modifier.padding(bottom = 18.dp)) {
-        Text(title, color = TEXT, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-        if (subtitle.isNotBlank()) Text(subtitle, color = MUTED, fontSize = 12.sp)
+        Text(title, color = Theme.TEXT, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        if (subtitle.isNotBlank()) Text(subtitle, color = Theme.MUTED, fontSize = 12.sp)
     }
 }
 
 @Composable
 fun CardBox(content: @Composable ColumnScope.() -> Unit) {
     Column(
-        Modifier.fillMaxWidth().background(CARD, RoundedCornerShape(14.dp)).border(1.dp, Color(0xFF1E2A47), RoundedCornerShape(14.dp)).padding(16.dp),
+        Modifier.fillMaxWidth().background(Theme.CARD, RoundedCornerShape(14.dp)).border(1.dp, Color(0xFF1E2A47), RoundedCornerShape(14.dp)).padding(16.dp),
         content = content
     )
 }
 
 @Composable
-fun StatCard(label: String, value: String, tint: Color = ACCENT) {
+fun StatCard(label: String, value: String, tint: Color = Theme.ACCENT) {
     Column(
-        Modifier.background(CARD, RoundedCornerShape(12.dp)).border(1.dp, Color(0xFF1E2A47), RoundedCornerShape(12.dp)).padding(14.dp).width(150.dp)
+        Modifier.background(Theme.CARD, RoundedCornerShape(12.dp)).border(1.dp, Color(0xFF1E2A47), RoundedCornerShape(12.dp)).padding(14.dp).width(150.dp)
     ) {
-        Text(label, color = MUTED, fontSize = 11.sp)
+        Text(label, color = Theme.MUTED, fontSize = 11.sp)
         Spacer(Modifier.height(4.dp))
         Text(value, color = tint, fontSize = 22.sp, fontWeight = FontWeight.Bold)
     }
@@ -219,7 +249,7 @@ fun Row3(content: @Composable RowScope.() -> Unit) {
 }
 
 @Composable
-fun FieldLabel(text: String) = Text(text, color = MUTED, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+fun FieldLabel(text: String) = Text(text, color = Theme.MUTED, fontSize = 11.sp, fontWeight = FontWeight.Medium)
 
 @Composable
 fun TextField(value: String, onValueChange: (String) -> Unit, modifier: Modifier = Modifier, placeholder: String = "") {
@@ -229,7 +259,7 @@ fun TextField(value: String, onValueChange: (String) -> Unit, modifier: Modifier
         placeholder = { Text(placeholder, color = Color(0xFF5A6B8C), fontSize = 12.sp) },
         singleLine = true,
         shape = RoundedCornerShape(8.dp),
-        textStyle = androidx.compose.ui.text.TextStyle(color = TEXT, fontSize = 13.sp)
+        textStyle = androidx.compose.ui.text.TextStyle(color = Theme.TEXT, fontSize = 13.sp)
     )
 }
 
@@ -238,20 +268,20 @@ fun Btn(label: String, primary: Boolean = true, onClick: () -> Unit) {
     Button(
         onClick = onClick,
         shape = RoundedCornerShape(8.dp),
-        colors = if (primary) ButtonDefaults.buttonColors(containerColor = ACCENT, contentColor = Color.White)
-        else ButtonDefaults.buttonColors(containerColor = ACCENT_SOFT, contentColor = TEXT)
+        colors = if (primary) ButtonDefaults.buttonColors(containerColor = Theme.ACCENT, contentColor = Color.White)
+        else ButtonDefaults.buttonColors(containerColor = Theme.ACCENT_SOFT, contentColor = Theme.TEXT)
     ) { Text(label, fontSize = 12.sp, fontWeight = FontWeight.SemiBold) }
 }
 
 @Composable
-fun HeaderCell(text: String) = Text(text, color = MUTED, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+fun HeaderCell(text: String) = Text(text, color = Theme.MUTED, fontSize = 11.sp, fontWeight = FontWeight.Bold)
 
 @Composable
-fun Cell(text: String, bold: Boolean = false, color: Color = TEXT) =
+fun Cell(text: String, bold: Boolean = false, color: Color = Theme.TEXT) =
     Text(text, color = color, fontSize = 12.sp, fontWeight = if (bold) FontWeight.SemiBold else FontWeight.Normal)
 
 @Composable
-fun ErrorText(msg: String) = Text(msg, color = WARN, fontSize = 11.sp)
+fun ErrorText(msg: String) = Text(msg, color = Theme.WARN, fontSize = 11.sp)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Screens — setup & dashboard
@@ -292,7 +322,7 @@ fun SetupScreen(state: AppState) {
                         state.refresh()
                         savedMsg = "School profile saved \u2713"
                     }
-                    if (savedMsg.isNotBlank()) Text(savedMsg, color = GOOD, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    if (savedMsg.isNotBlank()) Text(savedMsg, color = Theme.GOOD, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     if (error.isNotBlank()) ErrorText(error)
                 }
             }
@@ -307,15 +337,15 @@ fun AcademicYearsSection(state: AppState) {
     var newYear by remember { mutableStateOf("") }
 
     CardBox {
-        Text("Academic Years & Terms", color = TEXT, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+        Text("Academic Years & Terms", color = Theme.TEXT, fontSize = 15.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(10.dp))
         if (d.academicYears.isEmpty()) {
-            Text("No academic year yet. Create one to start entering marks.", color = MUTED, fontSize = 12.sp)
+            Text("No academic year yet. Create one to start entering marks.", color = Theme.MUTED, fontSize = 12.sp)
         }
         d.academicYears.forEach { year ->
             Column(Modifier.padding(vertical = 8.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(year.year, color = TEXT, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text(year.year, color = Theme.TEXT, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     if (year.terms.isEmpty()) {
                         Btn("Add 3 terms", primary = false) {
                             val terms = (1..3).map { n -> Term(id = state.repo.nextId(), yearId = year.id, number = n) }
@@ -327,7 +357,7 @@ fun AcademicYearsSection(state: AppState) {
                     }
                     year.currentTermId?.let { ct ->
                         val t = year.terms.firstOrNull { it.id == ct }
-                        if (t != null) Text("Current term: Term ${t.number}", color = GOOD, fontSize = 12.sp)
+                        if (t != null) Text("Current term: Term ${t.number}", color = Theme.GOOD, fontSize = 12.sp)
                     }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
@@ -340,7 +370,7 @@ fun AcademicYearsSection(state: AppState) {
                                 state.refresh()
                             },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = if (year.currentTermId == term.id) GOOD else ACCENT_SOFT,
+                                containerColor = if (year.currentTermId == term.id) Theme.GOOD else Theme.ACCENT_SOFT,
                                 contentColor = Color.White
                             ),
                             shape = RoundedCornerShape(6.dp)
@@ -380,25 +410,25 @@ fun DashboardScreen(state: AppState) {
     Column(verticalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.verticalScroll(rememberScrollState())) {
         Row3 {
             StatCard("Academic year", year?.year ?: "—")
-            StatCard("Students", activeStudents.toString(), GOOD)
+            StatCard("Students", activeStudents.toString(), Theme.GOOD)
             StatCard("Classes", classes.toString())
         }
         Spacer(Modifier.height(0.dp))
         Row3 {
             StatCard("Teachers", d.teachers.size.toString())
             StatCard("Subjects", d.subjects.count { it.active }.toString())
-            StatCard("Locked sheets", locked.toString(), WARN)
-            StatCard("Pending sync", pendingSync.toString(), WARN)
+            StatCard("Locked sheets", locked.toString(), Theme.WARN)
+            StatCard("Pending sync", pendingSync.toString(), Theme.WARN)
         }
         Spacer(Modifier.height(0.dp))
         Row3 {
-            StatCard("Fees collected", cur + " " + d.feePayments.filter { term != null && it.termId == term.id }.sumOf { it.amount }.toLong().toString(), GOOD)
+            StatCard("Fees collected", cur + " " + d.feePayments.filter { term != null && it.termId == term.id }.sumOf { it.amount }.toLong().toString(), Theme.GOOD)
             StatCard("Reports generated", d.reports.size.toString())
-            StatCard("Licence", d.settings.licencePlan, if (d.settings.licencePlan == "Trial") WARN else GOOD)
+            StatCard("Licence", d.settings.licencePlan, if (d.settings.licencePlan == "Trial") Theme.WARN else Theme.GOOD)
         }
         // ── Setup checklist ──
         CardBox {
-            Text("Getting started", color = TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text("Getting started", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(6.dp))
             val steps = listOf(
                 ("School profile saved" to (d.school.name.isNotBlank() && d.school.name != "My School")) to "setup",
@@ -413,9 +443,9 @@ fun DashboardScreen(state: AppState) {
                 val (label, done) = step
                 Row(verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth().clickable { state.screen = target }.padding(vertical = 4.dp)) {
-                    Text(if (done) "✓" else "○", color = if (done) GOOD else MUTED, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    Text(if (done) "✓" else "○", color = if (done) Theme.GOOD else Theme.MUTED, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.width(10.dp))
-                    Text(label, color = if (done) TEXT else MUTED, fontSize = 12.sp,
+                    Text(label, color = if (done) Theme.TEXT else Theme.MUTED, fontSize = 12.sp,
                         fontWeight = if (done) FontWeight.Normal else FontWeight.Medium,
                         textDecoration = if (done) androidx.compose.ui.text.style.TextDecoration.LineThrough else null)
                 }
@@ -423,13 +453,13 @@ fun DashboardScreen(state: AppState) {
         }
         // ── Recent activity ──
         CardBox {
-            Text("Recent activity", color = TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text("Recent activity", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(6.dp))
             val recent = d.auditLog.takeLast(6).reversed()
-            if (recent.isEmpty()) Text("Nothing yet — every change you make appears here.", color = MUTED, fontSize = 12.sp)
+            if (recent.isEmpty()) Text("Nothing yet — every change you make appears here.", color = Theme.MUTED, fontSize = 12.sp)
             recent.forEach { a ->
                 val t = java.text.SimpleDateFormat("d MMM HH:mm").format(java.util.Date(a.timestamp))
-                Text("$t  ·  ${a.action}  ${a.newValue.take(40)}", color = MUTED, fontSize = 11.sp, modifier = Modifier.padding(vertical = 2.dp))
+                Text("$t  ·  ${a.action}  ${a.newValue.take(40)}", color = Theme.MUTED, fontSize = 11.sp, modifier = Modifier.padding(vertical = 2.dp))
             }
         }
     }

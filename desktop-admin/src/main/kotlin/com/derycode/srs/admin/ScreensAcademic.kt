@@ -41,7 +41,7 @@ fun MarksScreen(state: AppState) {
     ScreenTitle("Marks Grid", "Keyboard-first: type a value, press Enter, it saves. Special: ABS / EXEMPT.")
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(if (term != null) "Term ${term.number} (${year?.year})" else "Create an academic year first", color = MUTED, fontSize = 12.sp)
+            Text(if (term != null) "Term ${term.number} (${year?.year})" else "Create an academic year first", color = Theme.MUTED, fontSize = 12.sp)
             if (d.classes.isEmpty() || d.subjects.isEmpty()) {
                 Text("Add classes and subjects first.", color = Color(0xFFF5A623), fontSize = 12.sp)
             }
@@ -52,7 +52,7 @@ fun MarksScreen(state: AppState) {
                     FieldLabel("Class")
                     d.classes.filter { it.active }.forEach { c ->
                         Text((if (classId == c.id) "● " else "○ ") + if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}",
-                            color = if (classId == c.id) ACCENT else TEXT, fontSize = 12.sp,
+                            color = if (classId == c.id) Theme.ACCENT else Theme.TEXT, fontSize = 12.sp,
                             modifier = Modifier.fillMaxWidth().clickable { classId = c.id }.padding(vertical = 3.dp))
                     }
                 }
@@ -65,14 +65,14 @@ fun MarksScreen(state: AppState) {
                         } else d.subjects.filter { it.level == c.level && it.active }
                         subjects.forEach { s ->
                             Text((if (subjectId == s.id) "● " else "○ ") + s.name,
-                                color = if (subjectId == s.id) ACCENT else TEXT, fontSize = 12.sp,
+                                color = if (subjectId == s.id) Theme.ACCENT else Theme.TEXT, fontSize = 12.sp,
                                 modifier = Modifier.fillMaxWidth().clickable { subjectId = s.id }.padding(vertical = 3.dp))
                         }
                     }
                 }
                 Column {
                     Spacer(Modifier.height(20.dp))
-                    Text("Assessment columns for this level:", color = MUTED, fontSize = 11.sp)
+                    Text("Assessment columns for this level:", color = Theme.MUTED, fontSize = 11.sp)
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         levelComponents.forEach { c -> AssistChip(onClick = { }, label = { Text(c.code, fontSize = 10.sp) }) }
                     }
@@ -89,7 +89,7 @@ fun MarksScreen(state: AppState) {
                             dd.copy(markSheets = sheets)
                         }
                         state.refresh()
-                    }) { Text("Submit sheet for review →", color = GOOD, fontSize = 12.sp) }
+                    }) { Text("Submit sheet for review →", color = Theme.GOOD, fontSize = 12.sp) }
                 }
             }
         }
@@ -187,9 +187,9 @@ fun GradingScreen(state: AppState) {
         scheme?.let { s ->
             CardBox {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(s.name, color = TEXT, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                    Text(levelLabel(s.level), color = MUTED, fontSize = 11.sp)
-                    Text("Rule: ${s.aggregateRule}", color = MUTED, fontSize = 11.sp)
+                    Text(s.name, color = Theme.TEXT, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                    Text(levelLabel(s.level), color = Theme.MUTED, fontSize = 11.sp)
+                    Text("Rule: ${s.aggregateRule}", color = Theme.MUTED, fontSize = 11.sp)
                     Spacer(Modifier.weight(1f))
                     Btn("New version (bump v${s.version} → v${s.version + 1})") {
                         state.repo.mutate("SCHEME_VERSION_BUMPED", "GradingScheme", s.id, old = "v${s.version}", new = "v${s.version + 1}") { dd ->
@@ -214,10 +214,10 @@ fun GradingScreen(state: AppState) {
                     Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                         Box(Modifier.weight(0.7f)) { TextField(minEdits[key] ?: b.minScore.toString(), { minEdits[key] = it }, Modifier.fillMaxWidth()) }
                         Box(Modifier.weight(0.7f)) { TextField(maxEdits[key] ?: b.maxScore.toString(), { maxEdits[key] = it }, Modifier.fillMaxWidth()) }
-                        Box(Modifier.weight(0.6f)) { Cell(b.grade, bold = true, color = ACCENT) }
-                        Box(Modifier.weight(1.4f)) { Cell(b.label, color = MUTED) }
+                        Box(Modifier.weight(0.6f)) { Cell(b.grade, bold = true, color = Theme.ACCENT) }
+                        Box(Modifier.weight(1.4f)) { Cell(b.label, color = Theme.MUTED) }
                         Box(Modifier.weight(0.6f)) { Cell(b.points.toString()) }
-                        Box(Modifier.weight(2f)) { Cell(b.remark, color = MUTED) }
+                        Box(Modifier.weight(2f)) { Cell(b.remark, color = Theme.MUTED) }
                     }
                 }
                 Spacer(Modifier.height(8.dp))
@@ -236,10 +236,10 @@ fun GradingScreen(state: AppState) {
                         minEdits.clear(); maxEdits.clear()
                         state.refresh()
                     }
-                    Text("Existing approved reports are not affected (grade history).", color = MUTED, fontSize = 11.sp)
+                    Text("Existing approved reports are not affected (grade history).", color = Theme.MUTED, fontSize = 11.sp)
                 }
                 Spacer(Modifier.height(10.dp))
-                Text("Preview: 50% → grade ${previewGrade(s, 50.0)} · 79.9% → ${previewGrade(s, 79.9)} · 90% → ${previewGrade(s, 90.0)}", color = GOOD, fontSize = 12.sp)
+                Text("Preview: 50% → grade ${previewGrade(s, 50.0)} · 79.9% → ${previewGrade(s, 79.9)} · 90% → ${previewGrade(s, 90.0)}", color = Theme.GOOD, fontSize = 12.sp)
             }
         }
     }
@@ -271,13 +271,13 @@ fun ResultsScreen(state: AppState) {
     ScreenTitle("Results Review", "Check calculations, approve and lock. Locked results need authorization to change.")
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("Class:", color = MUTED, fontSize = 12.sp)
+            Text("Class:", color = Theme.MUTED, fontSize = 12.sp)
             d.classes.filter { it.active }.forEach { c ->
                 FilterChip(selected = classId == c.id, onClick = { classId = c.id }, label = { Text(if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}", fontSize = 11.sp) })
             }
         }
         if (cls == null || term == null) {
-            Text("Create an academic year with terms and add classes first.", color = MUTED, fontSize = 12.sp)
+            Text("Create an academic year with terms and add classes first.", color = Theme.MUTED, fontSize = 12.sp)
         } else {
             val missing = ResultEngine.studentsWithMissingMarks(d, classId, term.id, d.subjects.firstOrNull()?.id ?: "")
             CardBox {
@@ -295,12 +295,12 @@ fun ResultsScreen(state: AppState) {
                         Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                             Box(Modifier.weight(2f)) { Cell(s?.fullName ?: "?", bold = true) }
                             Box(Modifier.weight(1f)) { Cell("${r.averagePercent}%") }
-                            Box(Modifier.weight(1.4f)) { Cell(r.division ?: r.uceResult ?: r.uacePoints?.let { "$it pts" } ?: "—", color = ACCENT) }
+                            Box(Modifier.weight(1.4f)) { Cell(r.division ?: r.uceResult ?: r.uacePoints?.let { "$it pts" } ?: "—", color = Theme.ACCENT) }
                             Box(Modifier.weight(0.8f)) { Cell(r.classPosition.toString()) }
                             Box(Modifier.weight(1.2f)) {
                                 Cell(
                                     if (r.subjectResults.any { it.incomplete }) "Incomplete" else "Ready",
-                                    color = if (r.subjectResults.any { it.incomplete }) WARN else GOOD
+                                    color = if (r.subjectResults.any { it.incomplete }) Theme.WARN else Theme.GOOD
                                 )
                             }
                         }
@@ -315,7 +315,7 @@ fun ResultsScreen(state: AppState) {
                         }
                         state.refresh()
                     }
-                    Text("Locking freezes the scheme version used on reports (reproducibility).", color = MUTED, fontSize = 11.sp)
+                    Text("Locking freezes the scheme version used on reports (reproducibility).", color = Theme.MUTED, fontSize = 11.sp)
                 }
             }
         }
@@ -339,28 +339,28 @@ fun ReportsScreen(state: AppState) {
     ScreenTitle("Reports", "Print-ready HTML report cards — open in any browser, print to PDF.")
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("Class:", color = MUTED, fontSize = 12.sp)
+            Text("Class:", color = Theme.MUTED, fontSize = 12.sp)
             d.classes.filter { it.active }.forEach { c ->
                 FilterChip(selected = classId == c.id, onClick = { classId = c.id }, label = { Text(if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}", fontSize = 11.sp) })
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("Design:", color = MUTED, fontSize = 12.sp)
+            Text("Design:", color = Theme.MUTED, fontSize = 12.sp)
             TemplateLayout.entries.forEach { l ->
                 FilterChip(selected = layout == l, onClick = { layout = l }, label = { Text(l.name.lowercase().replaceFirstChar { it.uppercase() }, fontSize = 11.sp) })
             }
         }
         if (cls == null || term == null || scheme == null) {
-            Text("Set up classes and an academic year with terms first.", color = MUTED, fontSize = 12.sp)
+            Text("Set up classes and an academic year with terms first.", color = Theme.MUTED, fontSize = 12.sp)
         } else {
             val results = ResultEngine.classResults(d, classId, term.id, scheme.id)
             if (results.isEmpty()) {
-                Text("No students enrolled in this class for ${year?.year}.", color = MUTED, fontSize = 12.sp)
+                Text("No students enrolled in this class for ${year?.year}.", color = Theme.MUTED, fontSize = 12.sp)
             } else {
                 CardBox {
-                    Text("Batch — whole class (${results.size} students)", color = TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    Text("Batch — whole class (${results.size} students)", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(6.dp))
-                    Text("Each student gets one A4 card: school header, marks, grades, aggregate/division, comments, signature lines, grading key.", color = MUTED, fontSize = 12.sp)
+                    Text("Each student gets one A4 card: school header, marks, grades, aggregate/division, comments, signature lines, grading key.", color = Theme.MUTED, fontSize = 12.sp)
                     Spacer(Modifier.height(10.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Btn("Generate Word documents (.docx)") {
@@ -393,13 +393,13 @@ fun ReportsScreen(state: AppState) {
                 }
                 Spacer(Modifier.height(4.dp))
                 CardBox {
-                    Text("Recently generated (frozen scheme versions)", color = TEXT, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    Text("Recently generated (frozen scheme versions)", color = Theme.TEXT, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(4.dp))
                     d.reports.takeLast(8).reversed().forEach { r ->
                         val s = d.students.firstOrNull { it.id == r.studentId }
-                        Text("• ${s?.fullName ?: r.studentId} — ${r.resultSummary} — scheme v${r.schemeVersion}", color = MUTED, fontSize = 11.sp, modifier = Modifier.padding(vertical = 2.dp))
+                        Text("• ${s?.fullName ?: r.studentId} — ${r.resultSummary} — scheme v${r.schemeVersion}", color = Theme.MUTED, fontSize = 11.sp, modifier = Modifier.padding(vertical = 2.dp))
                     }
-                    if (d.reports.isEmpty()) Text("None yet.", color = MUTED, fontSize = 11.sp)
+                    if (d.reports.isEmpty()) Text("None yet.", color = Theme.MUTED, fontSize = 11.sp)
                 }
             }
         }
@@ -421,13 +421,13 @@ fun SyncScreen(state: AppState) {
     ScreenTitle("Sync & Backup", "Local file is the primary database. The cloud is only a relay — and optional.")
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            StatCard("Backups kept", countBackups(backupsDir).toString(), GOOD)
+            StatCard("Backups kept", countBackups(backupsDir).toString(), Theme.GOOD)
             StatCard("Audit entries", d.auditLog.size.toString())
-            StatCard("Pending sync", d.syncQueue.count { it.status == "PENDING" }.toString(), WARN)
-            StatCard("Conflicts", d.conflicts.count { !it.resolved }.toString(), WARN)
+            StatCard("Pending sync", d.syncQueue.count { it.status == "PENDING" }.toString(), Theme.WARN)
+            StatCard("Conflicts", d.conflicts.count { !it.resolved }.toString(), Theme.WARN)
         }
         CardBox {
-            Text("Backup", color = TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text("Backup", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(6.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Btn("Create backup now") {
@@ -436,31 +436,31 @@ fun SyncScreen(state: AppState) {
                     state.refresh()
                 }
             }
-            if (message.isNotBlank()) Cell(message, color = GOOD)
+            if (message.isNotBlank()) Cell(message, color = Theme.GOOD)
         }
         CardBox {
-            Text("Restore", color = TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text("Restore", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(6.dp))
-            Text("A safety backup of current data is taken automatically before any restore.", color = MUTED, fontSize = 11.sp)
+            Text("A safety backup of current data is taken automatically before any restore.", color = Theme.MUTED, fontSize = 11.sp)
             Spacer(Modifier.height(6.dp))
             val backups = listBackups(backupsDir)
-            if (backups.isEmpty()) Text("No backups yet.", color = MUTED, fontSize = 12.sp)
+            if (backups.isEmpty()) Text("No backups yet.", color = Theme.MUTED, fontSize = 12.sp)
             else LazyColumn(Modifier.height(150.dp)) {
                 items(backups.takeLast(10).reversed()) { b ->
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 2.dp)) {
-                        Cell(b.fileName.toString(), color = MUTED)
+                        Cell(b.fileName.toString(), color = Theme.MUTED)
                         TextButton(onClick = {
                                     message = if (state.repo.restore(b)) "Restored from ${b.fileName}" else "Restore failed"
                                     state.refresh()
-                                }) { Text("Restore", color = WARN, fontSize = 11.sp) }
+                                }) { Text("Restore", color = Theme.WARN, fontSize = 11.sp) }
                     }
                 }
             }
         }
         CardBox {
-            Text("Export school setup for teacher phones", color = TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text("Export school setup for teacher phones", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(6.dp))
-            Text("Creates school-data-from-admin.json (classes, students, subjects, schemes — no marks). Copy it to each teacher's phone, then tap Import on the Export tab there.", color = MUTED, fontSize = 11.sp)
+            Text("Creates school-data-from-admin.json (classes, students, subjects, schemes — no marks). Copy it to each teacher's phone, then tap Import on the Export tab there.", color = Theme.MUTED, fontSize = 11.sp)
             Spacer(Modifier.height(6.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Btn("Export school setup") {
@@ -477,7 +477,7 @@ fun SyncScreen(state: AppState) {
             }
         }
         CardBox {
-            Text("Teacher bundle (USB / Bluetooth)", color = TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text("Teacher bundle (USB / Bluetooth)", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(6.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                 TextField(bundlePath, { bundlePath = it }, Modifier.width(360.dp), "Path to bundle file from teacher's phone")
@@ -497,16 +497,16 @@ fun SyncScreen(state: AppState) {
                 }
             }
             Spacer(Modifier.height(6.dp))
-            Text("Bundles are versioned and validated — a corrupt or old bundle can never corrupt newer data.", color = MUTED, fontSize = 11.sp)
+            Text("Bundles are versioned and validated — a corrupt or old bundle can never corrupt newer data.", color = Theme.MUTED, fontSize = 11.sp)
         }
         CardBox {
-            Text("Audit trail (latest 12)", color = TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text("Audit trail (latest 12)", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(4.dp))
             d.auditLog.takeLast(12).reversed().forEach { a ->
                 Text("• ${a.action} ${a.entity}${if (a.entityId.isNotBlank()) "(${a.entityId})" else ""} ${if (a.newValue.isNotBlank()) "→ ${a.newValue.take(40)}" else ""}",
-                    color = MUTED, fontSize = 10.5.sp, modifier = Modifier.padding(vertical = 1.dp))
+                    color = Theme.MUTED, fontSize = 10.5.sp, modifier = Modifier.padding(vertical = 1.dp))
             }
-            if (d.auditLog.isEmpty()) Text("Nothing yet — actions will appear here.", color = MUTED, fontSize = 11.sp)
+            if (d.auditLog.isEmpty()) Text("Nothing yet — actions will appear here.", color = Theme.MUTED, fontSize = 11.sp)
         }
     }
 }
