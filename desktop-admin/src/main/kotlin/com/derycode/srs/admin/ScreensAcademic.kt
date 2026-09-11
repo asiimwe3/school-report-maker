@@ -1,5 +1,6 @@
 package com.derycode.srs.admin
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -8,6 +9,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -382,6 +385,14 @@ fun ReportsScreen(state: AppState) {
                             state.refresh()
                             try { Desktop.getDesktop().open(f.toFile()) } catch (_: Exception) { }
                         }
+                        Btn("Print merit list (Word)", primary = false) {
+                            val outDir = dataDir.resolve("reports")
+                            Files.createDirectories(outDir)
+                            val label = if (cls.stream.isBlank()) cls.name else "${cls.name} ${cls.stream}"
+                            val f = outDir.resolve("merit-${label.replace(" ", "")}-term${term.number}.docx")
+                            DocxReport.writeMeritList(f, d, results, label, "Term ${term.number} ${year?.year}")
+                            try { Desktop.getDesktop().open(f.toFile()) } catch (_: Exception) { }
+                        }
                         Btn("Generate single (first student)", primary = false) {
                             val outDir = dataDir.resolve("reports")
                             Files.createDirectories(outDir)
@@ -517,3 +528,120 @@ private fun countBackups(dir: Path): Int =
 internal fun listBackups(dir: Path): List<Path> =
     if (java.nio.file.Files.exists(dir)) dir.toFile().listFiles { f -> f.name.startsWith("backup-") }?.map { it.toPath() }?.sortedBy { it.fileName.toString() } ?: emptyList()
     else emptyList()
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Analytics — charts, rankings, performance insights
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+fun AnalyticsScreen(state: AppState) {
+    val d = state.data
+    var classId by remember { mutableStateOf(d.classes.firstOrNull { it.active }?.id ?: "") }
+    val year = d.academicYears.firstOrNull { it.currentTermId != null } ?: d.academicYears.firstOrNull()
+    val term = year?.terms?.firstOrNull { it.id == year.currentTermId } ?: year?.terms?.firstOrNull()
+    val cls = d.classes.firstOrNull { it.id == classId }
+    val scheme = d.gradingSchemes.firstOrNull { it.level == cls?.level } ?: d.gradingSchemes.firstOrNull()
+    val results = remember(state.refreshTick, classId, term?.id, scheme?.id) {
+        if (cls != null && term != null && scheme != null) ResultEngine.classResults(d, classId, term.id, scheme.id) else emptyList()
+    }
+
+    ScreenTitle("Analytics", "Live performance insights — averages, rankings, subject trends, gender split.")
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            d.classes.filter { it.active }.forEach { c ->
+                FilterChip(selected = classId == c.id, onClick = { classId = c.id },
+                    label = { Text(if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}", fontSize = 11.sp) })
+            }
+        }
+        if (results.isEmpty()) {
+            CardBox { Text(if (cls == null || term == null) "Set up classes and an academic year first." else "No marks entered for this class/term yet — enter marks in the Marks Grid to see analytics.", color = Theme.MUTED, fontSize = 12.sp) }
+        } else {
+            val avg = results.map { it.averagePercent }.average()
+            val pass = results.count { it.averagePercent >= 50 }
+            val boys = results.count { r -> d.students.firstOrNull { it.id == r.studentId }?.sex == "M" }
+            val girls = results.size - boys
+            val ranked = results.filter { it.classPosition > 0 }.sortedBy { it.classPosition }
+
+            CardBox {
+                Text("Class snapshot — ${cls?.let { if (it.stream.isBlank()) it.name else "${it.name} ${it.stream}" }}, Term ${term?.number} ${year?.year}",
+                    color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(10.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Column(Modifier.weight(1f)) { Text("Class average", color = Theme.MUTED, fontSize = 11.sp); Text("${"%.1f".format(avg)}%", color = Theme.ACCENT, fontSize = 22.sp, fontWeight = FontWeight.Black) }
+                    Column(Modifier.weight(1f)) { Text("Passing (≥50%)", color = Theme.MUTED, fontSize = 11.sp); Text("$pass / ${results.size}", color = Theme.GOOD, fontSize = 22.sp, fontWeight = FontWeight.Black) }
+                    Column(Modifier.weight(1f)) { Text("Best student", color = Theme.MUTED, fontSize = 11.sp); Text(ranked.firstOrNull()?.let { r -> d.students.firstOrNull { it.id == r.studentId }?.fullName ?: "—" } ?: "—", color = Theme.TEXT, fontSize = 15.sp, fontWeight = FontWeight.Bold) }
+                }
+            }
+
+            CardBox {
+                Text("Subject performance — class average % per subject", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(8.dp))
+                val subjectAvgs = d.subjects.mapNotNull { sub ->
+                    val marks = results.flatMap { r -> r.subjectResults.filter { it.subjectId == sub.id }.map { it.percentage } }
+                    if (marks.isEmpty()) null else sub.name to marks.average()
+                }
+                subjectAvgs.sortedByDescending { it.second }.forEach { (name, pct) ->
+                    Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(name.take(18), color = Theme.MUTED, fontSize = 11.sp, modifier = Modifier.width(120.dp))
+                        Box(Modifier.weight(1f).height(14.dp)) {
+                            Canvas(Modifier.fillMaxSize()) {
+                                drawRoundRect(color = Color(0xFF243356), cornerRadius = CornerRadius(7.dp.toPx()))
+                                drawRoundRect(color = Theme.ACCENT, cornerRadius = CornerRadius(7.dp.toPx()),
+                                    size = Size(size.width * (pct / 100.0).toFloat(), size.height))
+                            }
+                        }
+                        Text("${pct.toInt()}%", color = if (pct >= 50) Theme.GOOD else Theme.WARN, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(40.dp))
+                    }
+                }
+                if (subjectAvgs.isEmpty()) Text("No subject marks yet.", color = Theme.MUTED, fontSize = 11.sp)
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(Modifier.weight(1f)) { CardBox {
+                    Text("Top 5 students", color = Theme.GOOD, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(6.dp))
+                    ranked.take(5).forEach { r ->
+                        val s = d.students.firstOrNull { it.id == r.studentId }
+                        Text("${r.classPosition}. ${s?.fullName ?: "—"} — ${"%.1f".format(r.averagePercent)}%", color = Theme.TEXT, fontSize = 12.sp, modifier = Modifier.padding(vertical = 2.dp))
+                    }
+                    if (ranked.isEmpty()) Text("No ranked students yet.", color = Theme.MUTED, fontSize = 11.sp)
+                } }
+                Box(Modifier.weight(1f)) { CardBox {
+                    Text("Needs attention — bottom 5", color = Theme.WARN, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(6.dp))
+                    ranked.takeLast(5).reversed().forEach { r ->
+                        val s = d.students.firstOrNull { it.id == r.studentId }
+                        Text("${s?.fullName ?: "—"} — ${"%.1f".format(r.averagePercent)}%", color = Theme.TEXT, fontSize = 12.sp, modifier = Modifier.padding(vertical = 2.dp))
+                    }
+                    if (ranked.isEmpty()) Text("No ranked students yet.", color = Theme.MUTED, fontSize = 11.sp)
+                } }
+            }
+
+            CardBox {
+                Text("Gender split", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(8.dp))
+                Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Boys $boys", color = Theme.MUTED, fontSize = 11.sp, modifier = Modifier.width(90.dp))
+                    Box(Modifier.weight(1f).height(14.dp)) {
+                        Canvas(Modifier.fillMaxSize()) {
+                            drawRoundRect(color = Color(0xFF243356), cornerRadius = CornerRadius(7.dp.toPx()))
+                            drawRoundRect(color = Theme.ACCENT, cornerRadius = CornerRadius(7.dp.toPx()),
+                                size = Size(size.width * (if (results.isEmpty()) 0f else boys.toFloat() / results.size), size.height))
+                        }
+                    }
+                }
+                Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Girls $girls", color = Theme.MUTED, fontSize = 11.sp, modifier = Modifier.width(90.dp))
+                    Box(Modifier.weight(1f).height(14.dp)) {
+                        Canvas(Modifier.fillMaxSize()) {
+                            drawRoundRect(color = Color(0xFF243356), cornerRadius = CornerRadius(7.dp.toPx()))
+                            drawRoundRect(color = Color(0xFFFF7EB6), cornerRadius = CornerRadius(7.dp.toPx()),
+                                size = Size(size.width * (if (results.isEmpty()) 0f else girls.toFloat() / results.size), size.height))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
