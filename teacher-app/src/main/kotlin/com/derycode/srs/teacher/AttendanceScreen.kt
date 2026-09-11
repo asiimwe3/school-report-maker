@@ -46,7 +46,7 @@ fun AttendanceScreen(state: TeacherState) {
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         classes.forEach { c ->
                             FilterChip(selected = classId == c.id, onClick = { classId = c.id },
-                                label = { Text(classShort(c), fontSize = 10.sp) })
+                                label = { Text(classShort(c), fontSize = 12.sp) })
                         }
                     }
                     Spacer(Modifier.height(6.dp))
@@ -78,7 +78,7 @@ fun AttendanceScreen(state: TeacherState) {
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         listOf("PRESENT" to "P", "ABSENT" to "A", "LATE" to "L").forEach { (st, label) ->
                             FilterChip(selected = status == st, onClick = { state.setAttendance(s.id, classId, date, st) },
-                                label = { Text(label, fontSize = 11.sp) },
+                                label = { Text(label, fontSize = 13.sp) },
                                 colors = FilterChipDefaults.filterChipColors(
                                     containerColor = CARD_ALT,
                                     selectedContainerColor = when (st) {

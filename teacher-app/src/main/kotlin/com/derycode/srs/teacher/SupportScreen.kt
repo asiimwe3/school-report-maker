@@ -125,7 +125,7 @@ fun SupportScreen(state: TeacherState) {
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = ACCENT),
                     enabled = !checking
-                ) { Text(if (checking) "Checking…" else "Check for update", color = Color.White, fontSize = 12.sp) }
+                ) { Text(if (checking) "Checking…" else "Check for update", color = Color.White, fontSize = 14.sp) }
             }
             update?.let { u ->
                 Spacer(Modifier.height(6.dp))
@@ -142,7 +142,7 @@ fun SupportScreen(state: TeacherState) {
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = GOOD)
-                ) { Text("Download & install update", color = Color(0xFF0B1220), fontSize = 12.sp) }
+                ) { Text("Download & install update", color = Color(0xFF0B1220), fontSize = 14.sp) }
             }
             if (downloadMsg.isNotEmpty()) Cell(downloadMsg, GOOD)
         }
@@ -156,10 +156,10 @@ fun SupportScreen(state: TeacherState) {
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Button(onClick = { sendCrashViaWhatsApp() }, colors = ButtonDefaults.buttonColors(containerColor = ACCENT)) {
-                        Text("Send to support (WhatsApp 0762306675)", color = Color.White, fontSize = 11.sp)
+                        Text("Send to support (WhatsApp 0762306675)", color = Color.White, fontSize = 13.sp)
                     }
                     Button(onClick = { CrashTracker.clear(context); state.refresh() }, colors = ButtonDefaults.buttonColors(containerColor = CARD)) {
-                        Text("Clear", color = MUTED, fontSize = 11.sp)
+                        Text("Clear", color = MUTED, fontSize = 13.sp)
                     }
                 }
             } else {
@@ -180,12 +180,12 @@ fun SupportScreen(state: TeacherState) {
                     onClick = { docView = if (docView == text) "" else text },
                     colors = ButtonDefaults.buttonColors(containerColor = CARD),
                     modifier = Modifier.padding(vertical = 2.dp)
-                ) { Text(if (docView == text) "Hide $label" else label, color = Color.White, fontSize = 12.sp) }
+                ) { Text(if (docView == text) "Hide $label" else label, color = Color.White, fontSize = 14.sp) }
             }
         }
         if (docView.isNotEmpty()) {
             CardBox {
-                Text(docView.trim(), color = MUTED, fontSize = 11.sp, lineHeight = 15.sp)
+                Text(docView.trim(), color = MUTED, fontSize = 13.sp, lineHeight = 15.sp)
             }
         }
         CardBox {

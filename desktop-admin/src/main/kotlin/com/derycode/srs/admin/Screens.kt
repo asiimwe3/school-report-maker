@@ -46,7 +46,7 @@ fun StudentsScreen(state: AppState) {
             TextField(search, { search = it }, Modifier.width(220.dp), "Search name / adm no…")
             Level.entries.forEach { lvl ->
                 FilterChip(selected = levelFilter == lvl && classFilter.isBlank(), onClick = { levelFilter = lvl; classFilter = "" },
-                    label = { Text(lvl.name, fontSize = 11.sp) })
+                    label = { Text(lvl.name, fontSize = 13.sp) })
             }
             Spacer(Modifier.weight(1f))
             Btn(if (adding) "Cancel" else "+ Add student") { adding = !adding; error = "" }
@@ -65,8 +65,8 @@ fun StudentsScreen(state: AppState) {
                     Column(Modifier.weight(1f)) {
                         FieldLabel("Sex")
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            FilterChip(selected = newStudent.sex == "M", onClick = { newStudent = newStudent.copy(sex = "M") }, label = { Text("M", fontSize = 11.sp) })
-                            FilterChip(selected = newStudent.sex == "F", onClick = { newStudent = newStudent.copy(sex = "F") }, label = { Text("F", fontSize = 11.sp) })
+                            FilterChip(selected = newStudent.sex == "M", onClick = { newStudent = newStudent.copy(sex = "M") }, label = { Text("M", fontSize = 13.sp) })
+                            FilterChip(selected = newStudent.sex == "F", onClick = { newStudent = newStudent.copy(sex = "F") }, label = { Text("F", fontSize = 13.sp) })
                         }
                     }
                     Column(Modifier.weight(1f)) { FieldLabel("Guardian name"); TextField(newStudent.guardian, { newStudent = newStudent.copy(guardian = it) }, Modifier.fillMaxWidth()) }
@@ -82,11 +82,11 @@ fun StudentsScreen(state: AppState) {
                                 FilterChip(
                                     selected = newStudent.classId == c.id,
                                     onClick = { newStudent = newStudent.copy(classId = c.id) },
-                                    label = { Text(if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}", fontSize = 10.sp) }
+                                    label = { Text(if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}", fontSize = 12.sp) }
                                 )
                             }
                         }
-                        if (classes.size > 8) Text("+ ${classes.size - 8} more classes…", color = Theme.MUTED, fontSize = 10.sp)
+                        if (classes.size > 8) Text("+ ${classes.size - 8} more classes…", color = Theme.MUTED, fontSize = 12.sp)
                     }
                 }
                 Spacer(Modifier.height(12.dp))
@@ -147,7 +147,7 @@ fun StudentsScreen(state: AppState) {
                                         dd.copy(students = dd.students.map { if (it.id == s.id) it.copy(status = StudentStatus.WITHDRAWN) else it })
                                     }
                                     state.refresh()
-                                }) { Text("Archive", color = Theme.WARN, fontSize = 11.sp) }
+                                }) { Text("Archive", color = Theme.WARN, fontSize = 13.sp) }
                             }
                         }
                     }
@@ -178,7 +178,7 @@ fun ClassesScreen(state: AppState) {
     ScreenTitle("Classes & Streams", "Level → Class → Stream. A-level classes follow a combination.")
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         CardBox {
-            Text("Add class / stream", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text("Add class / stream", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(10.dp))
             Row3 {
                 Column(Modifier.weight(1f)) { FieldLabel("Class name"); TextField(name, { name = it }, Modifier.fillMaxWidth(), "Senior 1") }
@@ -187,16 +187,16 @@ fun ClassesScreen(state: AppState) {
                     FieldLabel("Level")
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         Level.entries.forEach { lvl ->
-                            FilterChip(selected = level == lvl, onClick = { level = lvl }, label = { Text(if (lvl == Level.O_LEVEL) "O-Level" else if (lvl == Level.PRIMARY) "Primary" else "A-Level", fontSize = 10.sp) })
+                            FilterChip(selected = level == lvl, onClick = { level = lvl }, label = { Text(if (lvl == Level.O_LEVEL) "O-Level" else if (lvl == Level.PRIMARY) "Primary" else "A-Level", fontSize = 12.sp) })
                         }
                     }
                 }
                 Column(Modifier.weight(1f)) {
                     FieldLabel("Class teacher")
-                    if (d.teachers.isEmpty()) { Text("Add teachers first", color = Theme.MUTED, fontSize = 11.sp, modifier = Modifier.padding(top = 8.dp)) }
+                    if (d.teachers.isEmpty()) { Text("Add teachers first", color = Theme.MUTED, fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp)) }
                     else Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(top = 4.dp)) {
                         d.teachers.take(6).forEach { t ->
-                            FilterChip(selected = teacherId == t.id, onClick = { teacherId = t.id }, label = { Text(t.name.take(10), fontSize = 10.sp) })
+                            FilterChip(selected = teacherId == t.id, onClick = { teacherId = t.id }, label = { Text(t.name.take(10), fontSize = 12.sp) })
                         }
                     }
                 }
@@ -214,23 +214,23 @@ fun ClassesScreen(state: AppState) {
         }
 
         CardBox {
-            Text("Classes", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text("Classes", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
             Level.entries.forEach { lvl ->
                 val inLevel = d.classes.filter { it.level == lvl && it.active }
                 if (inLevel.isNotEmpty()) {
-                    Text(levelLabel(lvl), color = Theme.MUTED, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 8.dp, bottom = 4.dp))
+                    Text(levelLabel(lvl), color = Theme.MUTED, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 8.dp, bottom = 4.dp))
                     inLevel.groupBy { it.name }.forEach { (clsName, streams) ->
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text("• $clsName", color = Theme.TEXT, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                            Text("• $clsName", color = Theme.TEXT, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                             streams.forEach { s ->
-                                Text(if (s.stream.isBlank()) "(whole class)" else s.stream, color = Theme.ACCENT, fontSize = 12.sp)
+                                Text(if (s.stream.isBlank()) "(whole class)" else s.stream, color = Theme.ACCENT, fontSize = 14.sp)
                             }
                         }
                     }
                 }
             }
-            if (d.classes.isEmpty()) Text("No classes yet.", color = Theme.MUTED, fontSize = 12.sp)
+            if (d.classes.isEmpty()) Text("No classes yet.", color = Theme.MUTED, fontSize = 14.sp)
         }
 
         CombinationsCard(state)
@@ -246,22 +246,22 @@ fun CombinationsCard(state: AppState) {
     val aSubjects = d.subjects.filter { it.level == Level.A_LEVEL && it.principal }
 
     CardBox {
-        Text("A-Level Combinations", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+        Text("A-Level Combinations", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(6.dp))
-        Text("e.g. PCM = Physics + Chemistry + Mathematics, plus subsidiary (General Paper).", color = Theme.MUTED, fontSize = 11.sp)
+        Text("e.g. PCM = Physics + Chemistry + Mathematics, plus subsidiary (General Paper).", color = Theme.MUTED, fontSize = 13.sp)
         Spacer(Modifier.height(10.dp))
         d.combinations.forEach { c ->
             val names = (c.principalSubjectIds + c.subsidiarySubjectIds).mapNotNull { id -> d.subjects.firstOrNull { it.id == id }?.code }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(vertical = 3.dp)) {
-                Text("${c.name} — ${names.joinToString(" + ")}", color = Theme.TEXT, fontSize = 12.sp)
-                if (d.classes.any { it.combinationId == c.id }) Text("(in use)", color = Theme.GOOD, fontSize = 10.sp)
+                Text("${c.name} — ${names.joinToString(" + ")}", color = Theme.TEXT, fontSize = 14.sp)
+                if (d.classes.any { it.combinationId == c.id }) Text("(in use)", color = Theme.GOOD, fontSize = 12.sp)
             }
         }
         Spacer(Modifier.height(10.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
             TextField(name, { name = it }, Modifier.width(90.dp), "PCM")
             Column(Modifier.width(340.dp)) {
-                Text("Pick 3 principal subjects:", color = Theme.MUTED, fontSize = 10.sp)
+                Text("Pick 3 principal subjects:", color = Theme.MUTED, fontSize = 12.sp)
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(top = 4.dp)) {
                     aSubjects.take(10).forEach { s ->
                         FilterChip(
@@ -272,7 +272,7 @@ fun CombinationsCard(state: AppState) {
                     }
                 }
             }
-            FilterChip(selected = gp, onClick = { gp = !gp }, label = { Text("+GP", fontSize = 10.sp) })
+            FilterChip(selected = gp, onClick = { gp = !gp }, label = { Text("+GP", fontSize = 12.sp) })
             Btn("Add combination") {
                 if (name.isBlank() || aSubs.size != 3) return@Btn
                 val id = state.repo.nextId()
@@ -311,7 +311,7 @@ fun SubjectsScreen(state: AppState) {
     ScreenTitle("Subjects", "Preloaded defaults — add or remove anything your school offers")
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         CardBox {
-            Text("Add subject", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text("Add subject", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
             Row3 {
                 Column(Modifier.weight(2f)) { FieldLabel("Subject name"); TextField(name, { name = it }, Modifier.fillMaxWidth(), "Further Mathematics") }
@@ -325,8 +325,8 @@ fun SubjectsScreen(state: AppState) {
                 Column(Modifier.weight(1f)) {
                     FieldLabel("Compulsory")
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        FilterChip(selected = compulsory, onClick = { compulsory = true }, label = { Text("Yes", fontSize = 11.sp) })
-                        FilterChip(selected = !compulsory, onClick = { compulsory = false }, label = { Text("Optional", fontSize = 11.sp) })
+                        FilterChip(selected = compulsory, onClick = { compulsory = true }, label = { Text("Yes", fontSize = 13.sp) })
+                        FilterChip(selected = !compulsory, onClick = { compulsory = false }, label = { Text("Optional", fontSize = 13.sp) })
                     }
                 }
                 Column(Modifier.weight(1f)) {
@@ -346,21 +346,21 @@ fun SubjectsScreen(state: AppState) {
             Level.entries.forEach { lvl ->
                 val subs = d.subjects.filter { it.level == lvl && it.active }
                 if (subs.isNotEmpty()) {
-                    Text(levelLabel(lvl), color = Theme.MUTED, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = 4.dp))
+                    Text(levelLabel(lvl), color = Theme.MUTED, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = 4.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.wrapContentWidth()) {
                         subs.forEach { s ->
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.background(Theme.ACCENT_SOFT, RoundedCornerShape(8.dp)).padding(horizontal = 10.dp, vertical = 5.dp).clickable { }
                             ) {
-                                Text("${s.name}", color = Theme.TEXT, fontSize = 11.sp)
-                                if (!s.compulsory) Text(" · optional", color = Theme.WARN, fontSize = 10.sp)
+                                Text("${s.name}", color = Theme.TEXT, fontSize = 13.sp)
+                                if (!s.compulsory) Text(" · optional", color = Theme.WARN, fontSize = 12.sp)
                                 TextButton(onClick = {
                                     state.repo.mutate("SUBJECT_REMOVED", "Subject", s.id, old = s.name) { dd ->
                                         dd.copy(subjects = dd.subjects.map { if (it.id == s.id) it.copy(active = false) else it })
                                     }
                                     state.refresh()
-                                }) { Text("×", color = Theme.MUTED, fontSize = 12.sp) }
+                                }) { Text("×", color = Theme.MUTED, fontSize = 14.sp) }
                             }
                         }
                     }
@@ -386,13 +386,13 @@ fun TeachersScreen(state: AppState) {
     ScreenTitle("Teachers", "Teachers, roles and subject/class assignments")
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         CardBox {
-            Text("Add teacher", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text("Add teacher", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                 TextField(name, { name = it }, Modifier.width(220.dp), "Teacher name")
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     listOf(Role.TEACHER, Role.HEAD_TEACHER, Role.SCHOOL_ADMIN, Role.DATA_ENTRY).forEach { r ->
-                        FilterChip(selected = role == r, onClick = { role = r }, label = { Text(roleLabel(r), fontSize = 10.sp) })
+                        FilterChip(selected = role == r, onClick = { role = r }, label = { Text(roleLabel(r), fontSize = 12.sp) })
                     }
                 }
                 Btn("Add") {
@@ -407,24 +407,24 @@ fun TeachersScreen(state: AppState) {
         }
 
         CardBox {
-            Text("Assign teacher → subject → class", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text("Assign teacher → subject → class", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
             if (d.teachers.isEmpty() || d.classes.isEmpty()) {
-                Text("Add teachers and classes first.", color = Theme.MUTED, fontSize = 12.sp)
+                Text("Add teachers and classes first.", color = Theme.MUTED, fontSize = 14.sp)
             } else {
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.width(180.dp)) {
                         FieldLabel("Teacher")
                         d.teachers.forEach { t -> Row(Modifier.fillMaxWidth().clickable { assignTeacher = t.id }.padding(vertical = 3.dp)) {
-                            Text((if (assignTeacher == t.id) "● " else "○ ") + t.name, color = if (assignTeacher == t.id) Theme.ACCENT else Theme.TEXT, fontSize = 12.sp)
-                            Text("  ${roleLabel(t.role)}", color = Theme.MUTED, fontSize = 10.sp)
+                            Text((if (assignTeacher == t.id) "● " else "○ ") + t.name, color = if (assignTeacher == t.id) Theme.ACCENT else Theme.TEXT, fontSize = 14.sp)
+                            Text("  ${roleLabel(t.role)}", color = Theme.MUTED, fontSize = 12.sp)
                         }
                     }
                     Column(Modifier.width(180.dp)) {
                         FieldLabel("Subject")
                         d.subjects.filter { it.active }.take(20).forEach { s ->
                             Text((if (assignSubject == s.id) "● " else "○ ") + s.name,
-                                color = if (assignSubject == s.id) Theme.ACCENT else Theme.TEXT, fontSize = 12.sp,
+                                color = if (assignSubject == s.id) Theme.ACCENT else Theme.TEXT, fontSize = 14.sp,
                                 modifier = Modifier.fillMaxWidth().clickable { assignSubject = s.id }.padding(vertical = 3.dp))
                         }
                     }
@@ -432,7 +432,7 @@ fun TeachersScreen(state: AppState) {
                         FieldLabel("Class")
                         d.classes.filter { it.active }.take(20).forEach { c ->
                             Text((if (assignClass == c.id) "● " else "○ ") + if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}",
-                                color = if (assignClass == c.id) Theme.ACCENT else Theme.TEXT, fontSize = 12.sp,
+                                color = if (assignClass == c.id) Theme.ACCENT else Theme.TEXT, fontSize = 14.sp,
                                 modifier = Modifier.fillMaxWidth().clickable { assignClass = c.id }.padding(vertical = 3.dp))
                         }
                     }
@@ -452,13 +452,13 @@ fun TeachersScreen(state: AppState) {
                     }
                 }
                 Spacer(Modifier.height(10.dp))
-                Text("Current assignments", color = Theme.MUTED, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Text("Current assignments", color = Theme.MUTED, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                 d.assignments.forEach { a ->
                     val t = d.teachers.firstOrNull { it.id == a.teacherId }
                     val s = a.subjectId?.let { d.subjects.firstOrNull { x -> x.id == it } }
                     val c = d.classes.firstOrNull { it.id == a.classId }
                     val line = "${t?.name ?: "?"} → ${s?.name ?: "class teacher"} → ${c?.let { if (it.stream.isBlank()) it.name else "${it.name} ${it.stream}" } ?: "?"}"
-                    Text("• $line", color = Theme.TEXT, fontSize = 12.sp, modifier = Modifier.padding(vertical = 2.dp))
+                    Text("• $line", color = Theme.TEXT, fontSize = 14.sp, modifier = Modifier.padding(vertical = 2.dp))
                 }
             }
         }

@@ -50,8 +50,8 @@ fun EnterMarksScreen(state: TeacherState, classId: String, initialSubjectId: Str
                     Spacer(Modifier.width(10.dp))
                     Column {
                         Text((subjects.firstOrNull { it.id == subjectId }?.name ?: "Subject") + " \u2013 " + (cls?.let { classShort(it) } ?: ""),
-                            color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                        Text("${components.firstOrNull { it.id == componentId }?.name ?: ""} \u00B7 ${students.size} students", color = MUTED, fontSize = 11.sp)
+                            color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                        Text("${components.firstOrNull { it.id == componentId }?.name ?: ""} \u00B7 ${students.size} students", color = MUTED, fontSize = 13.sp)
                     }
                 }
             }
@@ -165,14 +165,14 @@ fun EnterMarksScreen(state: TeacherState, classId: String, initialSubjectId: Str
 
 @Composable
 internal fun FieldLabel(text: String) {
-    Text(text, color = MUTED, fontSize = 11.sp, modifier = Modifier.padding(bottom = 5.dp))
+    Text(text, color = MUTED, fontSize = 13.sp, modifier = Modifier.padding(bottom = 5.dp))
 }
 
 @Composable
 internal fun DarkTextField(value: String, onChange: (String) -> Unit) {
     androidx.compose.foundation.text.BasicTextField(
         value = value, onValueChange = onChange, singleLine = true,
-        textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 14.sp),
+        textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 16.sp),
         cursorBrush = androidx.compose.ui.graphics.SolidColor(BLUE),
         keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(CARD_ALT).padding(horizontal = 12.dp, vertical = 12.dp)
@@ -183,7 +183,7 @@ internal fun DarkTextField(value: String, onChange: (String) -> Unit) {
 private fun DarkTextFieldSmall(value: String, onChange: (String) -> Unit) {
     androidx.compose.foundation.text.BasicTextField(
         value = value, onValueChange = onChange, singleLine = true,
-        textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 13.sp),
+        textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 15.sp),
         cursorBrush = androidx.compose.ui.graphics.SolidColor(BLUE),
         modifier = Modifier.width(72.dp).clip(RoundedCornerShape(8.dp)).background(CARD_ALT).padding(horizontal = 8.dp, vertical = 9.dp)
     )
@@ -194,7 +194,7 @@ private fun OptionRow(icon: androidx.compose.ui.graphics.vector.ImageVector, lab
     Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
         Icon(icon, contentDescription = null, tint = MUTED, modifier = Modifier.size(17.dp))
         Spacer(Modifier.width(10.dp))
-        Text(label, color = Color.White, fontSize = 13.sp, modifier = Modifier.weight(1f))
+        Text(label, color = Color.White, fontSize = 15.sp, modifier = Modifier.weight(1f))
         Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = MUTED, modifier = Modifier.size(16.dp))
     }
 }
@@ -226,8 +226,8 @@ fun AssessmentsOverviewScreen(state: TeacherState, onOpenClass: (String) -> Unit
                 }
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("${subject?.name ?: "No subject"} \u2013 ${classShort(c)}", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                    Text("$entered / ${students.size} marks entered", color = MUTED, fontSize = 11.sp)
+                    Text("${subject?.name ?: "No subject"} \u2013 ${classShort(c)}", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                    Text("$entered / ${students.size} marks entered", color = MUTED, fontSize = 13.sp)
                 }
                 Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = MUTED)
             }

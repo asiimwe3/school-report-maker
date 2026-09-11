@@ -49,21 +49,21 @@ fun FeesScreen(state: AppState) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.verticalScroll(rememberScrollState())) {
         // ── Fee structure ──
         CardBox {
-            Text("Fee structure (${term?.let { "Term ${it.number} ${year?.year}" } ?: "no term"})", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text("Fee structure (${term?.let { "Term ${it.number} ${year?.year}" } ?: "no term"})", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
-            if (d.classes.isEmpty()) Text("Add classes first.", color = Theme.MUTED, fontSize = 12.sp)
+            if (d.classes.isEmpty()) Text("Add classes first.", color = Theme.MUTED, fontSize = 14.sp)
             else {
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     d.classes.filter { it.active }.take(10).forEach { c ->
                         FilterChip(selected = classId == c.id, onClick = { classId = c.id },
-                            label = { Text(if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}", fontSize = 10.sp) })
+                            label = { Text(if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}", fontSize = 12.sp) })
                     }
                 }
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                     TextField(if (structure != null && feeAmount.isBlank()) structure.amount.toLong().toString() else feeAmount,
                         { feeAmount = it }, Modifier.width(160.dp), "Amount per term")
-                    Text(cur, color = Theme.MUTED, fontSize = 12.sp)
+                    Text(cur, color = Theme.MUTED, fontSize = 14.sp)
                     Btn(if (structure == null) "Set fee" else "Update fee") {
                         val amt = feeAmount.toDoubleOrNull() ?: structure?.amount
                         if (classId.isNotBlank() && term != null && amt != null && amt > 0) {
@@ -76,7 +76,7 @@ fun FeesScreen(state: AppState) {
                             state.refresh()
                         }
                     }
-                    if (structure != null) Text("Current: ${cur} ${structure.amount.toLong()}", color = Theme.GOOD, fontSize = 12.sp)
+                    if (structure != null) Text("Current: ${cur} ${structure.amount.toLong()}", color = Theme.GOOD, fontSize = 14.sp)
                 }
             }
         }
@@ -84,12 +84,12 @@ fun FeesScreen(state: AppState) {
         // ── Record payment ──
         if (students.isNotEmpty()) {
             CardBox {
-                Text("Record a payment", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                Text("Record a payment", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
                     students.take(20).forEach { s ->
                         FilterChip(selected = payStudent == s.id, onClick = { payStudent = s.id },
-                            label = { Text(s.fullName.take(14), fontSize = 10.sp) })
+                            label = { Text(s.fullName.take(14), fontSize = 12.sp) })
                     }
                 }
                 Spacer(Modifier.height(8.dp))
@@ -99,7 +99,7 @@ fun FeesScreen(state: AppState) {
                         FieldLabel("Method")
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             listOf("Mobile Money", "Cash", "Bank").forEach { m ->
-                                FilterChip(selected = payMethod == m, onClick = { payMethod = m }, label = { Text(m, fontSize = 10.sp) })
+                                FilterChip(selected = payMethod == m, onClick = { payMethod = m }, label = { Text(m, fontSize = 12.sp) })
                             }
                         }
                     }
@@ -124,7 +124,7 @@ fun FeesScreen(state: AppState) {
                             state.refresh()
                         }
                     }
-                    if (msg.isNotBlank()) Text(msg, color = Theme.GOOD, fontSize = 12.sp)
+                    if (msg.isNotBlank()) Text(msg, color = Theme.GOOD, fontSize = 14.sp)
                 }
             }
         }
@@ -132,9 +132,9 @@ fun FeesScreen(state: AppState) {
         // ── Balances ──
         CardBox {
             Text("Balances — ${cls?.let { if (it.stream.isBlank()) it.name else "${it.name} ${it.stream}" } ?: "select a class"}",
-                color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
-            if (structure == null) Text("No fee set for this class/term yet — set one above.", color = Theme.MUTED, fontSize = 12.sp)
+            if (structure == null) Text("No fee set for this class/term yet — set one above.", color = Theme.MUTED, fontSize = 14.sp)
             else {
                 var totalPaid = 0.0
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -161,7 +161,7 @@ fun FeesScreen(state: AppState) {
                 Spacer(Modifier.height(8.dp))
                 val expected = structure.amount * students.size
                 val outstanding = students.sumOf { s -> (structure.amount - d.feePayments.filter { it.studentId == s.id && it.termId == term?.id }.sumOf { it.amount }).coerceAtLeast(0.0) }
-                Text("Expected: $cur ${expected.toLong()}    Collected: $cur ${totalPaid.toLong()}    Outstanding: $cur ${outstanding.toLong()}", color = Theme.GOOD, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                Text("Expected: $cur ${expected.toLong()}    Collected: $cur ${totalPaid.toLong()}    Outstanding: $cur ${outstanding.toLong()}", color = Theme.GOOD, fontSize = 15.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(10.dp))
                 Btn("Print defaulter list (Word)", primary = false, onClick = {
                     val rows = students.mapNotNull { s ->
@@ -204,7 +204,7 @@ fun PlansScreen(state: AppState) {
     ScreenTitle("Plans & Pricing", "Pick the tier that fits your school — pricing scales with student numbers.")
     Column(verticalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.verticalScroll(rememberScrollState())) {
         CardBox {
-            Text("Your school: $n students → recommended plan: $rec", color = Theme.ACCENT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text("Your school: $n students → recommended plan: $rec", color = Theme.ACCENT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
             plans.forEach { (name, feats) ->
@@ -214,11 +214,11 @@ fun PlansScreen(state: AppState) {
             }
         }
         CardBox {
-            Text("Current plan: $plan", color = if (plan == "Trial") Theme.WARN else Theme.GOOD, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-            if (d.settings.licenceRef.isNotBlank()) Text("Licence ref: ${d.settings.licenceRef}", color = Theme.MUTED, fontSize = 12.sp)
+            Text("Current plan: $plan", color = if (plan == "Trial") Theme.WARN else Theme.GOOD, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            if (d.settings.licenceRef.isNotBlank()) Text("Licence ref: ${d.settings.licenceRef}", color = Theme.MUTED, fontSize = 14.sp)
             Spacer(Modifier.height(10.dp))
-            Text("How to pay", color = Theme.TEXT, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-            Text("1. MTN MoMo / Airtel Money to 0762 306 675 (DeryCode)\n2. Send the payment confirmation to WhatsApp 0762 306 675\n3. Paste your licence reference below and tap Activate", color = Theme.MUTED, fontSize = 12.sp, modifier = Modifier.padding(vertical = 4.dp))
+            Text("How to pay", color = Theme.TEXT, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            Text("1. MTN MoMo / Airtel Money to 0762 306 675 (DeryCode)\n2. Send the payment confirmation to WhatsApp 0762 306 675\n3. Paste your licence reference below and tap Activate", color = Theme.MUTED, fontSize = 14.sp, modifier = Modifier.padding(vertical = 4.dp))
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                 TextField(ref, { ref = it }, Modifier.width(260.dp), "Licence reference from DeryCode")
@@ -240,7 +240,7 @@ fun PlansScreen(state: AppState) {
                         state.refresh()
                     }
                 }
-                if (msg.isNotBlank()) Text(msg, color = Theme.GOOD, fontSize = 12.sp)
+                if (msg.isNotBlank()) Text(msg, color = Theme.GOOD, fontSize = 14.sp)
             }
         }
     }
@@ -253,14 +253,14 @@ fun PlanCard(name: String, price: String, per: String, features: List<String>, c
             .border(1.dp, if (current) Theme.ACCENT else Color(0xFF1E2A47), RoundedCornerShape(14.dp)).padding(16.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(name, color = if (current) Theme.ACCENT else Theme.MUTED, fontSize = 12.sp, fontWeight = FontWeight.Black, modifier = Modifier.weight(1f))
-            if (current) Text("ACTIVE", color = Theme.GOOD, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            Text(name, color = if (current) Theme.ACCENT else Theme.MUTED, fontSize = 14.sp, fontWeight = FontWeight.Black, modifier = Modifier.weight(1f))
+            if (current) Text("ACTIVE", color = Theme.GOOD, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         }
         Spacer(Modifier.height(6.dp))
         Text(price, color = Theme.TEXT, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-        Text(per, color = Theme.MUTED, fontSize = 11.sp)
+        Text(per, color = Theme.MUTED, fontSize = 13.sp)
         Spacer(Modifier.height(10.dp))
-        features.forEach { Text("✓ $it", color = Theme.TEXT, fontSize = 11.sp, modifier = Modifier.padding(vertical = 2.dp)) }
+        features.forEach { Text("✓ $it", color = Theme.TEXT, fontSize = 13.sp, modifier = Modifier.padding(vertical = 2.dp)) }
     }
 }
 
@@ -275,7 +275,7 @@ fun HelpDocsScreen(state: AppState) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             listOf("guide" to "User Guide", "privacy" to "Privacy Policy", "terms" to "Terms & Conditions").forEach { (k, label) ->
-                FilterChip(selected = tab == k, onClick = { tab = k }, label = { Text(label, fontSize = 11.sp) })
+                FilterChip(selected = tab == k, onClick = { tab = k }, label = { Text(label, fontSize = 13.sp) })
             }
         }
         CardBox {
@@ -302,8 +302,8 @@ private fun DocGuide() {
     )
     LazyColumn(Modifier.height(430.dp)) {
         items(sections) { (title, body) ->
-            Text(title, color = Theme.ACCENT, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 10.dp, bottom = 3.dp))
-            Text(body, color = Theme.TEXT, fontSize = 12.sp)
+            Text(title, color = Theme.ACCENT, fontSize = 15.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 10.dp, bottom = 3.dp))
+            Text(body, color = Theme.TEXT, fontSize = 14.sp)
         }
     }
 }
@@ -312,7 +312,7 @@ private fun DocGuide() {
 private fun DocText(text: String) {
     Column(Modifier.verticalScroll(rememberScrollState()).height(430.dp)) {
         text.split("\n\n").forEach { para ->
-            Text(para, color = Theme.TEXT, fontSize = 12.sp, modifier = Modifier.padding(vertical = 4.dp))
+            Text(para, color = Theme.TEXT, fontSize = 14.sp, modifier = Modifier.padding(vertical = 4.dp))
         }
     }
 }

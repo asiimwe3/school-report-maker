@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -400,8 +401,8 @@ private fun TopBar(state: TeacherState, route: Route, onBack: () -> Unit) {
             Spacer(Modifier.width(8.dp))
         }
         Column(Modifier.weight(1f)) {
-            Text(title, color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-            if (!showBack) Text(state.data.school.name.ifBlank { "SRS Teacher" }, color = MUTED, fontSize = 10.sp, maxLines = 1)
+            Text(title, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+            if (!showBack) Text(state.data.school.name.ifBlank { "SRS Teacher" }, color = MUTED, fontSize = 12.sp, maxLines = 1)
         }
         if (!showBack) {
             Box {
@@ -466,11 +467,11 @@ private fun UpdateBanner(u: UpdateInfo, onOpen: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(Modifier.weight(1f)) {
-            Text("Update ${u.versionName} available", color = GREEN, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-            Text("Open More \u2192 Support to install.", color = MUTED, fontSize = 10.sp)
+            Text("Update ${u.versionName} available", color = GREEN, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text("Open More \u2192 Support to install.", color = MUTED, fontSize = 12.sp)
         }
         Button(onClick = onOpen, colors = ButtonDefaults.buttonColors(containerColor = GREEN), modifier = Modifier.height(32.dp)) {
-            Text("Get it", color = NAVY, fontSize = 11.sp)
+            Text("Get it", color = NAVY, fontSize = 13.sp)
         }
     }
 }
@@ -480,16 +481,18 @@ private fun UpdateBanner(u: UpdateInfo, onOpen: () -> Unit) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-internal fun CardBox(padding: Int = 14, content: @Composable ColumnScope.() -> Unit) {
+internal fun CardBox(padding: Int = 18, content: @Composable ColumnScope.() -> Unit) {
     Column(
-        Modifier.fillMaxWidth().background(CARD, RoundedCornerShape(16.dp)).padding(padding.dp),
+        Modifier.fillMaxWidth().background(CARD, RoundedCornerShape(18.dp))
+            .border(1.dp, BLUE.copy(alpha = 0.16f), RoundedCornerShape(18.dp))
+            .padding(padding.dp),
         content = content
     )
 }
 
 @Composable
 internal fun Cell(text: String, color: Color = Color.White, bold: Boolean = false, modifier: Modifier = Modifier) =
-    Text(text, color = color, fontSize = 13.sp,
+    Text(text, color = color, fontSize = 15.sp,
          fontWeight = if (bold) FontWeight.SemiBold else FontWeight.Normal, modifier = modifier)
 
 @Composable
@@ -505,7 +508,7 @@ internal fun ScoreBadge(pct: Double) {
         Modifier.clip(RoundedCornerShape(8.dp)).background(quickBandColor(pct).copy(alpha = 0.18f))
             .padding(horizontal = 10.dp, vertical = 5.dp)
     ) {
-        Text(pct.toInt().toString(), color = quickBandColor(pct), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+        Text(pct.toInt().toString(), color = quickBandColor(pct), fontWeight = FontWeight.Bold, fontSize = 15.sp)
     }
 }
 

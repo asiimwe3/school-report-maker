@@ -70,11 +70,11 @@ private fun ClassCard(state: TeacherState, c: SchoolClass, onClick: () -> Unit) 
         }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            Text(classLabel(c), color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+            Text(classLabel(c), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.People, contentDescription = null, tint = MUTED, modifier = Modifier.size(12.dp))
                 Spacer(Modifier.width(3.dp))
-                Text("${students.size} students", color = MUTED, fontSize = 11.sp)
+                Text("${students.size} students", color = MUTED, fontSize = 13.sp)
             }
             Spacer(Modifier.height(6.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
@@ -89,7 +89,7 @@ private fun ClassCard(state: TeacherState, c: SchoolClass, onClick: () -> Unit) 
 @Composable
 internal fun SubjectPill(text: String) {
     Box(Modifier.clip(RoundedCornerShape(6.dp)).background(BLUE.copy(alpha = 0.18f)).padding(horizontal = 8.dp, vertical = 3.dp)) {
-        Text(text, color = BLUE, fontSize = 10.sp)
+        Text(text, color = BLUE, fontSize = 12.sp)
     }
 }
 
@@ -101,7 +101,7 @@ internal fun FilterChipPill(text: String, selected: Boolean, onClick: () -> Unit
             .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 8.dp)
     ) {
-        Text(text, color = if (selected) Color.White else MUTED, fontSize = 12.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal)
+        Text(text, color = if (selected) Color.White else MUTED, fontSize = 14.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal)
     }
 }
 
@@ -121,11 +121,11 @@ internal fun SearchField(value: String, onChange: (String) -> Unit, placeholder:
 private fun BasicTextFieldLine(value: String, onChange: (String) -> Unit, placeholder: String) {
     androidx.compose.foundation.text.BasicTextField(
         value = value, onValueChange = onChange, singleLine = true,
-        textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 13.sp),
+        textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 15.sp),
         cursorBrush = androidx.compose.ui.graphics.SolidColor(BLUE),
         modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
         decorationBox = { inner ->
-            if (value.isEmpty()) Text(placeholder, color = MUTED, fontSize = 13.sp)
+            if (value.isEmpty()) Text(placeholder, color = MUTED, fontSize = 15.sp)
             inner()
         }
     )
@@ -134,7 +134,7 @@ private fun BasicTextFieldLine(value: String, onChange: (String) -> Unit, placeh
 @Composable
 internal fun EmptyHint(text: String) {
     Box(Modifier.fillMaxWidth().padding(top = 40.dp), contentAlignment = Alignment.Center) {
-        Text(text, color = MUTED, fontSize = 12.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        Text(text, color = MUTED, fontSize = 14.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
     }
 }
 
@@ -180,7 +180,7 @@ fun ClassDetailScreen(state: TeacherState, classId: String, onEnterMarks: (Strin
                             .background(if (selected) BLUE else Color.Transparent)
                             .clickable { tab = t }.padding(vertical = 9.dp),
                         contentAlignment = Alignment.Center
-                    ) { Text(label, color = if (selected) Color.White else MUTED, fontSize = 12.sp, fontWeight = FontWeight.Medium) }
+                    ) { Text(label, color = if (selected) Color.White else MUTED, fontSize = 14.sp, fontWeight = FontWeight.Medium) }
                 }
             }
         }
@@ -190,8 +190,8 @@ fun ClassDetailScreen(state: TeacherState, classId: String, onEnterMarks: (Strin
                     CardBox {
                         Cell("Recent Assessment", MUTED, true)
                         Spacer(Modifier.height(6.dp))
-                        Text(component?.name ?: "No assessment yet", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                        Text(todayLabel(), color = MUTED, fontSize = 11.sp)
+                        Text(component?.name ?: "No assessment yet", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                        Text(todayLabel(), color = MUTED, fontSize = 13.sp)
                         Spacer(Modifier.height(12.dp))
                         Row(Modifier.fillMaxWidth()) {
                             MiniStat(Modifier.weight(1f), students.size.toString(), "Total Students", BLUE)
@@ -241,7 +241,7 @@ private fun QuickRow(icon: androidx.compose.ui.graphics.vector.ImageVector, labe
     ) {
         Icon(icon, contentDescription = null, tint = BLUE, modifier = Modifier.size(18.dp))
         Spacer(Modifier.width(10.dp))
-        Text(label, color = Color.White, fontSize = 13.sp, modifier = Modifier.weight(1f))
+        Text(label, color = Color.White, fontSize = 15.sp, modifier = Modifier.weight(1f))
         Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = MUTED, modifier = Modifier.size(16.dp))
     }
 }

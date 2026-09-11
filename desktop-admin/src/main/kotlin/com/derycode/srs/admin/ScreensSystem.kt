@@ -40,13 +40,13 @@ fun TemplatesScreen(state: AppState) {
     ScreenTitle("Report Template Library", "Designs for report cards — create, duplicate, set a default.")
     Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.verticalScroll(rememberScrollState())) {
         CardBox {
-            Text("Create / duplicate a template", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text("Create / duplicate a template", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                 TextField(name, { name = it }, Modifier.width(180.dp), "e.g. P7 Classic 2026")
                 TemplateLayout.entries.forEach { l ->
                     FilterChip(selected = layout == l, onClick = { layout = l },
-                        label = { Text(l.name.lowercase().replaceFirstChar { it.uppercase() }, fontSize = 10.sp) })
+                        label = { Text(l.name.lowercase().replaceFirstChar { it.uppercase() }, fontSize = 12.sp) })
                 }
                 Btn("Add template") {
                     if (name.isNotBlank()) {
@@ -67,13 +67,13 @@ fun TemplatesScreen(state: AppState) {
             }
         }
         CardBox {
-            Text("Archived templates", color = Theme.TEXT, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            Text("Archived templates", color = Theme.TEXT, fontSize = 15.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(6.dp))
             val archived = d.templates.filter { it.archived }
-            if (archived.isEmpty()) Text("None.", color = Theme.MUTED, fontSize = 12.sp)
+            if (archived.isEmpty()) Text("None.", color = Theme.MUTED, fontSize = 14.sp)
             archived.forEach { t ->
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(vertical = 3.dp)) {
-                    Text(t.name, color = Theme.MUTED, fontSize = 12.sp, modifier = Modifier.width(220.dp))
+                    Text(t.name, color = Theme.MUTED, fontSize = 14.sp, modifier = Modifier.width(220.dp))
                     Btn("Restore", primary = false, onClick = {
                         state.repo.mutate("TEMPLATE_RESTORED", "ReportTemplate", t.id) { dd ->
                             dd.copy(templates = dd.templates.map { if (it.id == t.id) it.copy(archived = false) else it })
@@ -93,8 +93,8 @@ private fun TemplateCard(state: AppState, t: ReportTemplate) {
             .border(1.dp, if (t.isDefault) Theme.ACCENT else Color(0xFF1E2A47), RoundedCornerShape(14.dp)).padding(12.dp)
     ) {
         if (t.isDefault) Text("DEFAULT", color = Theme.ACCENT, fontSize = 9.sp, fontWeight = FontWeight.Black)
-        Text(t.name, color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-        Text(t.layout.name.lowercase().replaceFirstChar { it.uppercase() } + " layout", color = Theme.MUTED, fontSize = 10.sp)
+        Text(t.name, color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+        Text(t.layout.name.lowercase().replaceFirstChar { it.uppercase() } + " layout", color = Theme.MUTED, fontSize = 12.sp)
         Spacer(Modifier.height(8.dp))
         TemplatePreview(t.layout)
         Spacer(Modifier.height(10.dp))
@@ -196,38 +196,38 @@ fun PreviewScreen(state: AppState) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         CardBox {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("Class:", color = Theme.MUTED, fontSize = 12.sp)
+                Text("Class:", color = Theme.MUTED, fontSize = 14.sp)
                 d.classes.filter { it.active }.forEach { c ->
                     FilterChip(selected = classId == c.id, onClick = { classId = c.id; studentId = "" },
-                        label = { Text(if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}", fontSize = 11.sp) })
+                        label = { Text(if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}", fontSize = 13.sp) })
                 }
             }
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("Student:", color = Theme.MUTED, fontSize = 12.sp)
+                Text("Student:", color = Theme.MUTED, fontSize = 14.sp)
                 classStudents.take(12).forEach { s ->
                     FilterChip(selected = studentId == s.id, onClick = { studentId = s.id },
-                        label = { Text(s.fullName, fontSize = 11.sp) })
+                        label = { Text(s.fullName, fontSize = 13.sp) })
                 }
             }
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("Design:", color = Theme.MUTED, fontSize = 12.sp)
+                Text("Design:", color = Theme.MUTED, fontSize = 14.sp)
                 TemplateLayout.entries.forEach { l ->
                     FilterChip(selected = layout == l, onClick = { layout = l },
-                        label = { Text(l.name.lowercase().replaceFirstChar { it.uppercase() }, fontSize = 11.sp) })
+                        label = { Text(l.name.lowercase().replaceFirstChar { it.uppercase() }, fontSize = 13.sp) })
                 }
             }
         }
         if (term == null || scheme == null) {
-            Text("Create an academic year with terms and grading schemes first.", color = Theme.MUTED, fontSize = 12.sp)
+            Text("Create an academic year with terms and grading schemes first.", color = Theme.MUTED, fontSize = 14.sp)
         } else if (classStudents.isEmpty()) {
-            Text("No active students in this class.", color = Theme.MUTED, fontSize = 12.sp)
+            Text("No active students in this class.", color = Theme.MUTED, fontSize = 14.sp)
         } else {
             CardBox {
-                Text("Preview as Word document", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                Text("Preview as Word document", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(6.dp))
-                Text("The preview uses the exact same engine as batch printing — it opens in Word (.docx), exactly as it will print.", color = Theme.MUTED, fontSize = 12.sp)
+                Text("The preview uses the exact same engine as batch printing — it opens in Word (.docx), exactly as it will print.", color = Theme.MUTED, fontSize = 14.sp)
                 Spacer(Modifier.height(10.dp))
                 Btn("Preview selected student") {
                     val sid = studentId.ifBlank { classStudents.first().id }
@@ -243,7 +243,7 @@ fun PreviewScreen(state: AppState) {
                     try { Desktop.getDesktop().open(f.toFile()) } catch (_: Exception) { }
                     msg = "Saved to ${f.fileName}"
                 }
-                if (msg.isNotEmpty()) Text(msg, color = Theme.GOOD, fontSize = 12.sp)
+                if (msg.isNotEmpty()) Text(msg, color = Theme.GOOD, fontSize = 14.sp)
             }
         }
     }
@@ -273,9 +273,9 @@ fun SettingsScreen(state: AppState) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         // ── Danger zone: factory reset ──
         CardBox {
-            Text("Danger zone — Reset all data", color = Color(0xFFFF6B6B), fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text("Danger zone — Reset all data", color = Color(0xFFFF6B6B), fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(4.dp))
-            Text("Erases EVERYTHING: school profile, students, marks, fees, backups and audit trail — restores the app to a clean, brand-new state. Use before transferring or reinstalling the console.", color = Theme.MUTED, fontSize = 12.sp)
+            Text("Erases EVERYTHING: school profile, students, marks, fees, backups and audit trail — restores the app to a clean, brand-new state. Use before transferring or reinstalling the console.", color = Theme.MUTED, fontSize = 14.sp)
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                 TextField(confirmTxt, { confirmTxt = it }, Modifier.width(200.dp), "Type RESET to confirm")
@@ -287,48 +287,48 @@ fun SettingsScreen(state: AppState) {
                         state.refresh()
                     }
                 })
-                if (wiped) Text("✓ All data erased — the console is clean.", color = Theme.GOOD, fontSize = 12.sp)
+                if (wiped) Text("✓ All data erased — the console is clean.", color = Theme.GOOD, fontSize = 14.sp)
             }
         }
         CardBox {
-            Text("General", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text("General", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("Language:", color = Theme.MUTED, fontSize = 12.sp, modifier = Modifier.width(90.dp))
+                Text("Language:", color = Theme.MUTED, fontSize = 14.sp, modifier = Modifier.width(90.dp))
                 listOf("English", "Runyoro", "Luganda", "Swahili").forEach { l ->
-                    FilterChip(selected = lang == l, onClick = { lang = l }, label = { Text(l, fontSize = 10.sp) })
+                    FilterChip(selected = lang == l, onClick = { lang = l }, label = { Text(l, fontSize = 12.sp) })
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("Theme:", color = Theme.MUTED, fontSize = 12.sp, modifier = Modifier.width(90.dp))
+                Text("Theme:", color = Theme.MUTED, fontSize = 14.sp, modifier = Modifier.width(90.dp))
                 Theme.THEMES.forEach { t ->
-                    FilterChip(selected = theme == t, onClick = { theme = t; Theme.apply(t) }, label = { Text(t, fontSize = 10.sp) })
+                    FilterChip(selected = theme == t, onClick = { theme = t; Theme.apply(t) }, label = { Text(t, fontSize = 12.sp) })
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("Currency:", color = Theme.MUTED, fontSize = 12.sp, modifier = Modifier.width(90.dp))
+                Text("Currency:", color = Theme.MUTED, fontSize = 14.sp, modifier = Modifier.width(90.dp))
                 TextField(currency, { currency = it }, Modifier.width(80.dp), "UGX")
             }
         }
         CardBox {
-            Text("Notifications & backup", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text("Notifications & backup", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Checkbox(notif, { notif = it }); Text("In-app notifications", color = Theme.TEXT, fontSize = 12.sp)
+                    Checkbox(notif, { notif = it }); Text("In-app notifications", color = Theme.TEXT, fontSize = 14.sp)
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Checkbox(autoSync, { autoSync = it }); Text("Auto-send when a bundle source connects", color = Theme.TEXT, fontSize = 12.sp)
+                    Checkbox(autoSync, { autoSync = it }); Text("Auto-send when a bundle source connects", color = Theme.TEXT, fontSize = 14.sp)
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Checkbox(autoBackup, { autoBackup = it }); Text("Auto-backup", color = Theme.TEXT, fontSize = 12.sp)
+                    Checkbox(autoBackup, { autoBackup = it }); Text("Auto-backup", color = Theme.TEXT, fontSize = 14.sp)
                 }
             }
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("Backup every", color = Theme.MUTED, fontSize = 12.sp)
+                Text("Backup every", color = Theme.MUTED, fontSize = 14.sp)
                 TextField(freq, { freq = it }, Modifier.width(50.dp), "7")
-                Text("days, keep latest", color = Theme.MUTED, fontSize = 12.sp)
+                Text("days, keep latest", color = Theme.MUTED, fontSize = 14.sp)
                 TextField(keep, { keep = it }, Modifier.width(50.dp), "10")
                 Spacer(Modifier.width(20.dp))
                 Btn("Save settings") {
@@ -342,7 +342,7 @@ fun SettingsScreen(state: AppState) {
                     saved = true
                     state.refresh()
                 }
-                if (saved) Text("Saved ✓", color = Theme.GOOD, fontSize = 12.sp)
+                if (saved) Text("Saved ✓", color = Theme.GOOD, fontSize = 14.sp)
             }
         }
     }
@@ -366,9 +366,9 @@ fun AuditScreen(state: AppState) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         CardBox {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("Filter:", color = Theme.MUTED, fontSize = 12.sp)
+                Text("Filter:", color = Theme.MUTED, fontSize = 14.sp)
                 TextField(filter, { filter = it }, Modifier.width(260.dp), "action / entity / id / value")
-                Text("${entries.size} of ${d.auditLog.size} entries", color = Theme.MUTED, fontSize = 12.sp)
+                Text("${entries.size} of ${d.auditLog.size} entries", color = Theme.MUTED, fontSize = 14.sp)
             }
         }
         CardBox {
@@ -376,11 +376,11 @@ fun AuditScreen(state: AppState) {
                 items(entries.take(300)) { e ->
                     Column {
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Text(fmt.format(Date(e.timestamp)), color = Theme.MUTED, fontSize = 11.sp, modifier = Modifier.width(120.dp))
-                            Text(e.action, color = Theme.ACCENT, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.width(160.dp))
-                            Text(if (e.entity.isEmpty()) "" else "${e.entity} ${e.entityId}", color = Theme.TEXT, fontSize = 11.sp, modifier = Modifier.width(180.dp))
+                            Text(fmt.format(Date(e.timestamp)), color = Theme.MUTED, fontSize = 13.sp, modifier = Modifier.width(120.dp))
+                            Text(e.action, color = Theme.ACCENT, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.width(160.dp))
+                            Text(if (e.entity.isEmpty()) "" else "${e.entity} ${e.entityId}", color = Theme.TEXT, fontSize = 13.sp, modifier = Modifier.width(180.dp))
                             Text(if (e.oldValue.isNotEmpty()) "\"${e.oldValue}\" → \"${e.newValue}\"" else e.newValue,
-                                color = Theme.MUTED, fontSize = 11.sp)
+                                color = Theme.MUTED, fontSize = 13.sp)
                         }
                         HorizontalDivider(color = Color(0xFF1B2540))
                     }
@@ -403,23 +403,23 @@ fun ReportsArchiveScreen(state: AppState) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         CardBox {
             Row(horizontalArrangement = Arrangement.spacedBy(30.dp)) {
-                Text("Student", color = Theme.MUTED, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(220.dp))
-                Text("Scheme (version)", color = Theme.MUTED, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(180.dp))
-                Text("Status", color = Theme.MUTED, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(100.dp))
-                Text("Generated", color = Theme.MUTED, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text("Student", color = Theme.MUTED, fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(220.dp))
+                Text("Scheme (version)", color = Theme.MUTED, fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(180.dp))
+                Text("Status", color = Theme.MUTED, fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(100.dp))
+                Text("Generated", color = Theme.MUTED, fontSize = 14.sp, fontWeight = FontWeight.Bold)
             }
             LazyColumn(Modifier.height(400.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 items(d.reports.asReversed()) { r ->
                     val st = d.students.firstOrNull { it.id == r.studentId }
                     val scheme = d.gradingSchemes.firstOrNull { it.id == r.schemeId }
                     Row(horizontalArrangement = Arrangement.spacedBy(30.dp), modifier = Modifier.padding(vertical = 3.dp)) {
-                        Text(st?.fullName ?: r.studentId, color = Theme.TEXT, fontSize = 12.sp, modifier = Modifier.width(220.dp))
-                        Text("${scheme?.name ?: r.schemeId} (v${r.schemeVersion})", color = Theme.MUTED, fontSize = 12.sp, modifier = Modifier.width(180.dp))
-                        Text(if (r.approved) "approved" else "draft", color = if (r.approved) Theme.GOOD else Theme.MUTED, fontSize = 12.sp, modifier = Modifier.width(100.dp))
-                        Text(if (r.generatedAt > 0) fmt.format(Date(r.generatedAt)) else "—", color = Theme.MUTED, fontSize = 12.sp)
+                        Text(st?.fullName ?: r.studentId, color = Theme.TEXT, fontSize = 14.sp, modifier = Modifier.width(220.dp))
+                        Text("${scheme?.name ?: r.schemeId} (v${r.schemeVersion})", color = Theme.MUTED, fontSize = 14.sp, modifier = Modifier.width(180.dp))
+                        Text(if (r.approved) "approved" else "draft", color = if (r.approved) Theme.GOOD else Theme.MUTED, fontSize = 14.sp, modifier = Modifier.width(100.dp))
+                        Text(if (r.generatedAt > 0) fmt.format(Date(r.generatedAt)) else "—", color = Theme.MUTED, fontSize = 14.sp)
                     }
                 }
-                if (d.reports.isEmpty()) item { Text("No reports generated yet — use Reports → Generate.", color = Theme.MUTED, fontSize = 12.sp) }
+                if (d.reports.isEmpty()) item { Text("No reports generated yet — use Reports → Generate.", color = Theme.MUTED, fontSize = 14.sp) }
             }
         }
     }
@@ -449,19 +449,19 @@ fun BackupHistoryScreen(state: AppState) {
                     val dir = dataDir.resolve("backups").toFile()
                     if (dir.exists()) try { Desktop.getDesktop().open(dir) } catch (_: Exception) { }
                 }
-                if (msg.isNotEmpty()) Text(msg, color = Theme.GOOD, fontSize = 12.sp)
+                if (msg.isNotEmpty()) Text(msg, color = Theme.GOOD, fontSize = 14.sp)
             }
         }
         CardBox {
-            Text("Local backups (${backups.size})", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text("Local backups (${backups.size})", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
             LazyColumn(Modifier.height(380.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 items(backups) { b ->
                     val stamp = b.fileName.toString().removePrefix("backup-").removeSuffix(".json").toLongOrNull() ?: 0L
                     val size = Files.size(b)
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text(fmt.format(Date(stamp)), color = Theme.TEXT, fontSize = 12.sp, modifier = Modifier.width(220.dp))
-                        Text(String.format("%.1f KB", size / 1024.0), color = Theme.MUTED, fontSize = 12.sp, modifier = Modifier.width(100.dp))
+                        Text(fmt.format(Date(stamp)), color = Theme.TEXT, fontSize = 14.sp, modifier = Modifier.width(220.dp))
+                        Text(String.format("%.1f KB", size / 1024.0), color = Theme.MUTED, fontSize = 14.sp, modifier = Modifier.width(100.dp))
                         if (stamp > 0) Btn("Restore", primary = false, onClick = {
                             val ok = state.repo.restore(b)
                             msg = if (ok) "Restored ✓ (a safety backup was taken first)" else "Restore failed — file unreadable"
@@ -469,7 +469,7 @@ fun BackupHistoryScreen(state: AppState) {
                         })
                     }
                 }
-                if (backups.isEmpty()) item { Text("No backups yet — one is created automatically after every change.", color = Theme.MUTED, fontSize = 12.sp) }
+                if (backups.isEmpty()) item { Text("No backups yet — one is created automatically after every change.", color = Theme.MUTED, fontSize = 14.sp) }
             }
         }
     }
@@ -514,22 +514,22 @@ fun UsersScreen(state: AppState) {
             }
         }
         CardBox {
-            Text("Users (${d.teachers.size})", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text("Users (${d.teachers.size})", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(30.dp)) {
-                Text("Name", color = Theme.MUTED, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(180.dp))
-                Text("Username", color = Theme.MUTED, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(120.dp))
-                Text("Role", color = Theme.MUTED, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(130.dp))
-                Text("Status", color = Theme.MUTED, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(100.dp))
+                Text("Name", color = Theme.MUTED, fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(180.dp))
+                Text("Username", color = Theme.MUTED, fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(120.dp))
+                Text("Role", color = Theme.MUTED, fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(130.dp))
+                Text("Status", color = Theme.MUTED, fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(100.dp))
             }
             d.teachers.forEach { t ->
                 var roleEdit by remember(t.id) { mutableStateOf(t.role) }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(30.dp),
                     modifier = Modifier.padding(vertical = 4.dp)) {
-                    Text(t.name, color = Theme.TEXT, fontSize = 12.sp, modifier = Modifier.width(180.dp))
-                    Text(t.username.ifBlank { "—" }, color = Theme.MUTED, fontSize = 12.sp, modifier = Modifier.width(120.dp))
-                    Text(roleLabel(t.role), color = Theme.TEXT, fontSize = 12.sp, modifier = Modifier.width(130.dp))
-                    Text(if (t.active) "active" else "disabled", color = if (t.active) Theme.GOOD else Theme.MUTED, fontSize = 12.sp, modifier = Modifier.width(100.dp))
+                    Text(t.name, color = Theme.TEXT, fontSize = 14.sp, modifier = Modifier.width(180.dp))
+                    Text(t.username.ifBlank { "—" }, color = Theme.MUTED, fontSize = 14.sp, modifier = Modifier.width(120.dp))
+                    Text(roleLabel(t.role), color = Theme.TEXT, fontSize = 14.sp, modifier = Modifier.width(130.dp))
+                    Text(if (t.active) "active" else "disabled", color = if (t.active) Theme.GOOD else Theme.MUTED, fontSize = 14.sp, modifier = Modifier.width(100.dp))
                     Btn(if (t.active) "Disable" else "Enable", primary = false, onClick = {
                         state.repo.mutate("USER_STATUS", "User", t.id, new = (!t.active).toString()) { dd ->
                             dd.copy(teachers = dd.teachers.map { if (it.id == t.id) it.copy(active = !it.active) else it })
@@ -572,7 +572,7 @@ fun NotificationsScreen(state: AppState) {
     ScreenTitle("Notifications", "In-app alerts — everything that needs your attention right now.")
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         CardBox {
-            Text("${alerts.size} alert(s)", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text("${alerts.size} alert(s)", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
             LazyColumn(Modifier.height(400.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(alerts) { (kind, text) ->
@@ -580,11 +580,11 @@ fun NotificationsScreen(state: AppState) {
                         Text(when (kind) {
                             "missing" -> "⚠"; "backup" -> "💾"; "sync" -> "⇅"
                             "reports" -> "📄"; else -> "ℹ"
-                        }, color = when (kind) { "missing" -> Color(0xFFFFB84D); else -> Theme.ACCENT }, fontSize = 14.sp)
-                        Text(text, color = Theme.TEXT, fontSize = 12.sp)
+                        }, color = when (kind) { "missing" -> Color(0xFFFFB84D); else -> Theme.ACCENT }, fontSize = 16.sp)
+                        Text(text, color = Theme.TEXT, fontSize = 14.sp)
                     }
                 }
-                if (alerts.isEmpty()) item { Text("All clear ✓", color = Theme.GOOD, fontSize = 13.sp) }
+                if (alerts.isEmpty()) item { Text("All clear ✓", color = Theme.GOOD, fontSize = 15.sp) }
             }
         }
     }
@@ -624,14 +624,14 @@ fun CalendarScreen(state: AppState) {
             }
         }
         CardBox {
-            Text("Events (${d.calendarEvents.size})", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text("Events (${d.calendarEvents.size})", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
             LazyColumn(Modifier.height(360.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 items(d.calendarEvents.sortedBy { it.date }) { e ->
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(vertical = 3.dp)) {
-                        Text(e.date, color = Theme.ACCENT, fontSize = 12.sp, modifier = Modifier.width(110.dp))
-                        Text(e.title, color = Theme.TEXT, fontSize = 12.sp, modifier = Modifier.width(280.dp))
-                        Text(e.type.name.lowercase().replace('_', ' ').replaceFirstChar { it.uppercase() }, color = Theme.MUTED, fontSize = 12.sp)
+                        Text(e.date, color = Theme.ACCENT, fontSize = 14.sp, modifier = Modifier.width(110.dp))
+                        Text(e.title, color = Theme.TEXT, fontSize = 14.sp, modifier = Modifier.width(280.dp))
+                        Text(e.type.name.lowercase().replace('_', ' ').replaceFirstChar { it.uppercase() }, color = Theme.MUTED, fontSize = 14.sp)
                         Btn("Delete", primary = false, onClick = {
                             state.repo.mutate("CALENDAR_EVENT_DELETED", "CalendarEvent", e.id, old = e.title) { dd ->
                                 dd.copy(calendarEvents = dd.calendarEvents.filter { it.id != e.id })
@@ -640,7 +640,7 @@ fun CalendarScreen(state: AppState) {
                         })
                     }
                 }
-                if (d.calendarEvents.isEmpty()) item { Text("No calendar events yet.", color = Theme.MUTED, fontSize = 12.sp) }
+                if (d.calendarEvents.isEmpty()) item { Text("No calendar events yet.", color = Theme.MUTED, fontSize = 14.sp) }
             }
         }
     }
@@ -659,7 +659,7 @@ fun ImportExportScreen(state: AppState) {
     ScreenTitle("Import / Export", "CSV in and out — students, marks, results. No internet needed.")
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         CardBox {
-            Text("Export", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text("Export", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Btn("Export students CSV") {
@@ -693,12 +693,12 @@ fun ImportExportScreen(state: AppState) {
                     if (exportDir.toFile().exists()) try { Desktop.getDesktop().open(exportDir.toFile()) } catch (_: Exception) { }
                 }
             }
-            if (msg.isNotEmpty()) Text(msg, color = Theme.GOOD, fontSize = 12.sp)
+            if (msg.isNotEmpty()) Text(msg, color = Theme.GOOD, fontSize = 14.sp)
         }
         CardBox {
-            Text("Import students", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text("Import students", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(6.dp))
-            Text("Place a CSV named students-import.csv in the exports folder with columns: admissionNo,firstName,middleName,lastName,sex,dob,guardianPhone. Existing admission numbers are skipped.", color = Theme.MUTED, fontSize = 12.sp)
+            Text("Place a CSV named students-import.csv in the exports folder with columns: admissionNo,firstName,middleName,lastName,sex,dob,guardianPhone. Existing admission numbers are skipped.", color = Theme.MUTED, fontSize = 14.sp)
             Spacer(Modifier.height(8.dp))
             Btn("Import from exports/students-import.csv") {
                 val f = exportDir.resolve("students-import.csv")

@@ -36,7 +36,7 @@ object DesktopCrashTracker {
             try {
                 Files.createDirectories(dataDir)
                 val entry = "\n=== CRASH ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Date())} ===\n" +
-                    "App: Admin Console 1.8.0\nOS: ${System.getProperty("os.name")} ${System.getProperty("os.version")}\n" +
+                    "App: Admin Console 1.9.0\nOS: ${System.getProperty("os.name")} ${System.getProperty("os.version")}\n" +
                     "Thread: ${thread.name}\n${throwable.stackTraceToString().take(3500)}\n"
                 Files.writeString(logFile, Files.exists(logFile).let { if (it) Files.readString(logFile) else "" } + entry)
             } catch (_: Exception) { }
@@ -52,7 +52,7 @@ object DesktopCrashTracker {
 // ─────────────────────────────────────────────────────────────────────────────
 
 object DesktopUpdateChecker {
-    const val CURRENT_VERSION = "1.8.0"
+    const val CURRENT_VERSION = "1.9.0"
 
     fun check(): UpdateInfo? = try {
         val conn = URL(Support.VERSION_URL).openConnection()
@@ -98,9 +98,9 @@ fun SupportScreenDesktop(state: AppState) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.verticalScroll(rememberScrollState())) {
         // ── Update ──
         CardBox {
-            Text("App update", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text("App update", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(4.dp))
-            Text("Current version: ${DesktopUpdateChecker.CURRENT_VERSION}. A check runs automatically every time the console starts.", color = Theme.MUTED, fontSize = 12.sp)
+            Text("Current version: ${DesktopUpdateChecker.CURRENT_VERSION}. A check runs automatically every time the console starts.", color = Theme.MUTED, fontSize = 14.sp)
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Btn("Check for update now") {
@@ -109,8 +109,8 @@ fun SupportScreenDesktop(state: AppState) {
             }
             update?.let { u ->
                 Spacer(Modifier.height(6.dp))
-                Text("✓ Update ${u.versionName} available", color = Theme.GOOD, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                if (u.releaseNotes.isNotBlank()) Text(u.releaseNotes.take(300), color = Theme.MUTED, fontSize = 12.sp)
+                Text("✓ Update ${u.versionName} available", color = Theme.GOOD, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                if (u.releaseNotes.isNotBlank()) Text(u.releaseNotes.take(300), color = Theme.MUTED, fontSize = 14.sp)
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Btn("Download & run installer") {
@@ -121,16 +121,16 @@ fun SupportScreenDesktop(state: AppState) {
                         try { Desktop.getDesktop().browse(URI(Support.RELEASES_PAGE)) } catch (_: Exception) { }
                     })
                 }
-            } ?: Text("You are up to date." + if (update == null && msg == "checked") "" else "", color = Theme.MUTED, fontSize = 12.sp)
-            if (msg.isNotEmpty() && msg != "Downloading…") Text(msg, color = Theme.GOOD, fontSize = 12.sp)
+            } ?: Text("You are up to date." + if (update == null && msg == "checked") "" else "", color = Theme.MUTED, fontSize = 14.sp)
+            if (msg.isNotEmpty() && msg != "Downloading…") Text(msg, color = Theme.GOOD, fontSize = 14.sp)
         }
 
         // ── Crash report ──
         CardBox {
-            Text("Crash report", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text("Crash report", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(4.dp))
             if (DesktopCrashTracker.hasCrash()) {
-                Text("✓ Crash file found. Nothing was sent anywhere — you choose.", color = Color(0xFFFFB84D), fontSize = 12.sp)
+                Text("✓ Crash file found. Nothing was sent anywhere — you choose.", color = Color(0xFFFFB84D), fontSize = 14.sp)
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Btn("Send to support (WhatsApp 0762306675)") {
@@ -141,13 +141,13 @@ fun SupportScreenDesktop(state: AppState) {
                     Btn("Clear crash file", primary = false, onClick = { Files.deleteIfExists(DesktopCrashTracker.logFile); state.refresh() })
                 }
             } else {
-                Text("No crashes recorded on this computer. If the console ever crashes, the error is saved automatically.", color = Theme.MUTED, fontSize = 12.sp)
+                Text("No crashes recorded on this computer. If the console ever crashes, the error is saved automatically.", color = Theme.MUTED, fontSize = 14.sp)
             }
         }
 
         // ── Docs ──
         CardBox {
-            Text("Subscription, terms & privacy", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text("Subscription, terms & privacy", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 listOf(
@@ -163,13 +163,13 @@ fun SupportScreenDesktop(state: AppState) {
         }
         if (docView.isNotEmpty()) {
             CardBox {
-                Text(docView.trim(), color = Theme.MUTED, fontSize = 12.sp, lineHeight = 17.sp)
+                Text(docView.trim(), color = Theme.MUTED, fontSize = 14.sp, lineHeight = 17.sp)
             }
         }
         CardBox {
-            Text("Licence", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text("Licence", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(4.dp))
-            Text("DeryCode School Report Maker is licensed per school. Support: WhatsApp 0762306675. The software and all school data stay on your computers — nothing is hosted online.", color = Theme.MUTED, fontSize = 12.sp)
+            Text("DeryCode School Report Maker is licensed per school. Support: WhatsApp 0762306675. The software and all school data stay on your computers — nothing is hosted online.", color = Theme.MUTED, fontSize = 14.sp)
         }
     }
 }
