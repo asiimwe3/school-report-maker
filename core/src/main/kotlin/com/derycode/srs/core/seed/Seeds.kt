@@ -60,5 +60,12 @@ object Seeds {
         CommentTemplate("cb-h6", "HEAD", "Report to school with a parent/guardian at opening of next term.")
     )
 
+    /** Every school starts with the full Uganda ladder P1–S6 — admin only adds streams. */
+    val DEFAULT_CLASSES: List<com.derycode.srs.core.model.SchoolClass> = buildList {
+        (1..7).forEach { n -> add(com.derycode.srs.core.model.SchoolClass(id = "cls-p$n", name = "Primary $n", level = Level.PRIMARY)) }
+        (1..4).forEach { n -> add(com.derycode.srs.core.model.SchoolClass(id = "cls-s$n", name = "Senior $n", level = Level.O_LEVEL)) }
+        (5..6).forEach { n -> add(com.derycode.srs.core.model.SchoolClass(id = "cls-s$n", name = "Senior $n", level = Level.A_LEVEL)) }
+    }
+
     val ALL_SUBJECTS: List<Subject> = Level.entries.flatMap(::subjectsFor)
 }

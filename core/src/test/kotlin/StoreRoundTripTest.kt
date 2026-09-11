@@ -37,7 +37,7 @@ class StoreRoundTripTest {
 
         val d2 = SchoolRepository(JsonStore(), file).data
         assertEquals("Test SS", d2.school.name)
-        assertEquals(1, d2.classes.size)
+        assertEquals(Seeds.DEFAULT_CLASSES.size + 1, d2.classes.size)
         assertEquals(1, d2.students.size)
         assertEquals(1, d2.marks.size)
         assertEquals(91.0, d2.marks.first().score)

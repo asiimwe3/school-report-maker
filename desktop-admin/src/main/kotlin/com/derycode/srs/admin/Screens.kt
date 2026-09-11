@@ -69,8 +69,8 @@ fun StudentsScreen(state: AppState) {
                             FilterChip(selected = newStudent.sex == "F", onClick = { newStudent = newStudent.copy(sex = "F") }, label = { Text("F", fontSize = 13.sp) })
                         }
                     }
-                    Column(Modifier.weight(1f)) { FieldLabel("Guardian name"); TextField(newStudent.guardian, { newStudent = newStudent.copy(guardian = it) }, Modifier.fillMaxWidth()) }
-                    Column(Modifier.weight(1f)) { FieldLabel("Guardian phone"); TextField(newStudent.phone, { newStudent = newStudent.copy(phone = it) }, Modifier.fillMaxWidth()) }
+                    Column(Modifier.weight(1f)) { FieldLabel("Parent / Guardian full name"); TextField(newStudent.guardian, { newStudent = newStudent.copy(guardian = it) }, Modifier.fillMaxWidth(), "e.g. Namuli Sarah Grace") }
+                    Column(Modifier.weight(1f)) { FieldLabel("Guardian phone"); TextField(newStudent.phone, { newStudent = newStudent.copy(phone = it) }, Modifier.fillMaxWidth(), "07XXXXXXXX") }
                 }
                 Spacer(Modifier.height(8.dp))
                 Row3 {
@@ -92,8 +92,8 @@ fun StudentsScreen(state: AppState) {
                 Spacer(Modifier.height(12.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                     Btn("Save student") {
-                        if (newStudent.first.isBlank() || newStudent.last.isBlank() || newStudent.classId.isBlank()) {
-                            error = "First name, last name and class are required."
+                        if (newStudent.first.isBlank() || newStudent.last.isBlank() || newStudent.classId.isBlank() || newStudent.guardian.isBlank()) {
+                            error = "First name, last name, class and parent/guardian full name are required."
                         } else {
                             val sid = state.repo.nextId()
                             state.repo.mutate("STUDENT_ADDED", "Student", sid, new = newStudent.first) { dd ->
@@ -170,67 +170,103 @@ data class NewStudentForm(
 @Composable
 fun ClassesScreen(state: AppState) {
     val d = state.data
-    var name by remember { mutableStateOf("") }
-    var stream by remember { mutableStateOf("") }
-    var level by remember { mutableStateOf(Level.O_LEVEL) }
-    var teacherId by remember { mutableStateOf("") }
+    var streamOpenFor by remember { mutableStateOf("") }   // class name+level key currently adding a stream
+    var streamName by remember { mutableStateOf("") }
+    var customName by remember { mutableStateOf("") }
+    var customLevel by remember { mutableStateOf(Level.O_LEVEL) }
+    var showCustom by remember { mutableStateOf(false) }
+    var teacherPickerFor by remember { mutableStateOf("") }  // class id currently picking a teacher for
 
-    ScreenTitle("Classes & Streams", "Level → Class → Stream. A-level classes follow a combination.")
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        CardBox {
-            Text("Add class / stream", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(10.dp))
-            Row3 {
-                Column(Modifier.weight(1f)) { FieldLabel("Class name"); TextField(name, { name = it }, Modifier.fillMaxWidth(), "Senior 1") }
-                Column(Modifier.weight(1f)) { FieldLabel("Stream (optional)"); TextField(stream, { stream = it }, Modifier.fillMaxWidth(), "East") }
-                Column(Modifier.weight(1f)) {
-                    FieldLabel("Level")
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Level.entries.forEach { lvl ->
-                            FilterChip(selected = level == lvl, onClick = { level = lvl }, label = { Text(if (lvl == Level.O_LEVEL) "O-Level" else if (lvl == Level.PRIMARY) "Primary" else "A-Level", fontSize = 12.sp) })
-                        }
-                    }
-                }
-                Column(Modifier.weight(1f)) {
-                    FieldLabel("Class teacher")
-                    if (d.teachers.isEmpty()) { Text("Add teachers first", color = Theme.MUTED, fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp)) }
-                    else Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(top = 4.dp)) {
-                        d.teachers.take(6).forEach { t ->
-                            FilterChip(selected = teacherId == t.id, onClick = { teacherId = t.id }, label = { Text(t.name.take(10), fontSize = 12.sp) })
-                        }
-                    }
-                }
-            }
-            Spacer(Modifier.height(12.dp))
-            Btn("Add class") {
-                if (name.isBlank()) return@Btn
-                val id = state.repo.nextId()
-                val comb = if (level == Level.A_LEVEL) d.combinations.firstOrNull() else null
-                state.repo.mutate("CLASS_ADDED", "SchoolClass", id, new = name) { dd ->
-                    dd.copy(classes = dd.classes + SchoolClass(id = id, name = name, stream = stream, level = level, classTeacherId = teacherId.ifBlank { null }, combinationId = comb?.id))
-                }
-                name = ""; stream = ""; state.refresh()
-            }
-        }
-
-        CardBox {
-            Text("Classes", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(8.dp))
-            Level.entries.forEach { lvl ->
-                val inLevel = d.classes.filter { it.level == lvl && it.active }
-                if (inLevel.isNotEmpty()) {
-                    Text(levelLabel(lvl), color = Theme.MUTED, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 8.dp, bottom = 4.dp))
-                    inLevel.groupBy { it.name }.forEach { (clsName, streams) ->
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text("• $clsName", color = Theme.TEXT, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-                            streams.forEach { s ->
-                                Text(if (s.stream.isBlank()) "(whole class)" else s.stream, color = Theme.ACCENT, fontSize = 14.sp)
+    ScreenTitle("Classes & Streams", "Primary 1 → Senior 6 already set up for every school. Just add streams (East/West, A/B…) where a class is split.")
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Level.entries.forEach { lvl ->
+            val inLevel = d.classes.filter { it.level == lvl && it.active }
+            if (inLevel.isNotEmpty()) {
+                CardBox {
+                    Text(levelLabel(lvl), color = Theme.ACCENT, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(10.dp))
+                    inLevel.groupBy { it.name }.toSortedMap(compareBy { it.filter { c -> c.isDigit() }.toIntOrNull() ?: 0 }).forEach { (clsName, streams) ->
+                        val key = "$clsName|$lvl"
+                        Column(Modifier.padding(bottom = 10.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Text(clsName, color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.width(140.dp))
+                                streams.forEach { s ->
+                                    val ct = s.classTeacherId?.let { id -> d.teachers.firstOrNull { it.id == id } }
+                                    Column {
+                                        Box(Modifier.background(Theme.ACCENT_SOFT, RoundedCornerShape(8.dp)).padding(horizontal = 10.dp, vertical = 5.dp)) {
+                                            Text(if (s.stream.isBlank()) "Whole class" else s.stream, color = Theme.ACCENT, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                                        }
+                                        Text(if (ct != null) "Teacher: ${ct.name}" else "No class teacher",
+                                            color = if (ct != null) Theme.GOOD else Theme.MUTED, fontSize = 11.sp,
+                                            modifier = Modifier.clickable { teacherPickerFor = if (teacherPickerFor == s.id) "" else s.id }.padding(top = 2.dp))
+                                        if (teacherPickerFor == s.id) {
+                                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(top = 4.dp)) {
+                                                d.teachers.take(8).forEach { t ->
+                                                    FilterChip(selected = s.classTeacherId == t.id, onClick = {
+                                                        state.repo.mutate("CLASS_TEACHER_SET", "SchoolClass", s.id, new = t.name) { dd ->
+                                                            dd.copy(classes = dd.classes.map { c -> if (c.id == s.id) c.copy(classTeacherId = t.id) else c })
+                                                        }
+                                                        teacherPickerFor = ""; state.refresh()
+                                                    }, label = { Text(t.name.take(12), fontSize = 10.sp) })
+                                                }
+                                                if (d.teachers.isEmpty()) Text("Add teachers first", color = Theme.MUTED, fontSize = 11.sp)
+                                            }
+                                        }
+                                    }
+                                }
+                                Btn(if (streamOpenFor == key) "Cancel" else "+ Add stream", primary = false) {
+                                    streamOpenFor = if (streamOpenFor == key) "" else key; streamName = ""
+                                }
+                            }
+                            if (streamOpenFor == key) {
+                                Spacer(Modifier.height(8.dp))
+                                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    TextField(streamName, { streamName = it }, Modifier.width(180.dp), "e.g. East, A, Blue")
+                                    Btn("Save stream") {
+                                        if (streamName.isNotBlank()) {
+                                            val id = state.repo.nextId()
+                                            state.repo.mutate("CLASS_STREAM_ADDED", "SchoolClass", id, new = "$clsName $streamName") { dd ->
+                                                dd.copy(classes = dd.classes + SchoolClass(id = id, name = clsName, stream = streamName, level = lvl))
+                                            }
+                                            streamName = ""; streamOpenFor = ""; state.refresh()
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
-            if (d.classes.isEmpty()) Text("No classes yet.", color = Theme.MUTED, fontSize = 14.sp)
+        }
+
+        CardBox {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("Need a class outside P1–S6?", color = Theme.TEXT, fontSize = 15.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                Btn(if (showCustom) "Cancel" else "+ Add custom class", primary = false) { showCustom = !showCustom }
+            }
+            if (showCustom) {
+                Spacer(Modifier.height(10.dp))
+                Row3 {
+                    Column(Modifier.weight(1f)) { FieldLabel("Class name"); TextField(customName, { customName = it }, Modifier.fillMaxWidth(), "e.g. Nursery, Baby Class") }
+                    Column(Modifier.weight(1f)) {
+                        FieldLabel("Level")
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Level.entries.forEach { lvl ->
+                                FilterChip(selected = customLevel == lvl, onClick = { customLevel = lvl }, label = { Text(if (lvl == Level.O_LEVEL) "O-Level" else if (lvl == Level.PRIMARY) "Primary" else "A-Level", fontSize = 12.sp) })
+                            }
+                        }
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
+                Btn("Add class") {
+                    if (customName.isBlank()) return@Btn
+                    val id = state.repo.nextId()
+                    state.repo.mutate("CLASS_ADDED", "SchoolClass", id, new = customName) { dd ->
+                        dd.copy(classes = dd.classes + SchoolClass(id = id, name = customName, level = customLevel))
+                    }
+                    customName = ""; showCustom = false; state.refresh()
+                }
+            }
         }
 
         CombinationsCard(state)
@@ -385,6 +421,33 @@ fun TeachersScreen(state: AppState) {
 
     ScreenTitle("Teachers", "Teachers, roles and subject/class assignments")
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        CardBox {
+            Text("Staff roster", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(4.dp))
+            Text("Every teacher, at a glance: role, classes taught, subjects taught.", color = Theme.MUTED, fontSize = 13.sp)
+            Spacer(Modifier.height(10.dp))
+            if (d.teachers.isEmpty()) Text("No teachers yet — add one below.", color = Theme.MUTED, fontSize = 14.sp)
+            d.teachers.forEach { t ->
+                val classesTaught = (d.classes.filter { it.classTeacherId == t.id } +
+                    d.assignments.filter { it.teacherId == t.id }.mapNotNull { a -> d.classes.firstOrNull { it.id == a.classId } }).distinctBy { it.id }
+                val subjectsTaught = d.assignments.filter { it.teacherId == t.id }
+                    .mapNotNull { a -> a.subjectId?.let { sid -> d.subjects.firstOrNull { it.id == sid } } }.distinctBy { it.id }
+                Column(Modifier.fillMaxWidth().background(Theme.ACCENT_SOFT.copy(alpha = 0.4f), RoundedCornerShape(12.dp)).padding(14.dp).padding(bottom = 4.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(t.name, color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                        Box(Modifier.background(Theme.ACCENT, RoundedCornerShape(6.dp)).padding(horizontal = 8.dp, vertical = 3.dp)) {
+                            Text(roleLabel(t.role), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    Text("Classes: " + if (classesTaught.isEmpty()) "none assigned yet" else classesTaught.joinToString(", ") { if (it.stream.isBlank()) it.name else "${it.name} ${it.stream}" },
+                        color = Theme.TEXT, fontSize = 13.sp)
+                    Text("Subjects: " + if (subjectsTaught.isEmpty()) "none assigned yet" else subjectsTaught.joinToString(", ") { it.name },
+                        color = Theme.MUTED, fontSize = 13.sp)
+                    Spacer(Modifier.height(10.dp))
+                }
+            }
+        }
         CardBox {
             Text("Add teacher", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))

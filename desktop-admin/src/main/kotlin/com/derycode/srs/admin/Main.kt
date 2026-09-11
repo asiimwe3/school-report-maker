@@ -1,6 +1,7 @@
 package com.derycode.srs.admin
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -322,7 +323,40 @@ fun SetupScreen(state: AppState) {
                 Spacer(Modifier.height(10.dp))
                 Row3 {
                     Column(Modifier.weight(1f)) { FieldLabel("Primary color"); TextField(school.colorPrimary, { school = school.copy(colorPrimary = it) }, Modifier.fillMaxWidth(), "#1F6FEB") }
-                    Column(Modifier.weight(1f)) { FieldLabel("Logo path (optional)"); TextField(school.logoPath ?: "", { school = school.copy(logoPath = it.ifBlank { null }) }, Modifier.fillMaxWidth(), "C:/logo.png") }
+                    Column(Modifier.weight(1f)) {
+                        FieldLabel("School logo")
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 6.dp)) {
+                            val logoBytes = remember(school.logoPath) {
+                                school.logoPath?.let { p -> try { java.nio.file.Files.readAllBytes(java.nio.file.Path.of(p)) } catch (_: Exception) { null } }
+                            }
+                            Box(Modifier.size(52.dp).background(Color(0xFF1B2A4A), RoundedCornerShape(8.dp)).border(1.dp, Color(0xFF2C3B5E), RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
+                                if (logoBytes != null) {
+                                    Image(BitmapPainter(Image.makeFromEncoded(logoBytes).toComposeImageBitmap()), contentDescription = "School logo", modifier = Modifier.size(48.dp))
+                                } else Text("No\nlogo", color = Theme.MUTED, fontSize = 10.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                            }
+                            Column {
+                                Btn("Upload logo file", primary = false) {
+                                    val dialog = java.awt.FileDialog(null as java.awt.Frame?, "Select school logo", java.awt.FileDialog.LOAD)
+                                    dialog.setFilenameFilter { _, name -> name.lowercase().let { it.endsWith(".png") || it.endsWith(".jpg") || it.endsWith(".jpeg") } }
+                                    dialog.isVisible = true
+                                    val chosen = dialog.file
+                                    val dir = dialog.directory
+                                    if (chosen != null && dir != null) {
+                                        try {
+                                            val src = java.nio.file.Path.of(dir, chosen)
+                                            val assetsDir = dataDir.resolve("assets")
+                                            java.nio.file.Files.createDirectories(assetsDir)
+                                            val ext = chosen.substringAfterLast('.', "png")
+                                            val dest = assetsDir.resolve("logo.$ext")
+                                            java.nio.file.Files.copy(src, dest, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+                                            school = school.copy(logoPath = dest.toAbsolutePath().toString())
+                                        } catch (_: Exception) { }
+                                    }
+                                }
+                                if (school.logoPath != null) Text("Logo saved \u2713 — save profile to apply", color = Theme.GOOD, fontSize = 11.sp, modifier = Modifier.padding(top = 4.dp))
+                            }
+                        }
+                    }
                 }
                 Spacer(Modifier.height(14.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {

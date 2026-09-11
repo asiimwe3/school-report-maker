@@ -5,6 +5,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -125,50 +126,74 @@ private fun TemplateCard(state: AppState, t: ReportTemplate) {
 /** Miniature visual mock of a report card per layout. */
 @Composable
 private fun TemplatePreview(layout: TemplateLayout) {
-    val bg = Color(0xFF0E1526)
+    val paper = Color(0xFFFCFCFD)
+    val ink = Color(0xFF1C2333)
+    val faint = Color(0xFFB8BEC9)
+    val accent = Theme.ACCENT
     Column(
-        Modifier.fillMaxWidth().height(150.dp).background(bg, RoundedCornerShape(8.dp))
-            .border(1.dp, Color(0xFF223054), RoundedCornerShape(8.dp)).padding(8.dp)
+        Modifier.fillMaxWidth().height(190.dp)
+            .background(paper, RoundedCornerShape(6.dp))
+            .border(1.dp, Color(0xFFE2E5EA), RoundedCornerShape(6.dp))
+            .padding(12.dp)
     ) {
         when (layout) {
             TemplateLayout.CLASSIC -> {
-                Box(Modifier.fillMaxWidth().height(16.dp).background(Color(0xFF1F4E79), RoundedCornerShape(3.dp)))
+                Text("ST. MARY'S COLLEGE", color = ink, fontSize = 11.sp, fontWeight = FontWeight.Bold, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                Text("TERMLY REPORT CARD", color = accent, fontSize = 8.sp, fontWeight = FontWeight.Bold, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.fillMaxWidth())
                 Spacer(Modifier.height(6.dp))
-                Box(Modifier.fillMaxWidth(0.5f).height(7.dp).background(Color(0xFF3A4763), RoundedCornerShape(2.dp)))
+                Box(Modifier.fillMaxWidth().height(1.dp).background(accent))
                 Spacer(Modifier.height(6.dp))
-                repeat(5) {
-                    Box(Modifier.fillMaxWidth().height(8.dp).border(1.dp, Color(0xFF2C3B5E), RoundedCornerShape(2.dp)))
-                    Spacer(Modifier.height(4.dp))
+                repeat(4) { i ->
+                    Row(Modifier.fillMaxWidth().padding(vertical = 1.dp)) {
+                        Box(Modifier.weight(2f).height(7.dp).background(if (i == 0) accent.copy(alpha = 0.15f) else Color.Transparent))
+                        Spacer(Modifier.width(4.dp))
+                        Box(Modifier.weight(1f).height(7.dp).background(faint.copy(alpha = 0.5f), RoundedCornerShape(2.dp)))
+                        Spacer(Modifier.width(4.dp))
+                        Box(Modifier.weight(1f).height(7.dp).background(faint.copy(alpha = 0.5f), RoundedCornerShape(2.dp)))
+                    }
                 }
+                Spacer(Modifier.height(6.dp))
+                Box(Modifier.fillMaxWidth().height(14.dp).background(accent.copy(alpha = 0.1f), RoundedCornerShape(3.dp)))
             }
             TemplateLayout.MODERN -> {
-                Box(Modifier.fillMaxWidth().height(26.dp).background(Color(0xFF4F8CFF), RoundedCornerShape(6.dp)))
-                Spacer(Modifier.height(6.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    repeat(3) { Box(Modifier.weight(1f).height(16.dp).background(Color(0xFF1B2A4A), RoundedCornerShape(3.dp))) }
+                Box(Modifier.fillMaxWidth().height(30.dp).background(accent, RoundedCornerShape(6.dp)), contentAlignment = Alignment.Center) {
+                    Text("SCHOOL REPORT", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
-                Spacer(Modifier.height(6.dp))
-                repeat(4) {
-                    Box(Modifier.fillMaxWidth(0.8f).height(6.dp).background(Color(0xFF3A4763), RoundedCornerShape(2.dp)))
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                    repeat(3) { i ->
+                        Column(Modifier.weight(1f).height(24.dp).background(if (i == 1) accent.copy(alpha = 0.15f) else Color(0xFFF1F3F6), RoundedCornerShape(4.dp)), verticalArrangement = Arrangement.Center) {
+                            Text(if (i == 0) "AVG" else if (i == 1) "RANK" else "GRADE", color = ink, fontSize = 7.sp, fontWeight = FontWeight.Bold, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                        }
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                repeat(3) {
+                    Box(Modifier.fillMaxWidth().height(6.dp).background(Color(0xFFECEEF2), RoundedCornerShape(3.dp)))
                     Spacer(Modifier.height(5.dp))
                 }
             }
             TemplateLayout.COMPACT -> {
-                Box(Modifier.fillMaxWidth().height(10.dp).background(Color(0xFF2C3B5E), RoundedCornerShape(2.dp)))
+                Box(Modifier.fillMaxWidth().height(12.dp).background(ink, RoundedCornerShape(2.dp)), contentAlignment = Alignment.Center) {
+                    Text("COMPACT REPORT", color = Color.White, fontSize = 7.sp, fontWeight = FontWeight.Bold)
+                }
                 Spacer(Modifier.height(5.dp))
-                repeat(9) {
-                    Box(Modifier.fillMaxWidth().height(5.dp).background(Color(0xFF243355), RoundedCornerShape(2.dp)))
-                    Spacer(Modifier.height(3.dp))
+                repeat(8) { i ->
+                    Row(Modifier.fillMaxWidth().padding(vertical = 0.5.dp)) {
+                        Box(Modifier.weight(1.5f).height(5.dp).background(if (i % 2 == 0) Color(0xFFF1F3F6) else Color.Transparent))
+                        Box(Modifier.weight(1f).height(5.dp).background(accent.copy(alpha = 0.35f), RoundedCornerShape(2.dp)))
+                    }
+                    Spacer(Modifier.height(2.dp))
                 }
             }
             TemplateLayout.PLAIN -> {
-                Box(Modifier.fillMaxWidth(0.6f).height(9.dp).background(Color(0xFF4E5D7E), RoundedCornerShape(2.dp)))
+                Text("Report of Academic Performance", color = ink, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(8.dp))
                 repeat(5) {
-                    Box(Modifier.fillMaxWidth(0.9f).height(6.dp).background(Color(0xFF3A4763), RoundedCornerShape(2.dp)))
-                    Spacer(Modifier.height(6.dp))
+                    Box(Modifier.fillMaxWidth(0.92f).height(6.dp).background(Color(0xFFE7E9ED), RoundedCornerShape(1.dp)))
+                    Spacer(Modifier.height(7.dp))
                 }
-                Box(Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF2C3B5E)))
+                Box(Modifier.fillMaxWidth().height(1.dp).background(Color(0xFFD7DAE0)))
             }
         }
     }
@@ -594,44 +619,129 @@ fun NotificationsScreen(state: AppState) {
 // 20. School Calendar (Section 44.20)
 // ─────────────────────────────────────────────────────────────────────────────
 
+private fun eventColor(t: CalendarEventType): Color = when (t) {
+    CalendarEventType.TERM_START, CalendarEventType.TERM_END -> Theme.GOOD
+    CalendarEventType.EXAM -> Color(0xFFEF4444)
+    CalendarEventType.HOLIDAY -> Color(0xFFF59E0B)
+    CalendarEventType.MEETING -> Theme.ACCENT
+    else -> Theme.MUTED
+}
+
 @Composable
 fun CalendarScreen(state: AppState) {
     val d = state.data
     var title by remember { mutableStateOf("") }
     var date by remember { mutableStateOf("") }
     var type by remember { mutableStateOf(CalendarEventType.OTHER) }
+    var shownMonth by remember { mutableStateOf(java.time.YearMonth.now()) }
+    var showAdd by remember { mutableStateOf(false) }
 
-    ScreenTitle("School Calendar", "Term dates, exams, holidays, meetings and deadlines.")
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    ScreenTitle("School Calendar", "Term dates, exams, holidays and meetings — click a day to add an event.")
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         CardBox {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                TextField(title, { title = it }, Modifier.width(220.dp), "e.g. Beginning of Term 1")
-                TextField(date, { date = it }, Modifier.width(130.dp), "2026-09-14")
-                CalendarEventType.entries.take(6).forEach { t ->
-                    FilterChip(selected = type == t, onClick = { type = t },
-                        label = { Text(t.name.lowercase().replace('_', ' ').replaceFirstChar { it.uppercase() }, fontSize = 9.sp) })
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                Btn("‹", primary = false) { shownMonth = shownMonth.minusMonths(1) }
+                Text(shownMonth.month.name.lowercase().replaceFirstChar { it.uppercase() } + " ${shownMonth.year}",
+                    color = Theme.TEXT, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                Btn("Today", primary = false) { shownMonth = java.time.YearMonth.now() }
+                Btn("›", primary = false) { shownMonth = shownMonth.plusMonths(1) }
+            }
+            Spacer(Modifier.height(14.dp))
+            Row(Modifier.fillMaxWidth()) {
+                listOf("Mon","Tue","Wed","Thu","Fri","Sat","Sun").forEach { w ->
+                    Text(w, color = Theme.MUTED, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                 }
-                Btn("Add event") {
+            }
+            Spacer(Modifier.height(6.dp))
+            val firstOfMonth = shownMonth.atDay(1)
+            val leadBlanks = (firstOfMonth.dayOfWeek.value - 1).coerceAtLeast(0) // Monday=1
+            val daysInMonth = shownMonth.lengthOfMonth()
+            val totalCells = leadBlanks + daysInMonth
+            val rows = (totalCells + 6) / 7
+            val todayStr = java.time.LocalDate.now().toString()
+            for (row in 0 until rows) {
+                Row(Modifier.fillMaxWidth()) {
+                    for (col in 0 until 7) {
+                        val cellIndex = row * 7 + col
+                        val dayNum = cellIndex - leadBlanks + 1
+                        Box(Modifier.weight(1f).height(64.dp).padding(2.dp)) {
+                            if (dayNum in 1..daysInMonth) {
+                                val cellDate = shownMonth.atDay(dayNum).toString()
+                                val dayEvents = d.calendarEvents.filter { it.date == cellDate }
+                                val isToday = cellDate == todayStr
+                                Column(
+                                    Modifier.fillMaxSize()
+                                        .background(if (isToday) Theme.ACCENT.copy(alpha = 0.18f) else Theme.ACCENT_SOFT.copy(alpha = 0.25f), RoundedCornerShape(8.dp))
+                                        .border(1.dp, if (isToday) Theme.ACCENT else Color(0xFF1E2A47), RoundedCornerShape(8.dp))
+                                        .clickable { date = cellDate; showAdd = true }
+                                        .padding(6.dp)
+                                ) {
+                                    Text(dayNum.toString(), color = if (isToday) Theme.ACCENT else Theme.TEXT, fontSize = 13.sp, fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal)
+                                    Spacer(Modifier.height(2.dp))
+                                    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                                        dayEvents.take(4).forEach { e ->
+                                            Box(Modifier.size(6.dp).background(eventColor(e.type), RoundedCornerShape(3.dp)))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                listOf(CalendarEventType.TERM_START to "Term dates", CalendarEventType.EXAM to "Exam", CalendarEventType.HOLIDAY to "Holiday", CalendarEventType.MEETING to "Meeting").forEach { (ty, label) ->
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Box(Modifier.size(8.dp).background(eventColor(ty), RoundedCornerShape(4.dp)))
+                        Text(label, color = Theme.MUTED, fontSize = 11.sp)
+                    }
+                }
+            }
+        }
+
+        CardBox {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(if (date.isBlank()) "Add an event" else "Add event on $date", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                Btn(if (showAdd) "Close" else "+ Add event", primary = false) { showAdd = !showAdd; if (showAdd && date.isBlank()) date = java.time.LocalDate.now().toString() }
+            }
+            if (showAdd) {
+                Spacer(Modifier.height(10.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    TextField(title, { title = it }, Modifier.width(220.dp), "e.g. Beginning of Term 1")
+                    TextField(date, { date = it }, Modifier.width(130.dp), "2026-09-14")
+                }
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    CalendarEventType.entries.forEach { t ->
+                        FilterChip(selected = type == t, onClick = { type = t },
+                            label = { Text(t.name.lowercase().replace('_', ' ').replaceFirstChar { it.uppercase() }, fontSize = 11.sp) })
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
+                Btn("Save event") {
                     if (title.isNotBlank() && date.matches(Regex("\\d{4}-\\d{2}-\\d{2}"))) {
                         val id = state.repo.nextId()
                         state.repo.mutate("CALENDAR_EVENT_ADDED", "CalendarEvent", id, new = "$title ($date)") { dd ->
                             dd.copy(calendarEvents = dd.calendarEvents + CalendarEvent(id = id, title = title, date = date, type = type))
                         }
-                        title = ""; date = ""
+                        title = ""; showAdd = false
                         state.refresh()
                     }
                 }
             }
         }
+
         CardBox {
-            Text("Events (${d.calendarEvents.size})", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Text("Upcoming events (${d.calendarEvents.size})", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
-            LazyColumn(Modifier.height(360.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            LazyColumn(Modifier.height(300.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 items(d.calendarEvents.sortedBy { it.date }) { e ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(vertical = 3.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(vertical = 3.dp)) {
+                        Box(Modifier.size(8.dp).background(eventColor(e.type), RoundedCornerShape(4.dp)))
                         Text(e.date, color = Theme.ACCENT, fontSize = 14.sp, modifier = Modifier.width(110.dp))
-                        Text(e.title, color = Theme.TEXT, fontSize = 14.sp, modifier = Modifier.width(280.dp))
-                        Text(e.type.name.lowercase().replace('_', ' ').replaceFirstChar { it.uppercase() }, color = Theme.MUTED, fontSize = 14.sp)
+                        Text(e.title, color = Theme.TEXT, fontSize = 14.sp, modifier = Modifier.weight(1f))
+                        Text(e.type.name.lowercase().replace('_', ' ').replaceFirstChar { it.uppercase() }, color = Theme.MUTED, fontSize = 13.sp)
                         Btn("Delete", primary = false, onClick = {
                             state.repo.mutate("CALENDAR_EVENT_DELETED", "CalendarEvent", e.id, old = e.title) { dd ->
                                 dd.copy(calendarEvents = dd.calendarEvents.filter { it.id != e.id })
@@ -640,7 +750,7 @@ fun CalendarScreen(state: AppState) {
                         })
                     }
                 }
-                if (d.calendarEvents.isEmpty()) item { Text("No calendar events yet.", color = Theme.MUTED, fontSize = 14.sp) }
+                if (d.calendarEvents.isEmpty()) item { Text("No calendar events yet — click a day above to add one.", color = Theme.MUTED, fontSize = 14.sp) }
             }
         }
     }

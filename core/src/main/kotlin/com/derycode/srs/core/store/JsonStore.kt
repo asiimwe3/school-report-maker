@@ -291,6 +291,7 @@ class SchoolRepository(
             data = data.copy(
                 subjects = defaultSubjects,
                 components = defaultComponents,
+                classes = com.derycode.srs.core.seed.Seeds.DEFAULT_CLASSES,
                 gradingSchemes = com.derycode.srs.core.grading.GradingSchemes.ALL,
                 templates = listOf(
                     com.derycode.srs.core.model.ReportTemplate(id = "tpl-classic", name = "Classic", layout = com.derycode.srs.core.model.TemplateLayout.CLASSIC, isDefault = true),

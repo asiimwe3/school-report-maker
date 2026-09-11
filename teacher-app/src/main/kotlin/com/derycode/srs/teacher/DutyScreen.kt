@@ -197,7 +197,7 @@ fun RegisterScreen(state: TeacherState) {
                 }
                 Spacer(Modifier.height(8.dp))
                 OutlinedTextField(value = guardian, onValueChange = { guardian = it },
-                    placeholder = { Text("Guardian name\u2026", color = MUTED) }, modifier = Modifier.fillMaxWidth())
+                    placeholder = { Text("Parent / Guardian full name\u2026", color = MUTED) }, modifier = Modifier.fillMaxWidth())
                 Spacer(Modifier.height(6.dp))
                 OutlinedTextField(value = phone, onValueChange = { phone = it },
                     placeholder = { Text("Guardian phone\u2026", color = MUTED) }, modifier = Modifier.fillMaxWidth())
