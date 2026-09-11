@@ -1,7 +1,7 @@
 {
-  "versionCode": 8,
-  "versionName": "2.0.0",
-  "apkUrl": "https://github.com/asiimwe3/school-report-maker/releases/download/v2.0.0/srs-teacher-1.6.0.apk",
-  "msiUrl": "https://github.com/asiimwe3/school-report-maker/releases/download/v2.0.0/SchoolReportMaker-2.0.0.msi",
-  "releaseNotes": "Logo upload, full default class ladder P1-S6, teacher roster view, real month-grid calendar, and premium report template previews."
+  "versionCode": 9,
+  "versionName": "2.1.0",
+  "apkUrl": "https://github.com/asiimwe3/school-report-maker/releases/download/v2.1.0/srs-teacher-1.7.0.apk",
+  "msiUrl": "https://github.com/asiimwe3/school-report-maker/releases/download/v2.1.0/SchoolReportMaker-2.1.0.msi",
+  "releaseNotes": "Secure licence keys with real student limits, PIN lock for the console, and teacher phones now respect head-teacher marks locking."
 }

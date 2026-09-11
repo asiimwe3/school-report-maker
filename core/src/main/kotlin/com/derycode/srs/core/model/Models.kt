@@ -430,7 +430,9 @@ data class AppSettings(
     val autoBackupFrequencyDays: Int = 7,
     val backupsToKeep: Int = 10,
     val licencePlan: String = "Trial",
-    val licenceRef: String = ""
+    val licenceRef: String = "",
+    val licenceExpiry: String = "",
+    val adminPinHash: String = ""
 )
 
 // ── School fees (structure per class/term + payments per student) ──

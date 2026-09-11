@@ -37,6 +37,10 @@ fun EnterMarksScreen(state: TeacherState, classId: String, initialSubjectId: Str
     var maxMarks by remember { mutableStateOf((subjects.firstOrNull { it.id == subjectId }?.maxMarks ?: 100).toString()) }
     var showGrid by remember { mutableStateOf(false) }
     val edits = remember { mutableStateMapOf<String, String>() }
+    val sheetState = d.markSheets.firstOrNull { it.classId == classId && it.subjectId == subjectId && it.termId == termId }?.state
+        ?: com.derycode.srs.core.model.MarkSheetState.DRAFT
+    val locked = sheetState == com.derycode.srs.core.model.MarkSheetState.APPROVED ||
+            sheetState == com.derycode.srs.core.model.MarkSheetState.LOCKED
     var msg by remember { mutableStateOf("") }
     val students = state.studentsIn(classId)
 
@@ -52,6 +56,16 @@ fun EnterMarksScreen(state: TeacherState, classId: String, initialSubjectId: Str
                         Text((subjects.firstOrNull { it.id == subjectId }?.name ?: "Subject") + " \u2013 " + (cls?.let { classShort(it) } ?: ""),
                             color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                         Text("${components.firstOrNull { it.id == componentId }?.name ?: ""} \u00B7 ${students.size} students", color = MUTED, fontSize = 13.sp)
+                    }
+                }
+            }
+            if (locked) CardBox {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Filled.Lock, contentDescription = null, tint = ORANGE, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Column {
+                        Text("Locked by the head teacher", color = ORANGE, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                        Text("These marks were approved — read-only. Ask the head teacher to unlock before changes.", color = MUTED, fontSize = 12.sp)
                     }
                 }
             }
@@ -121,11 +135,12 @@ fun EnterMarksScreen(state: TeacherState, classId: String, initialSubjectId: Str
                                 Cell(s.fullName, bold = true)
                                 Cell(s.admissionNo, MUTED)
                             }
-                            DarkTextFieldSmall(field, { edits[key] = it })
+                            DarkTextFieldSmall(field, { edits[key] = it }, enabled = !locked)
                         }
                     }
                     Spacer(Modifier.height(10.dp))
                     Button(
+                        enabled = !locked,
                         onClick = {
                             var saved = 0
                             edits.forEach { (key, text) ->
@@ -180,10 +195,11 @@ internal fun DarkTextField(value: String, onChange: (String) -> Unit) {
 }
 
 @Composable
-private fun DarkTextFieldSmall(value: String, onChange: (String) -> Unit) {
+private fun DarkTextFieldSmall(value: String, onChange: (String) -> Unit, enabled: Boolean = true) {
     androidx.compose.foundation.text.BasicTextField(
-        value = value, onValueChange = onChange, singleLine = true,
-        textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 15.sp),
+        value = value, onValueChange = onChange, singleLine = true, enabled = enabled,
+        readOnly = !enabled,
+        textStyle = androidx.compose.ui.text.TextStyle(color = if (enabled) Color.White else MUTED, fontSize = 15.sp),
         cursorBrush = androidx.compose.ui.graphics.SolidColor(BLUE),
         modifier = Modifier.width(72.dp).clip(RoundedCornerShape(8.dp)).background(CARD_ALT).padding(horizontal = 8.dp, vertical = 9.dp)
     )

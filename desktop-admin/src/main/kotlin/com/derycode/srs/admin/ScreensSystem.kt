@@ -293,9 +293,46 @@ fun SettingsScreen(state: AppState) {
 
     var confirmTxt by remember { mutableStateOf("") }
     var wiped by remember { mutableStateOf(false) }
+    var pin by remember { mutableStateOf("") }
+    var pinMsg by remember { mutableStateOf("") }
 
     ScreenTitle("Settings", "App-wide preferences — stored in the same offline database.")
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // ── Security: PIN lock (Section 12) ──
+        CardBox {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("App lock (PIN)", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.weight(1f))
+                Text(if (s.adminPinHash.isNotBlank()) "PIN is ON ✓" else "No PIN set", color = if (s.adminPinHash.isNotBlank()) Theme.GOOD else Theme.MUTED, fontSize = 12.sp)
+            }
+            Spacer(Modifier.height(4.dp))
+            Text("With a PIN, the console asks for it every time it starts — protects student data if the office computer is used by others.", color = Theme.MUTED, fontSize = 13.sp)
+            Spacer(Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                TextField(pin, { pin = it.filter { c -> c.isDigit() }.take(6) }, Modifier.width(180.dp), "New PIN (4–6 digits)")
+                Btn("Set PIN") {
+                    when {
+                        pin.length < 4 -> pinMsg = "PIN must be 4–6 digits."
+                        else -> {
+                            state.repo.mutate("PIN_SET", "AppSettings", "adminPin", new = "***") { dd ->
+                                dd.copy(settings = dd.settings.copy(adminPinHash = com.derycode.srs.core.support.LicenseKeys.hash("pin|$pin")))
+                            }
+                            pinMsg = "PIN set ✓ — it will be asked at next start."
+                            pin = ""
+                            state.refresh()
+                        }
+                    }
+                }
+                if (s.adminPinHash.isNotBlank()) Btn("Remove PIN", primary = false) {
+                    state.repo.mutate("PIN_REMOVED", "AppSettings", "adminPin") { dd ->
+                        dd.copy(settings = dd.settings.copy(adminPinHash = ""))
+                    }
+                    pinMsg = "PIN removed."
+                    state.refresh()
+                }
+            }
+            if (pinMsg.isNotBlank()) Text(pinMsg, color = if (pinMsg.contains("✓")) Theme.GOOD else Theme.WARN, fontSize = 13.sp)
+        }
         // ── Danger zone: factory reset ──
         CardBox {
             Text("Danger zone — Reset all data", color = Color(0xFFFF6B6B), fontSize = 16.sp, fontWeight = FontWeight.Bold)

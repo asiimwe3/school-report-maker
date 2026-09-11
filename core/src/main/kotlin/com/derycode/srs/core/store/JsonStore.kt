@@ -162,7 +162,7 @@ class JsonStore(
 
     fun exportSchoolConfig(path: Path, data: SchoolData) {
         val config = data.copy(
-            marks = emptyList(), markSheets = emptyList(), termResults = emptyList(),
+            marks = emptyList(), termResults = emptyList(),
             comments = emptyList(), reports = emptyList(), auditLog = emptyList(),
             syncQueue = emptyList(), conflicts = emptyList(), feePayments = emptyList(),
             attendance = emptyList(), gatePasses = emptyList(), dutyRecords = emptyList()
@@ -181,7 +181,7 @@ class JsonStore(
     fun loadSchoolConfigFresh(path: Path): SchoolData {
         val imported = cfgJson.decodeFromString<SchoolData>(Files.readString(path))
         return imported.copy(
-            marks = emptyList(), comments = emptyList(), markSheets = emptyList(),
+            marks = emptyList(), comments = emptyList(),
             auditLog = emptyList(), syncQueue = emptyList(), conflicts = emptyList()
         )
     }
@@ -190,7 +190,8 @@ class JsonStore(
     fun loadSchoolConfig(path: Path, keep: SchoolData): SchoolData {
         val imported = cfgJson.decodeFromString<SchoolData>(Files.readString(path))
         return imported.copy(
-            marks = keep.marks, comments = keep.comments, markSheets = keep.markSheets,
+            marks = keep.marks, comments = keep.comments,
+            // lock states come from the office — the head teacher's decisions are authoritative
             auditLog = keep.auditLog, syncQueue = keep.syncQueue, conflicts = keep.conflicts,
             reports = keep.reports, settings = keep.settings
         )

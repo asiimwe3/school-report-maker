@@ -30,6 +30,8 @@ fun StudentsScreen(state: AppState) {
     var adding by remember { mutableStateOf(false) }
     var newStudent by remember { mutableStateOf(NewStudentForm()) }
     var error by remember { mutableStateOf("") }
+    val planLimit = com.derycode.srs.core.support.LicenseKeys.limitFor(d.settings.licencePlan)
+    val activeCount = d.students.count { it.status == StudentStatus.ACTIVE }
 
     val year = d.academicYears.firstOrNull()
     val enrollmentByClass: Map<String, List<Enrollment>> =
@@ -40,7 +42,7 @@ fun StudentsScreen(state: AppState) {
         (classFilter.isBlank() || enrollmentByClass[classFilter]?.any { it.studentId == s.id } == true)
     }
 
-    ScreenTitle("Students", "${d.students.count { it.status == StudentStatus.ACTIVE }} active · archived students are kept forever")
+    ScreenTitle("Students", "$activeCount active · plan limit $planLimit · archived students are kept forever")
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
             TextField(search, { search = it }, Modifier.width(220.dp), "Search name / adm no…")
@@ -49,7 +51,11 @@ fun StudentsScreen(state: AppState) {
                     label = { Text(lvl.name, fontSize = 13.sp) })
             }
             Spacer(Modifier.weight(1f))
-            Btn(if (adding) "Cancel" else "+ Add student") { adding = !adding; error = "" }
+            Btn(if (adding) "Cancel" else "+ Add student") {
+                if (!adding && activeCount >= planLimit) {
+                    error = "Plan limit reached — $planLimit students on ${d.settings.licencePlan}. Upgrade in Plans & Pricing."
+                } else { adding = !adding; error = "" }
+            }
         }
 
         if (adding) {
@@ -92,7 +98,9 @@ fun StudentsScreen(state: AppState) {
                 Spacer(Modifier.height(12.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                     Btn("Save student") {
-                        if (newStudent.first.isBlank() || newStudent.last.isBlank() || newStudent.classId.isBlank() || newStudent.guardian.isBlank()) {
+                        if (activeCount >= planLimit) {
+                            error = "Plan limit reached — $planLimit students on ${d.settings.licencePlan}. Upgrade in Plans & Pricing."
+                        } else if (newStudent.first.isBlank() || newStudent.last.isBlank() || newStudent.classId.isBlank() || newStudent.guardian.isBlank()) {
                             error = "First name, last name, class and parent/guardian full name are required."
                         } else {
                             val sid = state.repo.nextId()

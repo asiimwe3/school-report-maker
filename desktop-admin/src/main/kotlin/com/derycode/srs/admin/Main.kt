@@ -80,6 +80,7 @@ internal val dataFile: Path = dataDir.resolve("school-data.json")
 // ─────────────────────────────────────────────────────────────────────────────
 
 class AppState(val repo: SchoolRepository) {
+    var unlocked by mutableStateOf(false)
     var screen by mutableStateOf("dashboard")
     var refreshTick by mutableStateOf(0)
     var updateAvailable by mutableStateOf<com.derycode.srs.core.support.UpdateInfo?>(null)
@@ -123,6 +124,11 @@ fun main() = application {
 
 @Composable
 fun App(state: AppState) {
+    // ── Security gate (Section 12): PIN lock on startup ──
+    if (state.data.settings.adminPinHash.isNotBlank() && !state.unlocked) {
+        PinLockScreen(state)
+        return
+    }
     val navGroups = listOf(
         "OVERVIEW" to listOf("dashboard" to "Dashboard"),
         "SCHOOL" to listOf("setup" to "School Setup", "students" to "Students",
@@ -504,6 +510,56 @@ fun DashboardScreen(state: AppState) {
                 val t = java.text.SimpleDateFormat("d MMM HH:mm").format(java.util.Date(a.timestamp))
                 Text("$t  ·  ${a.action}  ${a.newValue.take(40)}", color = Theme.MUTED, fontSize = 13.sp, modifier = Modifier.padding(vertical = 2.dp))
             }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Security gate (Section 12) — PIN lock shown at startup
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+fun PinLockScreen(state: AppState) {
+    var pin by remember { mutableStateOf("") }
+    var err by remember { mutableStateOf(false) }
+    val school = state.data.school.name.ifBlank { "School Report Maker" }
+
+    Box(Modifier.fillMaxSize().background(Theme.NAVY), contentAlignment = Alignment.Center) {
+        Column(
+            Modifier.width(360.dp).background(Theme.CARD, RoundedCornerShape(16.dp)).padding(28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text("🔒", fontSize = 34.sp)
+            Spacer(Modifier.height(8.dp))
+            Text(school, color = Theme.TEXT, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            Text("This console is locked with a PIN.", color = Theme.MUTED, fontSize = 12.sp)
+            Spacer(Modifier.height(18.dp))
+            OutlinedTextField(
+                value = pin,
+                onValueChange = { pin = it.filter { c -> c.isDigit() }.take(6); err = false },
+                singleLine = true,
+                shape = RoundedCornerShape(10.dp),
+                visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                placeholder = { Text("Enter PIN", color = Color(0xFF5A6B8C), fontSize = 13.sp) },
+                textStyle = androidx.compose.ui.text.TextStyle(color = Theme.TEXT, fontSize = 16.sp),
+                isError = err
+            )
+            Spacer(Modifier.height(14.dp))
+            Button(
+                onClick = {
+                    if (com.derycode.srs.core.support.LicenseKeys.hash("pin|$pin") == state.data.settings.adminPinHash) {
+                        state.unlocked = true
+                    } else { err = true }
+                },
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Theme.ACCENT, contentColor = Color.White),
+                modifier = Modifier.fillMaxWidth().height(44.dp)
+            ) { Text("Unlock", fontSize = 14.sp) }
+            if (err) Spacer(Modifier.height(8.dp))
+            if (err) Text("Wrong PIN — try again.", color = Color(0xFFFF6B6B), fontSize = 12.sp)
+            Spacer(Modifier.height(12.dp))
+            Text("Forgot the PIN? Restore a backup made before the PIN was set, or use factory reset.", color = Theme.MUTED, fontSize = 10.sp)
         }
     }
 }
