@@ -1,5 +1,6 @@
 package com.derycode.srs.core.store
 
+import com.derycode.srs.core.model.AttendanceRecord
 import com.derycode.srs.core.model.AuditEntry
 import com.derycode.srs.core.model.DutyRecord
 import com.derycode.srs.core.model.Enrollment
@@ -77,7 +78,8 @@ class JsonStore(
         val students: List<Student> = emptyList(),
         val enrollmentRequests: List<EnrollmentRequest> = emptyList(),
         val dutyRecords: List<DutyRecord> = emptyList(),
-        val gatePasses: List<GatePass> = emptyList()
+        val gatePasses: List<GatePass> = emptyList(),
+        val attendance: List<AttendanceRecord> = emptyList()
     )
 
     /** Teacher exports their marks + duty data as a small bundle file (USB / Bluetooth). */
@@ -85,12 +87,13 @@ class JsonStore(
                      students: List<Student> = emptyList(),
                      enrollmentRequests: List<EnrollmentRequest> = emptyList(),
                      dutyRecords: List<DutyRecord> = emptyList(),
-                     gatePasses: List<GatePass> = emptyList()) {
+                     gatePasses: List<GatePass> = emptyList(),
+                     attendance: List<AttendanceRecord> = emptyList()) {
         val bundle = Bundle(
             schoolName = schoolName, deviceId = deviceId,
             createdAt = System.currentTimeMillis(), marks = marks,
             students = students, enrollmentRequests = enrollmentRequests,
-            dutyRecords = dutyRecords, gatePasses = gatePasses
+            dutyRecords = dutyRecords, gatePasses = gatePasses, attendance = attendance
         )
         Files.createDirectories(path.toAbsolutePath().parent)
         Files.writeString(path, json.encodeToString(Bundle.serializer(), bundle))
@@ -124,15 +127,17 @@ class JsonStore(
             // duty records & gate passes: replace same-id (newest state wins)
             val mergedDuty = data.dutyRecords.filter { r -> bundle.dutyRecords.none { it.id == r.id } } + bundle.dutyRecords
             val mergedPasses = data.gatePasses.filter { g -> bundle.gatePasses.none { it.id == g.id } } + bundle.gatePasses
+            val mergedAttendance = data.attendance.filter { a -> bundle.attendance.none { it.id == a.id } } + bundle.attendance
             val bits = mutableListOf<String>()
             if (merged.isNotEmpty()) bits.add("${merged.size} marks")
             if (newReqs.isNotEmpty()) bits.add("${newReqs.size} new students enrolled")
             if (bundle.dutyRecords.isNotEmpty()) bits.add("${bundle.dutyRecords.size} duty records")
             if (bundle.gatePasses.isNotEmpty()) bits.add("${bundle.gatePasses.size} gate passes")
+            if (bundle.attendance.isNotEmpty()) bits.add("${bundle.attendance.size} attendance records")
             val msg = "Imported: " + (if (bits.isEmpty()) "no new data" else bits.joinToString(", "))
             BundleMergeReport(success = true, message = msg, merged = merged, mergedStudents = mergedStudents,
                 mergedEnrollments = mergedEnrollments, mergedRequests = mergedRequests,
-                mergedDutyRecords = mergedDuty, mergedGatePasses = mergedPasses)
+                mergedDutyRecords = mergedDuty, mergedGatePasses = mergedPasses, mergedAttendance = mergedAttendance)
         } catch (e: Exception) {
             BundleMergeReport(success = false, message = "Bundle could not be read: ${e.message}")
         }
@@ -159,7 +164,8 @@ class JsonStore(
         val config = data.copy(
             marks = emptyList(), markSheets = emptyList(), termResults = emptyList(),
             comments = emptyList(), reports = emptyList(), auditLog = emptyList(),
-            syncQueue = emptyList(), conflicts = emptyList(), feePayments = emptyList()
+            syncQueue = emptyList(), conflicts = emptyList(), feePayments = emptyList(),
+            attendance = emptyList(), gatePasses = emptyList(), dutyRecords = emptyList()
         )
         Files.createDirectories(path.toAbsolutePath().parent)
         Files.writeString(path, cfgJson.encodeToString(SchoolData.serializer(), config))
@@ -201,6 +207,7 @@ data class BundleMergeReport(
     val mergedRequests: List<EnrollmentRequest> = emptyList(),
     val mergedDutyRecords: List<DutyRecord> = emptyList(),
     val mergedGatePasses: List<GatePass> = emptyList(),
+    val mergedAttendance: List<AttendanceRecord> = emptyList(),
     val merged: List<Mark> = emptyList()
 )
 

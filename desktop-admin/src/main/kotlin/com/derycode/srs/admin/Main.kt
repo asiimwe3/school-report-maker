@@ -127,8 +127,8 @@ fun App(state: AppState) {
         "SCHOOL" to listOf("setup" to "School Setup", "students" to "Students",
             "classes" to "Classes & Streams", "subjects" to "Subjects", "teachers" to "Teachers"),
         "ACADEMICS" to listOf("marks" to "Marks Grid", "grading" to "Grading Schemes",
-            "results" to "Results Review", "analytics" to "Analytics", "fees" to "School Fees", "calendar" to "Calendar"),
-        "REPORTS" to listOf("reports" to "Reports", "templates" to "Templates",
+            "results" to "Results Review", "analytics" to "Analytics", "attendance" to "Attendance", "promotion" to "Promotion & Rollover", "fees" to "School Fees", "calendar" to "Calendar"),
+        "REPORTS" to listOf("reports" to "Reports", "templates" to "Templates", "commentbank" to "Comment Bank",
             "preview" to "Report Preview", "archive" to "Report Archive"),
         "PLANS" to listOf("plans" to "Plans & Pricing"),
         "SYSTEM" to listOf("sync" to "Sync & Backup", "users" to "Users",
@@ -193,6 +193,9 @@ fun App(state: AppState) {
                 "grading" -> GradingScreen(state)
                 "results" -> ResultsScreen(state)
                 "analytics" -> AnalyticsScreen(state)
+                "attendance" -> AttendanceScreen(state)
+                "promotion" -> PromotionScreen(state)
+                "commentbank" -> CommentBankScreen(state)
                 "reports" -> ReportsScreen(state)
                 "sync" -> SyncScreen(state)
                 "templates" -> TemplatesScreen(state)

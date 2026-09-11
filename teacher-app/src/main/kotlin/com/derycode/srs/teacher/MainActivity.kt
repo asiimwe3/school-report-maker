@@ -187,7 +187,7 @@ class TeacherState(context: Context) {
         val target = dir.toPath().resolve(fileName)
         store.exportBundle(target, data.school.name, deviceId = "teacher-phone", marks = data.marks,
             students = data.students, enrollmentRequests = data.enrollmentRequests,
-            dutyRecords = data.dutyRecords, gatePasses = data.gatePasses)
+            dutyRecords = data.dutyRecords, gatePasses = data.gatePasses, attendance = data.attendance)
         return target.toString()
     }
 
@@ -226,6 +226,24 @@ class TeacherState(context: Context) {
 
     fun markReturned(passId: String) {
         data = data.copy(gatePasses = data.gatePasses.map { if (it.id == passId) it.copy(returnedAt = System.currentTimeMillis()) else it })
+        save()
+    }
+
+    // ── Attendance ─────────────────────────────────────────────────────────
+    fun attendanceFor(classId: String, date: String): Map<String, String> =
+        data.attendance.filter { it.classId == classId && it.date == date }.associate { it.studentId to it.status }
+
+    fun setAttendance(studentId: String, classId: String, date: String, status: String) {
+        val id = "att-$studentId-$date"
+        val rec = AttendanceRecord(id = id, studentId = studentId, classId = classId, date = date, status = status, recordedBy = me?.id ?: "")
+        data = data.copy(attendance = data.attendance.filter { it.id != id } + rec)
+        save()
+    }
+
+    fun markAllPresent(classId: String, date: String, studentIds: List<String>) {
+        val recs = studentIds.map { AttendanceRecord(id = "att-$it-$date", studentId = it, classId = classId, date = date, status = "PRESENT", recordedBy = me?.id ?: "") }
+        val ids = recs.map { it.id }.toSet()
+        data = data.copy(attendance = data.attendance.filter { it.id !in ids } + recs)
         save()
     }
 
@@ -304,6 +322,7 @@ sealed class Route {
     object Sync : Route()
     object Duty : Route()
     object Register : Route()
+    object Attendance : Route()
     object Support : Route()
 }
 
@@ -328,7 +347,7 @@ fun TeacherApp(state: TeacherState) {
         is Route.Classes, is Route.ClassDetail, is Route.EnterMarks -> Tab.CLASSES
         is Route.Assessments -> Tab.ASSESSMENTS
         is Route.Students, is Route.StudentDetail -> Tab.STUDENTS
-        is Route.More, is Route.Comments, is Route.Sync, is Route.Duty, is Route.Register, is Route.Support -> Tab.MORE
+        is Route.More, is Route.Comments, is Route.Sync, is Route.Duty, is Route.Register, is Route.Attendance, is Route.Support -> Tab.MORE
     }
 
     Column(Modifier.fillMaxSize().background(NAVY)) {
@@ -355,6 +374,7 @@ fun TeacherApp(state: TeacherState) {
                     is Route.Comments -> CommentsScreen(state)
                     is Route.Sync -> SyncScreen(state)
                     is Route.Duty -> DutyScreen(state)
+                    is Route.Attendance -> AttendanceScreen(state)
                     is Route.Register -> RegisterScreen(state)
                     is Route.Support -> SupportScreen(state)
                 }
@@ -413,6 +433,7 @@ private fun titleFor(state: TeacherState, route: Route): Pair<String, Boolean> =
     is Route.Sync -> "Sync & Support Data" to true
     is Route.Duty -> "Teacher on Duty" to true
     is Route.Register -> "Register Student" to true
+    is Route.Attendance -> "Attendance" to true
     is Route.Support -> "Support & Licence" to true
 }
 

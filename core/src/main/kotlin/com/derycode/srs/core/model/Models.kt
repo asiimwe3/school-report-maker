@@ -316,6 +316,27 @@ data class EnrollmentRequest(
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Attendance & comment bank
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Serializable
+data class AttendanceRecord(
+    val id: String,                  // att-<studentId>-<date>
+    val studentId: String,
+    val classId: String,
+    val date: String,                // yyyy-MM-dd
+    val status: String,             // PRESENT / ABSENT / LATE
+    val recordedBy: String = ""
+)
+
+@Serializable
+data class CommentTemplate(
+    val id: String,
+    val category: String,            // TEACHER / HEAD
+    val text: String
+)
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Comments, signatures, templates, reports
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -458,6 +479,8 @@ data class SchoolData(
     val schemaVersion: Int = 2,
     val school: School = School(),
     val dutyRecords: List<DutyRecord> = emptyList(),
+    val attendance: List<AttendanceRecord> = emptyList(),
+    val commentTemplates: List<CommentTemplate> = emptyList(),
     val gatePasses: List<GatePass> = emptyList(),
     val enrollmentRequests: List<EnrollmentRequest> = emptyList(),
     val academicYears: List<AcademicYear> = emptyList(),

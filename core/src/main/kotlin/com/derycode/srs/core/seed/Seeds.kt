@@ -1,6 +1,7 @@
 package com.derycode.srs.core.seed
 
 import com.derycode.srs.core.model.AssessmentComponent
+import com.derycode.srs.core.model.CommentTemplate
 import com.derycode.srs.core.model.Level
 import com.derycode.srs.core.model.Subject
 
@@ -41,6 +42,23 @@ object Seeds {
             )
         }
     }
+
+    val COMMENT_TEMPLATES: List<CommentTemplate> = listOf(
+        CommentTemplate("cb-t1", "TEACHER", "A hardworking and disciplined student. Keep it up!"),
+        CommentTemplate("cb-t2", "TEACHER", "Has improved greatly this term. Continue with the same spirit."),
+        CommentTemplate("cb-t3", "TEACHER", "Bright but needs to be more attentive in class."),
+        CommentTemplate("cb-t4", "TEACHER", "Quiet and cooperative. Participate more in class discussions."),
+        CommentTemplate("cb-t5", "TEACHER", "Performance dropped this term — more revision at home is advised."),
+        CommentTemplate("cb-t6", "TEACHER", "Excellent leader among peers. Very well behaved."),
+        CommentTemplate("cb-t7", "TEACHER", "Capable of much better results if attendance and effort improve."),
+        CommentTemplate("cb-t8", "TEACHER", "Punctual, neat and polite. A good example to others."),
+        CommentTemplate("cb-h1", "HEAD", "Promoted to the next class. We are proud of your progress."),
+        CommentTemplate("cb-h2", "HEAD", "A good result. Aim even higher next term."),
+        CommentTemplate("cb-h3", "HEAD", "Must work harder to realize full potential."),
+        CommentTemplate("cb-h4", "HEAD", "Excellent performance. Keep the school flag flying."),
+        CommentTemplate("cb-h5", "HEAD", "Parents are advised to support revision at home."),
+        CommentTemplate("cb-h6", "HEAD", "Report to school with a parent/guardian at opening of next term.")
+    )
 
     val ALL_SUBJECTS: List<Subject> = Level.entries.flatMap(::subjectsFor)
 }

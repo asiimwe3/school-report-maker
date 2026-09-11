@@ -509,7 +509,8 @@ fun SyncScreen(state: AppState) {
                                     enrollments = (dd.enrollments.filter { e -> report.mergedEnrollments.none { it.id == e.id } } + report.mergedEnrollments),
                                     enrollmentRequests = (dd.enrollmentRequests.filter { r -> report.mergedRequests.none { it.id == r.id } } + report.mergedRequests),
                                     dutyRecords = (dd.dutyRecords.filter { r -> report.mergedDutyRecords.none { it.id == r.id } } + report.mergedDutyRecords),
-                                    gatePasses = (dd.gatePasses.filter { g -> report.mergedGatePasses.none { it.id == g.id } } + report.mergedGatePasses))
+                                    gatePasses = (dd.gatePasses.filter { g -> report.mergedGatePasses.none { it.id == g.id } } + report.mergedGatePasses),
+                                    attendance = (dd.attendance.filter { a -> report.mergedAttendance.none { it.id == a.id } } + report.mergedAttendance))
                             }
                         }
                         message = report.message
@@ -655,3 +656,220 @@ fun AnalyticsScreen(state: AppState) {
         }
     }
 }
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Attendance — per-class register view + CSV export
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+fun AttendanceScreen(state: AppState) {
+    val d = state.data
+    var classId by remember { mutableStateOf(d.classes.firstOrNull { it.active }?.id ?: "") }
+    var msg by remember { mutableStateOf("") }
+    val klass = d.classes.firstOrNull { it.id == classId }
+    val students = d.enrollments.filter { it.classId == classId }
+        .sortedBy { it.studentId }.map { e -> d.students.firstOrNull { it.id == e.studentId } }
+        .filterNotNull().distinctBy { it.id }
+    val recs = d.attendance.filter { it.classId == classId }
+
+    ScreenTitle("Attendance", "Daily register from teacher phones — present / absent / late, per class.")
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            d.classes.filter { it.active }.forEach { c ->
+                FilterChip(selected = classId == c.id, onClick = { classId = c.id },
+                    label = { Text(if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}", fontSize = 11.sp) })
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            StatCard("Recorded days", recs.map { it.date }.distinct().count().toString(), Theme.GOOD)
+            StatCard("Students", students.size.toString())
+            StatCard("Attendance %", if (recs.isEmpty()) "—" else "${(recs.count { it.status == "PRESENT" } * 100.0 / recs.size).toInt()}%")
+        }
+        CardBox {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Btn("Export attendance CSV", primary = false) {
+                    val f = dataDir.resolve("exports").resolve("attendance-${klass?.name ?: "class"}.csv")
+                    Files.createDirectories(f.toAbsolutePath().parent)
+                    val rows = students.joinToString("\n") { s ->
+                        val a = recs.filter { it.studentId == s.id }
+                        listOf(s.admissionNo, s.fullName, a.count { it.status == "PRESENT" }.toString(),
+                            a.count { it.status == "LATE" }.toString(), a.count { it.status == "ABSENT" }.toString(),
+                            if (a.isEmpty()) "" else "${(a.count { it.status == "PRESENT" } * 100.0 / a.size).toInt()}%")
+                            .joinToString(",") { csvCell(it) }
+                    }
+                    Files.writeString(f, "admissionNo,student,present,late,absent,attendancePercent\n$rows")
+                    msg = "Saved ${f.fileName}"
+                    try { java.awt.Desktop.getDesktop().open(f.toFile().parentFile) } catch (_: Exception) { }
+                }
+            }
+            if (msg.isNotBlank()) Cell(msg, color = Theme.GOOD)
+            Spacer(Modifier.height(6.dp))
+            if (recs.isEmpty()) Text("No attendance recorded for this class yet — teachers mark it daily on their phones (More → Attendance) and it syncs in their bundle.",
+                color = Theme.MUTED, fontSize = 11.sp)
+        }
+        CardBox {
+            Text("Per-student totals", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(6.dp))
+            if (students.isEmpty()) Text("No students in this class.", color = Theme.MUTED, fontSize = 12.sp)
+            LazyColumn(Modifier.height(320.dp)) {
+                items(students) { s ->
+                    val a = recs.filter { it.studentId == s.id }
+                    val pct = if (a.isEmpty()) 0.0 else a.count { it.status == "PRESENT" } * 100.0 / a.size
+                    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(s.fullName, color = Theme.TEXT, fontSize = 12.sp, modifier = Modifier.weight(1.4f))
+                        Text("P ${a.count { it.status == "PRESENT" }}", color = Theme.GOOD, fontSize = 12.sp, modifier = Modifier.weight(0.5f))
+                        Text("L ${a.count { it.status == "LATE" }}", color = Theme.WARN, fontSize = 12.sp, modifier = Modifier.weight(0.5f))
+                        Text("A ${a.count { it.status == "ABSENT" }}", color = Color(0xFFEF4444), fontSize = 12.sp, modifier = Modifier.weight(0.5f))
+                        Text(if (a.isEmpty()) "—" else "${pct.toInt()}%", color = if (pct >= 75) Theme.GOOD else Theme.WARN, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(0.6f))
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Comment bank — teacher & headteacher reusable comments
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+fun CommentBankScreen(state: AppState) {
+    val d = state.data
+    var category by remember { mutableStateOf("TEACHER") }
+    var newText by remember { mutableStateOf("") }
+    var msg by remember { mutableStateOf("") }
+
+    ScreenTitle("Comment Bank", "Reusable comments for teachers and the headteacher — tap-to-insert on teacher phones.")
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            listOf("TEACHER" to "Class teacher", "HEAD" to "Headteacher").forEach { (id, label) ->
+                FilterChip(selected = category == id, onClick = { category = id }, label = { Text(label, fontSize = 11.sp) })
+            }
+        }
+        CardBox {
+            Text("Add to ${if (category == "TEACHER") "class teacher" else "headteacher"} bank", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(6.dp))
+            TextField(newText, { newText = it }, Modifier.fillMaxWidth(), "Comment text…")
+            Spacer(Modifier.height(6.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Btn("Add comment") {
+                    if (newText.isNotBlank()) {
+                        val id = "cb-${System.currentTimeMillis()}"
+                        state.repo.mutate("COMMENT_TEMPLATE_ADDED", "CommentTemplate", new = id) { dd ->
+                            dd.copy(commentTemplates = dd.commentTemplates + CommentTemplate(id, category, newText.trim()))
+                        }
+                        newText = ""
+                        msg = "Added to the bank."
+                    }
+                }
+            }
+            if (msg.isNotBlank()) Cell(msg, color = Theme.GOOD)
+        }
+        CardBox {
+            Text("${d.commentTemplates.count { it.category == category }} comments in this bank", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(6.dp))
+            LazyColumn(Modifier.height(360.dp)) {
+                items(d.commentTemplates.filter { it.category == category }) { c ->
+                    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(c.text, color = Theme.TEXT, fontSize = 12.sp, modifier = Modifier.weight(1f))
+                        TextButton(onClick = {
+                            state.repo.mutate("COMMENT_TEMPLATE_REMOVED", "CommentTemplate", old = c.id) { dd ->
+                                dd.copy(commentTemplates = dd.commentTemplates.filter { it.id != c.id })
+                            }
+                        }) { Text("Delete", color = Theme.WARN, fontSize = 11.sp) }
+                    }
+                }
+            }
+        }
+        Cell("Syncs to teacher phones with the next school setup export.", color = Theme.MUTED)
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Promotion & rollover — move students up, start the next academic year
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+fun PromotionScreen(state: AppState) {
+    val d = state.data
+    val active = d.classes.filter { it.active }
+    var fromId by remember { mutableStateOf(active.firstOrNull()?.id ?: "") }
+    var toId by remember { mutableStateOf(active.lastOrNull()?.id ?: "") }
+    var msg by remember { mutableStateOf("") }
+    var rolloverConfirm by remember { mutableStateOf(false) }
+
+    val latestEnrollment = { studentId: String -> d.enrollments.lastOrNull { it.studentId == studentId } }
+    val toMove = d.students.filter { latestEnrollment(it.id)?.classId == fromId }
+
+    ScreenTitle("Promotion & Rollover", "Move students to the next class and start the next academic year — all offline.")
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        CardBox {
+            Text("Promote students to the next class", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(6.dp))
+            Text("Leavers (P7 / S4 / S6 / U6) are NOT moved — graduate them by leaving the class as-is.", color = Theme.MUTED, fontSize = 11.sp)
+            Spacer(Modifier.height(8.dp))
+            Text("From:", color = Theme.MUTED, fontSize = 11.sp)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                active.forEach { c -> FilterChip(selected = fromId == c.id, onClick = { fromId = c.id },
+                    label = { Text(if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}", fontSize = 10.sp) }) }
+            }
+            Spacer(Modifier.height(6.dp))
+            Text("To:", color = Theme.MUTED, fontSize = 11.sp)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                active.forEach { c -> FilterChip(selected = toId == c.id, onClick = { toId = c.id },
+                    label = { Text(if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}", fontSize = 10.sp) }) }
+            }
+            Spacer(Modifier.height(8.dp))
+            Cell("${toMove.size} students will be promoted.", color = Theme.TEXT, bold = true)
+            Spacer(Modifier.height(6.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Btn("Promote ${toMove.size} students", primary = toMove.isNotEmpty()) {
+                    val yearId = d.academicYears.firstOrNull { it.currentTermId != null }?.id ?: d.academicYears.firstOrNull()?.id ?: ""
+                    state.repo.mutate("STUDENTS_PROMOTED", "Enrollment", new = "$fromId -> $toId (${toMove.size})") { dd ->
+                        dd.copy(enrollments = dd.enrollments + toMove.map {
+                            Enrollment(id = "enr-prom-${it.id}-${System.currentTimeMillis()}", studentId = it.id,
+                                academicYearId = yearId, classId = toId)
+                        })
+                    }
+                    msg = "Promoted ${toMove.size} students."
+                }
+            }
+            if (msg.isNotBlank()) Cell(msg, color = Theme.GOOD)
+        }
+        CardBox {
+            Text("End-of-year rollover", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(6.dp))
+            val year = d.academicYears.firstOrNull { it.currentTermId != null } ?: d.academicYears.lastOrNull()
+            if (year == null) {
+                Text("Create an academic year first (Calendar screen).", color = Theme.MUTED, fontSize = 12.sp)
+            } else {
+                Text("Creates academic year ${(year.year.toIntOrNull() ?: 2026) + 1} with 3 open terms, sets Term 1 as current, and closes this year's terms. Classes, students, grading schemes and the comment bank all carry over. Fee structures must be re-entered for the new terms.", color = Theme.MUTED, fontSize = 11.sp)
+                Spacer(Modifier.height(8.dp))
+                if (!rolloverConfirm) {
+                    Btn("Start rollover") { rolloverConfirm = true }
+                } else {
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Btn("Confirm — create year ${(year.year.toIntOrNull() ?: 2026) + 1}") {
+                            val ny = (year.year.toIntOrNull() ?: 2026) + 1
+                            val terms = (1..3).map { n -> Term(id = "term-$ny-$n", yearId = "ay-$ny", number = n, status = "OPEN") }
+                            state.repo.mutate("YEAR_ROLLOVER", "AcademicYear", new = "ay-$ny") { dd ->
+                                val closed = dd.academicYears.map { y ->
+                                    if (y.id == year.id) y.copy(terms = y.terms.map { it.copy(status = "CLOSED") }, currentTermId = null)
+                                    else y
+                                }
+                                dd.copy(academicYears = closed + AcademicYear(id = "ay-$ny", year = ny.toString(), terms = terms, currentTermId = terms.first().id))
+                            }
+                            rolloverConfirm = false
+                            msg = "Academic year $ny created — Term 1 is now current."
+                        }
+                        Btn("Cancel", primary = false) { rolloverConfirm = false }
+                    }
+                }
+                if (msg.isNotBlank()) Cell(msg, color = Theme.GOOD)
+            }
+        }
+    }
+}
+
+private fun csvCell(s: String): String = "\"" + s.replace("\"", "\"\"") + "\""

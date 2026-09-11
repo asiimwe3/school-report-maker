@@ -56,6 +56,7 @@ fun MoreScreen(state: TeacherState, onOpen: (Route) -> Unit) {
                 Divider(color = STROKE, modifier = Modifier.padding(vertical = 4.dp))
                 MoreRow(Icons.Filled.Shield, "Duty Desk", "Teacher on duty \u00B7 gate passes \u00B7 duty log") { onOpen(Route.Duty) }
                 MoreRow(Icons.Filled.PersonAdd, "Register student", "Enroll a new student from the field") { onOpen(Route.Register) }
+                MoreRow(Icons.Filled.EventAvailable, "Attendance", "Daily register \u00B7 present / absent / late") { onOpen(Route.Attendance) }
                 MoreRow(Icons.Filled.Sync, "Sync & Export", "Import school data \u00B7 export your marks") { onOpen(Route.Sync) }
                 Divider(color = STROKE, modifier = Modifier.padding(vertical = 4.dp))
                 MoreRow(Icons.Filled.SupportAgent, "Support & Licence", "Updates \u00B7 crash reports \u00B7 plans") { onOpen(Route.Support) }
@@ -129,6 +130,15 @@ fun CommentsScreen(state: TeacherState) {
                 Cell("Comment", MUTED, true)
                 Spacer(Modifier.height(6.dp))
                 DarkTextField(text) { text = it }
+                Spacer(Modifier.height(8.dp))
+                Cell("Comment bank \u2014 tap to insert", MUTED)
+                Spacer(Modifier.height(4.dp))
+                val bank = d.commentTemplates.filter { it.category == "TEACHER" }
+                bank.take(8).forEach { c ->
+                    Row(Modifier.fillMaxWidth().clickable { text = c.text }.padding(vertical = 5.dp)) {
+                        Text("\u2022 ${c.text}", color = MUTED, fontSize = 12.sp)
+                    }
+                }
                 Spacer(Modifier.height(10.dp))
                 Button(
                     onClick = {

@@ -262,6 +262,21 @@ object DocxReport {
             doc.p("", size = 10, spacingAfter = 60)
         }
 
+        // attendance summary (only when the school records attendance)
+        val att = data.attendance.filter { it.studentId == student.id }
+        if (att.isNotEmpty()) {
+            val present = att.count { it.status == "PRESENT" }
+            val late = att.count { it.status == "LATE" }
+            val absent = att.count { it.status == "ABSENT" }
+            val pct = (present * 100.0 / att.size)
+            doc.p("Attendance (${att.size} recorded days)", bold = true, size = 22, color = accent, spacingAfter = 40)
+            doc.table(
+                listOf("Present", "Late", "Absent", "Attendance %"),
+                listOf(listOf(present.toString(), late.toString(), absent.toString(), fmt(pct) + "%"))
+            )
+            doc.p("", size = 10, spacingAfter = 60)
+        }
+
         // comments
         val classComments = data.comments
             .filter { it.studentId == student.id && it.termId == result.termId }
@@ -275,11 +290,23 @@ object DocxReport {
             size = 20, spacingAfter = 200)
         doc.p("Sign: ______________________          Sign: ______________________", size = 20, spacingAfter = 100)
 
+        val serial = reportSerial(data, result)
+        doc.p("Report Serial No: $serial", bold = true, size = 16, align = "center", color = ink, spacingAfter = 20)
+        doc.p("Verify this report with the school administration using serial $serial — any report without it is invalid.",
+            size = 12, align = "center", color = "999999", spacingAfter = 20)
+
         val scheme = data.gradingSchemes.firstOrNull { it.id == result.schemeId }
         val key = scheme?.boundaries?.sortedByDescending { it.minScore }
             ?.joinToString(" · ") { "${it.grade} ${it.minScore.toInt()}-${it.maxScore.toInt()}%" }
         doc.p((if (key != null) "Grading: $key — " else "") + "Printed by DeryCode School Report Maker",
             size = 14, align = "center", color = "999999")
+    }
+
+    /** Unique, tamper-evident serial for a report — derived from school + student + term. */
+    fun reportSerial(data: SchoolData, result: TermResult): String {
+        val src = "${data.school.id}|${data.school.name}|${result.studentId}|${result.termId}|${result.averagePercent}|${result.classPosition}"
+        val d = java.security.MessageDigest.getInstance("SHA-256").digest(src.toByteArray())
+        return "SRS-" + d.joinToString("") { "%02x".format(it) }.take(10).uppercase()
     }
 
     /** Accepts hex like #1F4E79 or 1F4E79; falls back to Word's dark blue. */
