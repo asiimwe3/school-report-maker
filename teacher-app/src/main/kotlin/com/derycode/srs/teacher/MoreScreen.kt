@@ -170,6 +170,7 @@ fun SyncScreen(state: TeacherState) {
                 Spacer(Modifier.height(6.dp))
                 Cell("Copy school-data-from-admin.json here via USB/Bluetooth, then tap Import. Your own marks and comments are always kept.", MUTED)
                 Spacer(Modifier.height(4.dp))
+                Cell("School: ${d.school.name.ifBlank { "not connected yet" }}", MUTED)
                 Cell("Teacher: ${state.me?.name ?: "not selected"}", MUTED)
                 Spacer(Modifier.height(10.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -178,6 +179,12 @@ fun SyncScreen(state: TeacherState) {
                     }
                     Button(onClick = { state.setMe(null) }, colors = ButtonDefaults.buttonColors(containerColor = CARD_ALT)) {
                         Text("Change teacher", color = Color.White)
+                    }
+                }
+                if (state.pendingSchoolName != null) {
+                    Spacer(Modifier.height(8.dp))
+                    Button(onClick = { importMsg = state.confirmSchoolSwitch() }, colors = ButtonDefaults.buttonColors(containerColor = ORANGE)) {
+                        Text("Switch school (replaces everything)")
                     }
                 }
                 if (importMsg.isNotEmpty()) { Spacer(Modifier.height(6.dp)); Cell(importMsg, if (importMsg.startsWith("\u2713") || importMsg.startsWith("\u2713")) GREEN else ORANGE) }

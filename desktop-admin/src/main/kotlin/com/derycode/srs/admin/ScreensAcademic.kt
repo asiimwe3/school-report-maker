@@ -471,7 +471,11 @@ fun SyncScreen(state: AppState) {
         CardBox {
             Text("Export school setup for teacher phones", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(6.dp))
-            Text("Creates school-data-from-admin.json (classes, students, subjects, schemes — no marks). Copy it to each teacher's phone, then tap Import on the Export tab there.", color = Theme.MUTED, fontSize = 11.sp)
+            Text("Each school runs its own admin console and exports its own bundle — teachers connect only to their own school.", color = Theme.MUTED, fontSize = 11.sp)
+            Spacer(Modifier.height(6.dp))
+            Text("1. Tap Export school setup — creates school-data-from-admin.json (classes, students, subjects, schemes — no marks)\n2. Copy it to each teacher's phone via USB or Bluetooth\n3. On the teacher's phone: More → Sync & Export → Import\n4. Teacher picks their name and enters marks for their classes\n5. Teacher taps Export marks bundle and copies it back here\n6. Import bundle below — newest-wins merge, everything logged", color = Theme.MUTED, fontSize = 11.sp)
+            Spacer(Modifier.height(6.dp))
+            Text("The teacher app now shows which school it is connected to, and refuses to silently mix two different schools' data — if a teacher joins another school, it asks before replacing.", color = Theme.GOOD, fontSize = 11.sp)
             Spacer(Modifier.height(6.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Btn("Export school setup") {

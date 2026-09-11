@@ -107,17 +107,41 @@ class TeacherState(context: Context) {
             }
         }
 
+    var pendingSchoolName by mutableStateOf<String?>(null)
+
     /** Import the school setup exported by the admin (structure only — local marks/comments are kept). */
     fun importSchoolData(): String {
         val dir = exportDir ?: return "Cannot access device storage"
         val f = dir.resolve("school-data-from-admin.json")
         if (!f.exists()) return "File not found: ${f.name} — copy it from the admin computer first (USB/Bluetooth)."
         return try {
-            val imported = store.loadSchoolConfig(f.toPath(), data)
-            data = imported
-            save()
-            "✓ Imported ${imported.classes.size} classes, ${imported.students.size} students, ${imported.subjects.size} subjects. Your marks were kept."
+            val (incomingId, incomingName) = store.peekSchool(f.toPath())
+            val sameSchool = incomingId.isBlank() || incomingId == data.school.id || data.students.isEmpty() && data.marks.isEmpty()
+            if (!sameSchool) {
+                pendingSchoolName = incomingName.ifBlank { incomingId }
+                "This file is from ${pendingSchoolName} — but this phone already holds ${data.school.name.ifBlank { "another school" }} with ${data.students.size} students. Importing would mix two schools! Tap 'Switch school' below to replace everything, or copy the correct file."
+            } else {
+                pendingSchoolName = null
+                val imported = store.loadSchoolConfig(f.toPath(), data)
+                data = imported
+                save()
+                "✓ Connected to ${imported.school.name.ifBlank { "your school" }} — imported ${imported.classes.size} classes, ${imported.students.size} students, ${imported.subjects.size} subjects. Your marks were kept."
+            }
         } catch (_: Exception) { "Import failed — file unreadable or wrong format." }
+    }
+
+    /** Replace ALL school data on this phone with the file's school (teacher switched schools). */
+    fun confirmSchoolSwitch(): String {
+        val dir = exportDir ?: return "Cannot access device storage"
+        val f = dir.resolve("school-data-from-admin.json")
+        if (!f.exists()) return "File not found."
+        return try {
+            data = store.loadSchoolConfigFresh(f.toPath())
+            setMe(null)
+            pendingSchoolName = null
+            save()
+            "✓ Switched to ${data.school.name.ifBlank { "the new school" }}. Old school's marks and students were cleared — pick your name on Home."
+        } catch (_: Exception) { "Switch failed — file unreadable." }
     }
 
     init {

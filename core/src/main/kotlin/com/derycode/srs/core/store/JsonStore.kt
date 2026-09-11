@@ -126,6 +126,21 @@ class JsonStore(
         Files.writeString(path, cfgJson.encodeToString(SchoolData.serializer(), config))
     }
 
+    /** Peek at the school identity inside an exported config without importing it. */
+    fun peekSchool(path: Path): Pair<String, String> {
+        val imported = cfgJson.decodeFromString<SchoolData>(Files.readString(path))
+        return imported.school.id to imported.school.name
+    }
+
+    /** Fresh school config with NOTHING kept from the phone — used when a teacher switches schools. */
+    fun loadSchoolConfigFresh(path: Path): SchoolData {
+        val imported = cfgJson.decodeFromString<SchoolData>(Files.readString(path))
+        return imported.copy(
+            marks = emptyList(), comments = emptyList(), markSheets = emptyList(),
+            auditLog = emptyList(), syncQueue = emptyList(), conflicts = emptyList()
+        )
+    }
+
     /** Teacher phone loads a school config; keeps its own marks, comments and audit log. */
     fun loadSchoolConfig(path: Path, keep: SchoolData): SchoolData {
         val imported = cfgJson.decodeFromString<SchoolData>(Files.readString(path))
