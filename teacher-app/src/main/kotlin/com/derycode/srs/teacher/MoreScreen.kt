@@ -54,6 +54,8 @@ fun MoreScreen(state: TeacherState, onOpen: (Route) -> Unit) {
             CardBox {
                 MoreRow(Icons.Filled.Comment, "Class Teacher Comments", "Write end-of-term remarks") { onOpen(Route.Comments) }
                 Divider(color = STROKE, modifier = Modifier.padding(vertical = 4.dp))
+                MoreRow(Icons.Filled.Shield, "Duty Desk", "Teacher on duty \u00B7 gate passes \u00B7 duty log") { onOpen(Route.Duty) }
+                MoreRow(Icons.Filled.PersonAdd, "Register student", "Enroll a new student from the field") { onOpen(Route.Register) }
                 MoreRow(Icons.Filled.Sync, "Sync & Export", "Import school data \u00B7 export your marks") { onOpen(Route.Sync) }
                 Divider(color = STROKE, modifier = Modifier.padding(vertical = 4.dp))
                 MoreRow(Icons.Filled.SupportAgent, "Support & Licence", "Updates \u00B7 crash reports \u00B7 plans") { onOpen(Route.Support) }
@@ -201,7 +203,7 @@ fun SyncScreen(state: TeacherState) {
                 Cell("Copy this file to the admin computer via USB or Bluetooth and import it in Sync & Backup.", MUTED)
                 Spacer(Modifier.height(8.dp))
                 Button(onClick = { path = state.exportBundle() }, colors = ButtonDefaults.buttonColors(containerColor = BLUE)) {
-                    Text("Export ${d.marks.size} marks")
+                    Text("Export ${d.marks.size} marks + duty data")
                 }
                 if (path != null) {
                     Spacer(Modifier.height(6.dp))

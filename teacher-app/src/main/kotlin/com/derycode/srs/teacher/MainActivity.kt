@@ -185,8 +185,62 @@ class TeacherState(context: Context) {
     fun exportBundle(fileName: String = "teacher-bundle.json"): String? {
         val dir = exportDir ?: return null
         val target = dir.toPath().resolve(fileName)
-        store.exportBundle(target, data.school.name, deviceId = "teacher-phone", marks = data.marks)
+        store.exportBundle(target, data.school.name, deviceId = "teacher-phone", marks = data.marks,
+            students = data.students, enrollmentRequests = data.enrollmentRequests,
+            dutyRecords = data.dutyRecords, gatePasses = data.gatePasses)
         return target.toString()
+    }
+
+    // ── Teacher-on-duty module ─────────────────────────────────────────────
+    val todayKey: String get() = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
+    val myDutyToday: DutyRecord? get() = data.dutyRecords.firstOrNull { it.teacherId == (me?.id ?: "") && it.date == todayKey }
+
+    fun startDuty(role: String) {
+        val id = me?.id ?: return
+        val rec = DutyRecord(id = "dr-$id-$todayKey", teacherId = id, date = todayKey, role = role)
+        data = data.copy(dutyRecords = data.dutyRecords.filter { it.id != rec.id } + rec)
+        save()
+    }
+
+    fun endDuty() {
+        val id = me?.id ?: return
+        val today = todayKey
+        data = data.copy(dutyRecords = data.dutyRecords.filterNot { it.teacherId == id && it.date == today })
+        save()
+    }
+
+    fun addIncident(note: String) {
+        val rec = myDutyToday ?: return
+        val updated = rec.copy(incidents = rec.incidents + DutyIncident(System.currentTimeMillis(), note.trim()))
+        data = data.copy(dutyRecords = data.dutyRecords.filter { it.id != rec.id } + updated)
+        save()
+    }
+
+    fun issueGatePass(studentId: String, reason: String, destination: String, expectedBack: String) {
+        val id = me?.id ?: return
+        val pass = GatePass(id = "gp-$studentId-${System.currentTimeMillis()}", studentId = studentId, teacherId = id,
+            reason = reason, destination = destination, outAt = System.currentTimeMillis(), expectedBack = expectedBack)
+        data = data.copy(gatePasses = data.gatePasses + pass)
+        save()
+    }
+
+    fun markReturned(passId: String) {
+        data = data.copy(gatePasses = data.gatePasses.map { if (it.id == passId) it.copy(returnedAt = System.currentTimeMillis()) else it })
+        save()
+    }
+
+    fun registerStudent(firstName: String, lastName: String, sex: String, classId: String, guardianName: String, guardianPhone: String): String {
+        if (firstName.isBlank() || lastName.isBlank()) return "Fill the first and last name."
+        if (classId.isBlank()) return "Pick a class."
+        val year = data.academicYears.firstOrNull { it.currentTermId != null } ?: data.academicYears.firstOrNull()
+        val sid = "stu-${System.currentTimeMillis()}"
+        val stu = Student(id = sid, admissionNo = "", firstName = firstName.trim(), lastName = lastName.trim(),
+            sex = sex, guardianName = guardianName.trim(), guardianPhone = guardianPhone.trim())
+        val req = EnrollmentRequest(id = "er-$sid", student = stu, academicYearId = year?.id ?: "", classId = classId,
+            teacherId = me?.id ?: "", status = "PENDING", createdAt = System.currentTimeMillis())
+        data = data.copy(students = data.students + stu, enrollmentRequests = data.enrollmentRequests + req)
+        save()
+        return "✓ ${stu.firstName} ${stu.lastName} registered — PENDING until the admin imports your bundle."
     }
 
     /** Marks entered but not yet bundled — simple local status. */
@@ -248,6 +302,8 @@ sealed class Route {
     object More : Route()
     object Comments : Route()
     object Sync : Route()
+    object Duty : Route()
+    object Register : Route()
     object Support : Route()
 }
 
@@ -272,7 +328,7 @@ fun TeacherApp(state: TeacherState) {
         is Route.Classes, is Route.ClassDetail, is Route.EnterMarks -> Tab.CLASSES
         is Route.Assessments -> Tab.ASSESSMENTS
         is Route.Students, is Route.StudentDetail -> Tab.STUDENTS
-        is Route.More, is Route.Comments, is Route.Sync, is Route.Support -> Tab.MORE
+        is Route.More, is Route.Comments, is Route.Sync, is Route.Duty, is Route.Register, is Route.Support -> Tab.MORE
     }
 
     Column(Modifier.fillMaxSize().background(NAVY)) {
@@ -298,6 +354,8 @@ fun TeacherApp(state: TeacherState) {
                     is Route.More -> MoreScreen(state, onOpen = { push(it) })
                     is Route.Comments -> CommentsScreen(state)
                     is Route.Sync -> SyncScreen(state)
+                    is Route.Duty -> DutyScreen(state)
+                    is Route.Register -> RegisterScreen(state)
                     is Route.Support -> SupportScreen(state)
                 }
             }
@@ -353,6 +411,8 @@ private fun titleFor(state: TeacherState, route: Route): Pair<String, Boolean> =
     is Route.More -> "More" to false
     is Route.Comments -> "Class Comments" to true
     is Route.Sync -> "Sync & Support Data" to true
+    is Route.Duty -> "Teacher on Duty" to true
+    is Route.Register -> "Register Student" to true
     is Route.Support -> "Support & Licence" to true
 }
 

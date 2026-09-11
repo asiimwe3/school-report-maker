@@ -274,6 +274,48 @@ data class TermResult(
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Teacher-on-duty module: duty records, gate passes, enrollment requests
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Serializable
+data class DutyIncident(
+    val at: Long = 0,
+    val note: String = ""
+)
+
+@Serializable
+data class DutyRecord(
+    val id: String,
+    val teacherId: String,
+    val date: String,                 // yyyy-MM-dd
+    val role: String = "Teacher on duty",
+    val incidents: List<DutyIncident> = emptyList()
+)
+
+@Serializable
+data class GatePass(
+    val id: String,
+    val studentId: String,
+    val teacherId: String,
+    val reason: String = "",           // Sick bay / Home pass / Errand / Other
+    val destination: String = "",
+    val outAt: Long = 0,
+    val expectedBack: String = "",
+    val returnedAt: Long? = null       // null = still outside school
+)
+
+@Serializable
+data class EnrollmentRequest(
+    val id: String,
+    val student: Student,
+    val academicYearId: String = "",
+    val classId: String,
+    val teacherId: String,
+    val status: String = "PENDING",    // PENDING / APPROVED
+    val createdAt: Long = 0
+)
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Comments, signatures, templates, reports
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -415,6 +457,9 @@ data class CalendarEvent(
 data class SchoolData(
     val schemaVersion: Int = 2,
     val school: School = School(),
+    val dutyRecords: List<DutyRecord> = emptyList(),
+    val gatePasses: List<GatePass> = emptyList(),
+    val enrollmentRequests: List<EnrollmentRequest> = emptyList(),
     val academicYears: List<AcademicYear> = emptyList(),
     val classes: List<SchoolClass> = emptyList(),
     val combinations: List<Combination> = emptyList(),

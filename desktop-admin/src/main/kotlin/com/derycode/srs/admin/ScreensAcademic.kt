@@ -503,7 +503,13 @@ fun SyncScreen(state: AppState) {
                         val report = state.repo.store.importBundle(state.repo.data, p)
                         if (report.success) {
                             state.repo.mutate("BUNDLE_IMPORTED", "Mark", new = report.message) { dd ->
-                                dd.copy(marks = state.repo.store.mergeMarks(dd, report.merged.ifEmpty { dd.marks }))
+                                dd.copy(
+                                    marks = state.repo.store.mergeMarks(dd, report.merged.ifEmpty { dd.marks }),
+                                    students = (dd.students.filter { s -> report.mergedStudents.none { it.id == s.id } } + report.mergedStudents),
+                                    enrollments = (dd.enrollments.filter { e -> report.mergedEnrollments.none { it.id == e.id } } + report.mergedEnrollments),
+                                    enrollmentRequests = (dd.enrollmentRequests.filter { r -> report.mergedRequests.none { it.id == r.id } } + report.mergedRequests),
+                                    dutyRecords = (dd.dutyRecords.filter { r -> report.mergedDutyRecords.none { it.id == r.id } } + report.mergedDutyRecords),
+                                    gatePasses = (dd.gatePasses.filter { g -> report.mergedGatePasses.none { it.id == g.id } } + report.mergedGatePasses))
                             }
                         }
                         message = report.message
