@@ -288,21 +288,26 @@ class SchoolRepository(
 
     fun seedIfNeeded(defaultSubjects: List<com.derycode.srs.core.model.Subject>,
                      defaultComponents: List<com.derycode.srs.core.model.AssessmentComponent>) {
-        if (data.students.isEmpty() && data.academicYears.isEmpty() && data.gradingSchemes.isEmpty()) {
-            data = data.copy(
-                subjects = defaultSubjects,
-                components = defaultComponents,
-                classes = com.derycode.srs.core.seed.Seeds.DEFAULT_CLASSES,
-                gradingSchemes = com.derycode.srs.core.grading.GradingSchemes.ALL,
-                templates = listOf(
-                    com.derycode.srs.core.model.ReportTemplate(id = "tpl-classic", name = "Classic", layout = com.derycode.srs.core.model.TemplateLayout.CLASSIC, isDefault = true),
-                    com.derycode.srs.core.model.ReportTemplate(id = "tpl-modern", name = "Modern", layout = com.derycode.srs.core.model.TemplateLayout.MODERN),
-                    com.derycode.srs.core.model.ReportTemplate(id = "tpl-compact", name = "Compact", layout = com.derycode.srs.core.model.TemplateLayout.COMPACT),
-                    com.derycode.srs.core.model.ReportTemplate(id = "tpl-plain", name = "Plain", layout = com.derycode.srs.core.model.TemplateLayout.PLAIN)
-                )
-            )
-            save()
+        // v2.2.1 fix: each piece is seeded independently. The old all-or-nothing guard
+        // (only seeded when students AND academicYears AND gradingSchemes were ALL empty)
+        // meant a school that had already created a term — but had no classes yet because
+        // of the earlier setup-wizard bug — would NEVER get its default classes seeded.
+        var changed = false
+        var next = data
+        if (next.subjects.isEmpty()) { next = next.copy(subjects = defaultSubjects); changed = true }
+        if (next.components.isEmpty()) { next = next.copy(components = defaultComponents); changed = true }
+        if (next.classes.isEmpty()) { next = next.copy(classes = com.derycode.srs.core.seed.Seeds.DEFAULT_CLASSES); changed = true }
+        if (next.gradingSchemes.isEmpty()) { next = next.copy(gradingSchemes = com.derycode.srs.core.grading.GradingSchemes.ALL); changed = true }
+        if (next.templates.isEmpty()) {
+            next = next.copy(templates = listOf(
+                com.derycode.srs.core.model.ReportTemplate(id = "tpl-classic", name = "Classic", layout = com.derycode.srs.core.model.TemplateLayout.CLASSIC, isDefault = true),
+                com.derycode.srs.core.model.ReportTemplate(id = "tpl-modern", name = "Modern", layout = com.derycode.srs.core.model.TemplateLayout.MODERN),
+                com.derycode.srs.core.model.ReportTemplate(id = "tpl-compact", name = "Compact", layout = com.derycode.srs.core.model.TemplateLayout.COMPACT),
+                com.derycode.srs.core.model.ReportTemplate(id = "tpl-plain", name = "Plain", layout = com.derycode.srs.core.model.TemplateLayout.PLAIN)
+            ))
+            changed = true
         }
+        if (changed) { data = next; save() }
     }
 
     // ── School config for teacher phones (Section 45: teacher gets structure, admin gets marks) ──

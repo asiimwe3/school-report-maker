@@ -2,6 +2,6 @@
   "versionCode": 11,
   "versionName": "1.9.0",
   "apkUrl": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.9.0.apk",
-  "msiUrl": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.1.msi",
-  "releaseNotes": "Cloud sync is here: teacher accounts, join school with invite code, pull school setup, send marks online. New app icon. Updated plans/terms/privacy (identical in both apps)."
+  "msiUrl": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.2.msi",
+  "releaseNotes": "Fixed: screen titles overlapping with content (Box->Column layout bug). Fixed: default classes (P1-S6) not appearing when a school already had an academic year set up before classes existed. Fixed: setup wizard getting stuck on Open Dashboard."
 }

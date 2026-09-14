@@ -193,7 +193,12 @@ fun App(state: AppState) {
         }
 
         // ── Content ──
-        Box(Modifier.weight(1f).fillMaxHeight().padding(24.dp)) {
+        // v2.2.1 fix: this MUST be a Column, not a Box. Every screen composes
+        // ScreenTitle() followed by its body as two siblings expecting to be
+        // stacked vertically. A Box stacks children on top of each other
+        // (z-order) instead of one below the other — that was the cause of
+        // titles/subtitles visually overlapping with the screen content below them.
+        Column(Modifier.weight(1f).fillMaxHeight().padding(24.dp)) {
             when (state.screen) {
                 "dashboard" -> DashboardScreen(state)
                 "setup" -> SetupScreen(state)
