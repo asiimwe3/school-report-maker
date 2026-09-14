@@ -5,10 +5,8 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import java.net.HttpURLConnection
 import java.net.URI
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
@@ -29,19 +27,35 @@ object CloudApi {
     const val DEFAULT_URL = "https://ntdghazoglldkynlcndg.supabase.co"
     const val DEFAULT_KEY = "sb_publishable_efREJ4m-7d5Wkv5MARESIA_KJfr6ARn"
 
-    private val client = HttpClient.newHttpClient()
 
     data class AuthResult(val ok: Boolean, val error: String = "", val accessToken: String = "", val refreshToken: String = "")
 
+    // HttpURLConnection instead of java.net.http.HttpClient — works on Java 8 too,
+    // so cloud sync never crashes on school PCs with an old Java installed (fix for
+    // NoClassDefFoundError: java/net/http/HttpClient on Java 8).
     private fun http(method: String, url: String, key: String, token: String?, body: String?): Pair<Int, String> {
-        val b = HttpRequest.newBuilder(URI.create(url))
-            .header("apikey", key)
-            .header("Content-Type", "application/json")
-            .header("Prefer", "return=representation")
-        if (token != null) b.header("Authorization", "Bearer $token")
-        body?.let { b.method(method, HttpRequest.BodyPublishers.ofString(it)) } ?: b.method(method, HttpRequest.BodyPublishers.noBody())
-        val resp = client.send(b.build(), HttpResponse.BodyHandlers.ofString())
-        return Pair(resp.statusCode(), resp.body())
+        val conn = URI.create(url).toURL().openConnection() as HttpURLConnection
+        try {
+            conn.requestMethod = method
+            conn.connectTimeout = 15000
+            conn.readTimeout = 30000
+            conn.setRequestProperty("apikey", key)
+            conn.setRequestProperty("Content-Type", "application/json")
+            conn.setRequestProperty("Prefer", "return=representation")
+            if (token != null) conn.setRequestProperty("Authorization", "Bearer $token")
+            if (body != null) {
+                conn.doOutput = true
+                conn.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
+            }
+            val code = try { conn.responseCode } catch (e: java.io.IOException) {
+                return Pair(-1, "No internet connection — check the school's network or data bundle.")
+            }
+            val stream = if (code in 200..299) conn.inputStream else conn.errorStream
+            val text = try { stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() } ?: "" } catch (_: Exception) { "" }
+            return Pair(code, text)
+        } finally {
+            conn.disconnect()
+        }
     }
 
     fun signUp(url: String, key: String, email: String, password: String): AuthResult {
