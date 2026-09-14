@@ -123,7 +123,7 @@ private fun StepSchool(state: AppState, next: () -> Unit) {
         var err by remember { mutableStateOf(false) }
         if (err) Text("Please enter the school name.", color = Color(0xFFFF6B6B), fontSize = 12.sp)
         Row {
-            Button({ if (s.name.isBlank()) err = true else { state.repo.mutate("SETUP_SCHOOL", "School") { d -> d.copy(school = s) }; next() } },
+            Button({ if (s.name.isBlank()) err = true else { state.repo.mutate("SETUP_SCHOOL", "School") { d -> d.copy(school = s) }; state.refresh(); next() } },
                 shape = RoundedCornerShape(10.dp), colors = ButtonDefaults.buttonColors(containerColor = Theme.ACCENT), modifier = Modifier.height(44.dp).width(200.dp)) {
                 Text("Save & Continue", fontSize = 14.sp, fontWeight = FontWeight.Bold)
             }
@@ -201,6 +201,7 @@ private fun StepAccount(state: AppState, next: () -> Unit) {
                         cloudUrl = url, cloudKey = key, cloudEmail = email.trim().lowercase(),
                         cloudAccessToken = r.accessToken, cloudRefreshToken = r.refreshToken,
                         cloudSchoolId = sid, cloudInviteCode = code, teacherCloudEnabled = true)) }
+                    state.refresh()   // make the invite code visible immediately
                     linked = true
                 }.start()
             }, enabled = !busy, shape = RoundedCornerShape(10.dp), colors = ButtonDefaults.buttonColors(containerColor = Theme.ACCENT), modifier = Modifier.height(44.dp).width(220.dp)) {
@@ -208,7 +209,7 @@ private fun StepAccount(state: AppState, next: () -> Unit) {
             }
             Spacer(Modifier.width(12.dp))
             OutlinedButton({
-                state.repo.mutate("CLOUD_SKIP", "Settings") { d -> d.copy(settings = d.settings.copy(cloudUrl = url, cloudKey = key, teacherCloudEnabled = false)) }
+                state.repo.mutate("CLOUD_SKIP", "Settings") { d -> d.copy(settings = d.settings.copy(cloudUrl = url, cloudKey = key, teacherCloudEnabled = false)) }; state.refresh()
                 next()
             }, shape = RoundedCornerShape(10.dp), modifier = Modifier.height(44.dp)) {
                 Text("Set up later (offline mode)", fontSize = 12.sp, color = Theme.MUTED)
@@ -243,7 +244,7 @@ private fun StepPin(state: AppState, next: () -> Unit) {
                 if (pin.length < 4) { msg = "PIN must be 4–6 digits."; err = true }
                 else if (pin != pin2) { msg = "PINs do not match."; err = true }
                 else {
-                    state.repo.mutate("SETUP_PIN", "Settings") { d -> d.copy(settings = d.settings.copy(adminPinHash = LicenseKeys.hash("pin|$pin"))) }
+                    state.repo.mutate("SETUP_PIN", "Settings") { d -> d.copy(settings = d.settings.copy(adminPinHash = LicenseKeys.hash("pin|$pin"))) }; state.refresh()
                     next()
                 }
             }, shape = RoundedCornerShape(10.dp), colors = ButtonDefaults.buttonColors(containerColor = Theme.ACCENT), modifier = Modifier.height(44.dp).width(220.dp)) { Text("Set PIN & Continue", fontSize = 14.sp, fontWeight = FontWeight.Bold) }
@@ -273,13 +274,13 @@ private fun StepLicence(state: AppState, next: () -> Unit) {
                 val v = LicenseKeys.validate(key)
                 if (v == null) { msg = "Invalid or expired key — check it and try again."; err = true; return@Button }
                 val (plan, expiry) = v
-                state.repo.mutate("LICENCE_ACTIVATE", "Settings") { d -> d.copy(settings = d.settings.copy(licencePlan = plan.name, licenceRef = key, licenceExpiry = expiry)) }
+                state.repo.mutate("LICENCE_ACTIVATE", "Settings") { d -> d.copy(settings = d.settings.copy(licencePlan = plan.name, licenceRef = key, licenceExpiry = expiry)) }; state.refresh()
                 next()
             }, shape = RoundedCornerShape(10.dp), colors = ButtonDefaults.buttonColors(containerColor = Theme.ACCENT), modifier = Modifier.height(44.dp).width(170.dp)) { Text("Activate Key", fontSize = 14.sp, fontWeight = FontWeight.Bold) }
             Spacer(Modifier.width(12.dp))
             OutlinedButton({
                 val expiry = java.time.LocalDate.now().plusDays(30).toString().replace("-", "")
-                state.repo.mutate("TRIAL_START", "Settings") { d -> d.copy(settings = d.settings.copy(licencePlan = "Trial", licenceRef = "TRIAL", licenceExpiry = expiry)) }
+                state.repo.mutate("TRIAL_START", "Settings") { d -> d.copy(settings = d.settings.copy(licencePlan = "Trial", licenceRef = "TRIAL", licenceExpiry = expiry)) }; state.refresh()
                 next()
             }, shape = RoundedCornerShape(10.dp), modifier = Modifier.height(44.dp)) { Text("Start 30-day Trial", fontSize = 13.sp) }
         }
@@ -308,6 +309,7 @@ private fun StepDone(state: AppState) {
         Spacer(Modifier.height(18.dp))
         Button({
             state.repo.mutate("SETUP_COMPLETE", "Settings") { d -> d.copy(settings = d.settings.copy(setupComplete = true)) }
+            state.refresh()   // without this the first-run gate never lifted — v2.2.1 fix
             state.screen = "dashboard"
             state.unlocked = true
             // initial cloud backup if account exists
