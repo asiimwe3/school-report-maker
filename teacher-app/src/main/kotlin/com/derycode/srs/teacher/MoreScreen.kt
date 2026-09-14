@@ -58,6 +58,7 @@ fun MoreScreen(state: TeacherState, onOpen: (Route) -> Unit) {
                 MoreRow(Icons.Filled.PersonAdd, "Register student", "Enroll a new student from the field") { onOpen(Route.Register) }
                 MoreRow(Icons.Filled.EventAvailable, "Attendance", "Daily register \u00B7 present / absent / late") { onOpen(Route.Attendance) }
                 MoreRow(Icons.Filled.Sync, "Sync & Export", "Import school data \u00B7 export your marks") { onOpen(Route.Sync) }
+                MoreRow(Icons.Filled.Cloud, "Cloud Sync", "Online account \u00B7 join school \u00B7 send marks") { onOpen(Route.Cloud) }
                 Divider(color = STROKE, modifier = Modifier.padding(vertical = 4.dp))
                 MoreRow(Icons.Filled.SupportAgent, "Support & Licence", "Updates \u00B7 crash reports \u00B7 plans") { onOpen(Route.Support) }
             }

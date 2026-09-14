@@ -1,0 +1,195 @@
+package com.derycode.srs.teacher
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Cloud — teacher account, join school with invite code, pull setup, send marks
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+fun CloudScreen(state: TeacherState) {
+    val scope = rememberCoroutineScope()
+    var busy by remember { mutableStateOf(false) }
+    var msg by remember { mutableStateOf("") }
+    var msgGood by remember { mutableStateOf(true) }
+    var mode by remember { mutableStateOf(if (state.cloud.signedIn) "main" else "signup") }
+    var schools by remember { mutableStateOf(state.cloudSchools) }
+    var inviteCode by remember { mutableStateOf("") }
+
+    var email by remember { mutableStateOf(state.cloud.account.email) }
+    var password by remember { mutableStateOf("") }
+    var fullName by remember { mutableStateOf(state.me?.name ?: "") }
+    var phone by remember { mutableStateOf(state.me?.phone ?: "") }
+
+    fun report(ok: Boolean, text: String) { msgGood = ok; msg = text }
+    fun run(block: suspend () -> Unit) { if (!busy) { busy = true; scope.launch(Dispatchers.IO) { block(); busy = false } } }
+
+    fun loadSchools() = run {
+        val t = state.cloud.freshToken()
+        if (!t.ok) { report(false, t.msg); return@run }
+        schools = state.cloud.linkedSchools(t.token)
+    }
+
+    if (mode == "signup" || mode == "login") {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.verticalScroll(rememberScrollState())) {
+            CardBox {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Filled.Cloud, contentDescription = null, tint = BLUE, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Cell(if (mode == "signup") "Create your cloud account" else "Sign in to your cloud account", MUTED, true)
+                }
+                Spacer(Modifier.height(4.dp))
+                Cell("One account works for every school you teach in. Your email and password stay private — the school never sees your password.", MUTED)
+                Spacer(Modifier.height(10.dp))
+                OutlinedTextField(email, { email = it }, label = { Text("Email") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(password, { password = it }, label = { Text(if (mode == "signup") "Choose a password (min 6 characters)" else "Password") },
+                    singleLine = true, visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password), modifier = Modifier.fillMaxWidth())
+                if (mode == "signup") {
+                    OutlinedTextField(fullName, { fullName = it }, label = { Text("Your full name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(phone, { phone = it }, label = { Text("Phone (optional)") }, singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone), modifier = Modifier.fillMaxWidth())
+                }
+                Spacer(Modifier.height(10.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = {
+                        run {
+                            if (email.isBlank() || password.length < 6) { report(false, "Enter a valid email and a password of at least 6 characters"); return@run }
+                            val r = if (mode == "signup") state.cloud.signUp(email, password, fullName.ifBlank { "Teacher" })
+                                    else state.cloud.login(email, password)
+                            if (!r.ok) { report(false, r.msg); return@run }
+                            mode = "main"
+                            schools = state.cloud.linkedSchools(r.token)
+                            report(true, if (mode == "signup") "" else "Signed in ✓")
+                            msg = if (schools.isEmpty()) "Signed in ✓ — now join your school with its invite code below."
+                                  else "Signed in ✓ — ${schools.size} school(s) linked."
+                        }
+                    }, enabled = !busy, colors = ButtonDefaults.buttonColors(containerColor = BLUE)) {
+                        Text(if (busy) "Please wait…" else if (mode == "signup") "Create account" else "Sign in", color = Color.White)
+                    }
+                    TextButton(onClick = { mode = if (mode == "signup") "login" else "signup" }) {
+                        Text(if (mode == "signup") "I already have an account" else "Create a new account", color = MUTED, fontSize = 13.sp)
+                    }
+                }
+                if (msg.isNotEmpty()) {
+                    Spacer(Modifier.height(6.dp))
+                    Cell(msg, if (msgGood) GOOD else ORANGE)
+                }
+            }
+        }
+        return
+    }
+
+    // ── Signed-in main cloud view ──
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.verticalScroll(rememberScrollState())) {
+        CardBox {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.CloudDone, contentDescription = null, tint = GOOD, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
+                Column(Modifier.weight(1f)) {
+                    Cell("Cloud account", MUTED, true)
+                    Cell(state.cloud.account.email.ifBlank { "signed in" }, MUTED)
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+            if (schools.isEmpty()) {
+                Cell("No school linked yet. Ask your head teacher for the school's invite code (it's shown on the Admin Console), then enter it below.", MUTED)
+            } else {
+                Cell("Your schools:", MUTED, true)
+                schools.forEach { Cell("• ${it.name.ifBlank { it.id.take(8) }}", Color.White) }
+                Cell("School on this phone: ${state.data.school.name.ifBlank { "not imported yet" }}", MUTED)
+            }
+        }
+
+        CardBox {
+            Cell("Join a school", MUTED, true)
+            Spacer(Modifier.height(4.dp))
+            Cell("The head teacher finds the invite code on the console: Cloud → School account.", MUTED)
+            Spacer(Modifier.height(8.dp))
+            OutlinedTextField(inviteCode, { inviteCode = it }, label = { Text("Invite code (e.g. ABC-1234)") },
+                singleLine = true, modifier = Modifier.fillMaxWidth())
+            Spacer(Modifier.height(8.dp))
+            Button(onClick = {
+                run {
+                    val t = state.cloud.freshToken()
+                    if (!t.ok) { report(false, t.msg); return@run }
+                    val r = state.cloud.joinSchool(t.token, inviteCode, state.me?.name ?: fullName.ifBlank { "Teacher" })
+                    if (!r.ok) { report(false, r.msg); return@run }
+                    schools = state.cloud.linkedSchools(t.token)
+                    report(true, "Joined ✓ — pull the school's setup below.")
+                }
+            }, enabled = !busy && inviteCode.isNotBlank(), colors = ButtonDefaults.buttonColors(containerColor = BLUE)) {
+                Text(if (busy) "Please wait…" else "Join school", color = Color.White)
+            }
+        }
+
+        CardBox {
+            Cell("Sync with the school", MUTED, true)
+            Spacer(Modifier.height(4.dp))
+            Cell("Pull school setup: downloads classes, students and subject config pushed by the console. Your own marks are always kept.", MUTED)
+            Spacer(Modifier.height(6.dp))
+            Cell("Send my marks: uploads your marks bundle to the school cloud — the head teacher imports it with one tap on the console.", MUTED)
+            Spacer(Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = {
+                    run {
+                        val t = state.cloud.freshToken()
+                        if (!t.ok) { report(false, t.msg); return@run }
+                        val target = schools.firstOrNull()
+                        if (target == null) { report(false, "Join a school first"); return@run }
+                        val (payload, err) = state.cloud.pullSchoolConfig(t.token, target.id)
+                        if (payload.isBlank()) { report(false, err); return@run }
+                        val res = state.importCloudConfig(payload)
+                        report(res.first, res.second)
+                    }
+                }, enabled = !busy && schools.isNotEmpty(), colors = ButtonDefaults.buttonColors(containerColor = BLUE)) {
+                    Text("Pull school setup", color = Color.White, fontSize = 13.sp)
+                }
+                Button(onClick = {
+                    run {
+                        val t = state.cloud.freshToken()
+                        if (!t.ok) { report(false, t.msg); return@run }
+                        val target = schools.firstOrNull()
+                        if (target == null) { report(false, "Join a school first"); return@run }
+                        val payload = state.buildMarksBundle()
+                        if (payload == null) { report(false, "Nothing to send — no marks on this phone yet"); return@run }
+                        val r = state.cloud.pushMarks(t.token, target.id, state.me?.name ?: "Teacher", payload)
+                        report(r.ok, r.msg)
+                    }
+                }, enabled = !busy && schools.isNotEmpty(), colors = ButtonDefaults.buttonColors(containerColor = GOOD)) {
+                    Text("Send my marks", color = Color(0xFF06281A), fontSize = 13.sp)
+                }
+            }
+        }
+
+        if (msg.isNotEmpty()) {
+            CardBox {
+                Text(msg, color = if (msgGood) GOOD else ORANGE, fontSize = 14.sp)
+            }
+        }
+
+        CardBox {
+            Button(onClick = { state.cloud.signOut(); mode = "signup"; schools = emptyList(); report(true, "Signed out. Your marks stay on this phone.") },
+                colors = ButtonDefaults.buttonColors(containerColor = CARD_ALT)) {
+                Text("Sign out (marks stay on phone)", color = Color.White, fontSize = 13.sp)
+            }
+        }
+    }
+}

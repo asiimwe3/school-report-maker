@@ -1,7 +1,7 @@
 {
-  "versionCode": 9,
-  "versionName": "2.1.0",
-  "apkUrl": "https://github.com/asiimwe3/school-report-maker/releases/download/v2.1.0/srs-teacher-1.7.0.apk",
-  "msiUrl": "https://github.com/asiimwe3/school-report-maker/releases/download/v2.1.0/SchoolReportMaker-2.1.0.msi",
-  "releaseNotes": "Secure licence keys with real student limits, PIN lock for the console, and teacher phones now respect head-teacher marks locking."
+  "versionCode": 11,
+  "versionName": "1.9.0",
+  "apkUrl": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.9.0.apk",
+  "msiUrl": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.0.msi",
+  "releaseNotes": "Cloud sync is here: teacher accounts, join school with invite code, pull school setup, send marks online. New app icon. Updated plans/terms/privacy (identical in both apps)."
 }

@@ -12,8 +12,8 @@ android {
         applicationId = "com.derycode.srs.teacher"
         minSdk = 26
         targetSdk = 34
-        versionCode = 9
-        versionName = "1.7.0"
+        versionCode = 11
+        versionName = "1.9.0"
     }
 
     compileOptions {

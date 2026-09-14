@@ -145,6 +145,33 @@ class TeacherState(context: Context) {
         } catch (_: Exception) { "Switch failed — file unreadable." }
     }
 
+    // ── Cloud sync state ─────────────────────────────────────────────────
+    val cloud = TeacherCloud(context)
+    var cloudSchools by mutableStateOf<List<SchoolLite>>(emptyList())
+
+    /** Pull school config from cloud into the normal import path (same rules as USB import). */
+    fun importCloudConfig(payload: String): Pair<Boolean, String> {
+        val dir = exportDir ?: return Pair(false, "Cannot access device storage")
+        return try {
+            File(dir, "school-data-from-admin.json").writeText(payload)
+            val msg = importSchoolData()
+            if (pendingSchoolName != null) Pair(false, msg)
+            else Pair(true, msg)
+        } catch (_: Exception) { Pair(false, "Import failed — wrong data format") }
+    }
+
+    /** Build the same marks bundle the USB export creates, as a JSON string for the cloud. */
+    fun buildMarksBundle(): String? {
+        val dir = exportDir ?: return null
+        val target = File(dir, "cloud-bundle-temp.json")
+        return try {
+            store.exportBundle(target.toPath(), data.school.name, deviceId = "teacher-cloud", marks = data.marks,
+                students = data.students, enrollmentRequests = data.enrollmentRequests,
+                dutyRecords = data.dutyRecords, gatePasses = data.gatePasses, attendance = data.attendance)
+            target.readText().also { target.delete() }
+        } catch (_: Exception) { null }
+    }
+
     init {
         data = if (Files.exists(file)) store.load(file)
         else SchoolData(
@@ -325,6 +352,7 @@ sealed class Route {
     object Register : Route()
     object Attendance : Route()
     object Support : Route()
+    object Cloud : Route()
 }
 
 private enum class Tab(val route: Route, val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
@@ -348,7 +376,7 @@ fun TeacherApp(state: TeacherState) {
         is Route.Classes, is Route.ClassDetail, is Route.EnterMarks -> Tab.CLASSES
         is Route.Assessments -> Tab.ASSESSMENTS
         is Route.Students, is Route.StudentDetail -> Tab.STUDENTS
-        is Route.More, is Route.Comments, is Route.Sync, is Route.Duty, is Route.Register, is Route.Attendance, is Route.Support -> Tab.MORE
+        is Route.More, is Route.Comments, is Route.Sync, is Route.Duty, is Route.Register, is Route.Attendance, is Route.Support, is Route.Cloud -> Tab.MORE
     }
 
     Column(Modifier.fillMaxSize().background(NAVY)) {
@@ -378,6 +406,7 @@ fun TeacherApp(state: TeacherState) {
                     is Route.Attendance -> AttendanceScreen(state)
                     is Route.Register -> RegisterScreen(state)
                     is Route.Support -> SupportScreen(state)
+                    is Route.Cloud -> CloudScreen(state)
                 }
             }
         }
@@ -436,6 +465,7 @@ private fun titleFor(state: TeacherState, route: Route): Pair<String, Boolean> =
     is Route.Register -> "Register Student" to true
     is Route.Attendance -> "Attendance" to true
     is Route.Support -> "Support & Licence" to true
+    is Route.Cloud -> "Cloud Sync" to true
 }
 
 @Composable

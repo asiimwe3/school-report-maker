@@ -432,7 +432,18 @@ data class AppSettings(
     val licencePlan: String = "Trial",
     val licenceRef: String = "",
     val licenceExpiry: String = "",
-    val adminPinHash: String = ""
+    val adminPinHash: String = "",
+    // ── Onboarding & cloud (v2.2.0) ──
+    val setupComplete: Boolean = false,
+    val cloudUrl: String = "",
+    val cloudKey: String = "",
+    val cloudEmail: String = "",
+    val cloudAccessToken: String = "",
+    val cloudRefreshToken: String = "",
+    val cloudSchoolId: String = "",
+    val cloudInviteCode: String = "",
+    val cloudLastBackup: String = "",
+    val teacherCloudEnabled: Boolean = false
 )
 
 // ── School fees (structure per class/term + payments per student) ──

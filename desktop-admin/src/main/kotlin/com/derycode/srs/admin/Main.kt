@@ -94,6 +94,7 @@ class AppState(val repo: SchoolRepository) {
     fun refresh() {
         data = repo.data
         refreshTick++
+        CloudSync.scheduleAutoPush(repo)   // debounced cloud auto-backup after every save
     }
 }
 
@@ -124,6 +125,11 @@ fun main() = application {
 
 @Composable
 fun App(state: AppState) {
+    // ── First-run gate (v2.2.0): mandatory setup wizard before dashboard ──
+    if (!state.data.settings.setupComplete) {
+        SetupWizard(state)
+        return
+    }
     // ── Security gate (Section 12): PIN lock on startup ──
     if (state.data.settings.adminPinHash.isNotBlank() && !state.unlocked) {
         PinLockScreen(state)
@@ -138,7 +144,7 @@ fun App(state: AppState) {
         "REPORTS" to listOf("reports" to "Reports", "templates" to "Templates", "commentbank" to "Comment Bank",
             "preview" to "Report Preview", "archive" to "Report Archive"),
         "PLANS" to listOf("plans" to "Plans & Pricing"),
-        "SYSTEM" to listOf("sync" to "Sync & Backup", "users" to "Users",
+        "SYSTEM" to listOf("sync" to "Sync & Backup", "cloud" to "Cloud & Online", "users" to "Users",
             "notifications" to "Notifications", "backups" to "Backup History",
             "importexport" to "Import / Export", "audit" to "Audit Log", "settings" to "Settings"),
         "HELP" to listOf("docs" to "Help & Documentation", "support" to "Support & Licence")
@@ -205,6 +211,7 @@ fun App(state: AppState) {
                 "commentbank" -> CommentBankScreen(state)
                 "reports" -> ReportsScreen(state)
                 "sync" -> SyncScreen(state)
+                "cloud" -> CloudScreen(state)
                 "templates" -> TemplatesScreen(state)
                 "preview" -> PreviewScreen(state)
                 "audit" -> AuditScreen(state)
