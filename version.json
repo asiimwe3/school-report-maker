@@ -1,7 +1,7 @@
 {
-  "versionCode": 11,
-  "versionName": "1.9.0",
-  "apkUrl": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.9.0.apk",
-  "msiUrl": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.2.msi",
-  "releaseNotes": "Fixed: screen titles overlapping with content (Box->Column layout bug). Fixed: default classes (P1-S6) not appearing when a school already had an academic year set up before classes existed. Fixed: setup wizard getting stuck on Open Dashboard."
+ "console": "2.2.3",
+ "teacher": "1.9.0",
+ "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.3.msi",
+ "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.9.0.apk",
+ "released": "2026-09-14"
 }

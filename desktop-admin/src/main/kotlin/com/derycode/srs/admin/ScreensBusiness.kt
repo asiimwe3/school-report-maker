@@ -32,6 +32,10 @@ fun FeesScreen(state: AppState) {
     val year = d.academicYears.firstOrNull { it.currentTermId != null } ?: d.academicYears.firstOrNull()
     val term = year?.terms?.firstOrNull { it.id == year.currentTermId } ?: year?.terms?.firstOrNull()
     var classId by remember { mutableStateOf(d.classes.firstOrNull { it.active }?.id ?: "") }
+    // v2.2.3: filter by level so schools with many streams (and Senior 4+) don't hit the old
+    // hard cutoff — previously only the FIRST 10 classes ever showed here, silently hiding
+    // Senior 4, 5 and 6 for any school with 7 primary classes + streams.
+    var feesLevel by remember { mutableStateOf<Level?>(null) }
     var feeAmount by remember { mutableStateOf("") }
     var msg by remember { mutableStateOf("") }
     var payStudent by remember { mutableStateOf("") }
@@ -54,7 +58,14 @@ fun FeesScreen(state: AppState) {
             if (d.classes.isEmpty()) Text("Add classes first.", color = Theme.MUTED, fontSize = 14.sp)
             else {
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    d.classes.filter { it.active }.take(10).forEach { c ->
+                    FilterChip(selected = feesLevel == null, onClick = { feesLevel = null }, label = { Text("All levels", fontSize = 12.sp) })
+                    Level.entries.forEach { lvl ->
+                        FilterChip(selected = feesLevel == lvl, onClick = { feesLevel = lvl }, label = { Text(levelLabel(lvl), fontSize = 12.sp) })
+                    }
+                }
+                Spacer(Modifier.height(6.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
+                    d.classes.filter { it.active && (feesLevel == null || it.level == feesLevel) }.forEach { c ->
                         FilterChip(selected = classId == c.id, onClick = { classId = c.id },
                             label = { Text(if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}", fontSize = 12.sp) })
                     }

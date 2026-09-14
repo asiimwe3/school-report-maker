@@ -333,6 +333,41 @@ fun SettingsScreen(state: AppState) {
             }
             if (pinMsg.isNotBlank()) Text(pinMsg, color = if (pinMsg.contains("✓")) Theme.GOOD else Theme.WARN, fontSize = 13.sp)
         }
+        // ── Connect Teachers (v2.2.3) ──
+        CardBox {
+            Text("Connect Teachers", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(4.dp))
+            if (s.cloudSchoolId.isBlank()) {
+                Text("Set up your school's cloud account first (Cloud & Online), then teachers can join with a code from their phone.", color = Theme.MUTED, fontSize = 13.sp)
+                Spacer(Modifier.height(8.dp))
+                Btn("Go to Cloud & Online") { state.screen = "cloud" }
+            } else {
+                Text("Share this code — teachers enter it in the phone app to join your school and see their classes.", color = Theme.MUTED, fontSize = 13.sp)
+                Spacer(Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Box(Modifier.background(Theme.ACCENT_SOFT, RoundedCornerShape(8.dp)).padding(horizontal = 16.dp, vertical = 8.dp)) {
+                        Text(s.cloudInviteCode, color = Theme.ACCENT, fontSize = 22.sp, fontWeight = FontWeight.Black)
+                    }
+                    Btn("Copy code", primary = false) {
+                        try {
+                            val sel = java.awt.datatransfer.StringSelection(s.cloudInviteCode)
+                            java.awt.Toolkit.getDefaultToolkit().systemClipboard.setContents(sel, null)
+                        } catch (_: Exception) { }
+                    }
+                    Btn("Manage teachers", primary = false) { state.screen = "teachers" }
+                }
+                Spacer(Modifier.height(10.dp))
+                Text("Teachers on this school's staff list:", color = Theme.MUTED, fontSize = 12.sp)
+                if (state.data.teachers.isEmpty()) {
+                    Text("None added yet — go to Teachers to add staff, then assign them to classes and subjects.", color = Theme.MUTED, fontSize = 13.sp)
+                } else {
+                    state.data.teachers.take(10).forEach { t ->
+                        Text("• ${t.name} — ${roleLabel(t.role)}", color = Theme.TEXT, fontSize = 13.sp, modifier = Modifier.padding(vertical = 1.dp))
+                    }
+                    if (state.data.teachers.size > 10) Text("+ ${state.data.teachers.size - 10} more — see Teachers", color = Theme.MUTED, fontSize = 12.sp)
+                }
+            }
+        }
         // ── Danger zone: factory reset ──
         CardBox {
             Text("Danger zone — Reset all data", color = Color(0xFFFF6B6B), fontSize = 16.sp, fontWeight = FontWeight.Bold)
@@ -801,6 +836,7 @@ fun CalendarScreen(state: AppState) {
 fun ImportExportScreen(state: AppState) {
     val d = state.data
     var msg by remember { mutableStateOf("") }
+    var excelMsg by remember { mutableStateOf("") }
     val exportDir = dataDir.resolve("exports")
 
     ScreenTitle("Import / Export", "CSV in and out — students, marks, results. No internet needed.")
@@ -874,6 +910,81 @@ fun ImportExportScreen(state: AppState) {
                 }
                 msg = "Imported $added students, skipped $skipped (already enrolled or malformed)."
             }
+        }
+
+        // ── Excel class-list import (v2.2.3) — the big time-saver ──
+        CardBox {
+            Text("Import class lists from Excel (.xlsx)", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(6.dp))
+            Text("One sheet per class (name the sheet like the class, e.g. \"Primary 1\" or \"Senior 2 East\"). Columns in order: Admission No, First Name, Middle Name, Last Name, Sex, Date of Birth, Guardian Phone. Header row is ignored. Students are enrolled straight into the matching class for the current academic year — no typing needed.", color = Theme.MUTED, fontSize = 13.sp)
+            Spacer(Modifier.height(10.dp))
+            val year = d.academicYears.firstOrNull { it.currentTermId != null } ?: d.academicYears.firstOrNull()
+            if (year == null) {
+                Text("Create an academic year first (Calendar screen) before importing class lists.", color = Theme.WARN, fontSize = 13.sp)
+            } else if (d.classes.isEmpty()) {
+                Text("Add classes first (Classes & Streams screen) so sheets have something to match against.", color = Theme.WARN, fontSize = 13.sp)
+            } else {
+                Btn("Choose Excel file…") {
+                    val dialog = java.awt.FileDialog(null as java.awt.Frame?, "Select class-list workbook", java.awt.FileDialog.LOAD)
+                    dialog.setFilenameFilter { _, name -> name.lowercase().endsWith(".xlsx") }
+                    dialog.isVisible = true
+                    val chosen = dialog.file
+                    val dir = dialog.directory
+                    if (chosen == null || dir == null) return@Btn
+                    try {
+                        val path = java.nio.file.Path.of(dir, chosen)
+                        val sheets = com.derycode.srs.core.importer.ExcelImport.readClassLists(path)
+                        val newStudents = mutableListOf<Student>()
+                        val newEnrollments = mutableListOf<Enrollment>()
+                        var added = 0; var skipped = 0
+                        val unmatched = mutableListOf<String>()
+                        sheets.forEach { sheet ->
+                            val target = com.derycode.srs.core.importer.ExcelImport.normalize(sheet.sheetName)
+                            val cls = d.classes.firstOrNull { c ->
+                                val full = com.derycode.srs.core.importer.ExcelImport.normalize(if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}")
+                                val nameOnly = com.derycode.srs.core.importer.ExcelImport.normalize(c.name)
+                                full == target || nameOnly == target || target.contains(nameOnly) || nameOnly.contains(target)
+                            }
+                            if (cls == null) { unmatched += sheet.sheetName; return@forEach }
+                            sheet.rows.forEach { row ->
+                                if (row.admissionNo.isBlank() || row.firstName.isBlank()) { skipped++; return@forEach }
+                                val existing = d.students.firstOrNull { it.admissionNo == row.admissionNo }
+                                    ?: newStudents.firstOrNull { it.admissionNo == row.admissionNo }
+                                val studentId: String
+                                if (existing != null) {
+                                    studentId = existing.id
+                                } else {
+                                    val id = state.repo.nextId()
+                                    newStudents += Student(
+                                        id = id, admissionNo = row.admissionNo,
+                                        firstName = row.firstName, middleName = row.middleName, lastName = row.lastName,
+                                        sex = row.sex.ifBlank { "M" }, dateOfBirth = row.dateOfBirth, guardianPhone = row.guardianPhone
+                                    )
+                                    studentId = id
+                                }
+                                val alreadyEnrolled = d.enrollments.any { it.studentId == studentId && it.academicYearId == year.id && it.classId == cls.id } ||
+                                    newEnrollments.any { it.studentId == studentId && it.academicYearId == year.id && it.classId == cls.id }
+                                if (!alreadyEnrolled) {
+                                    newEnrollments += Enrollment(id = state.repo.nextId(), studentId = studentId, academicYearId = year.id, classId = cls.id)
+                                    added++
+                                } else skipped++
+                            }
+                        }
+                        if (newStudents.isNotEmpty() || newEnrollments.isNotEmpty()) {
+                            state.repo.mutate("EXCEL_CLASS_LISTS_IMPORTED", "Student", "", new = "$added enrolled, $skipped skipped") { dd ->
+                                dd.copy(students = dd.students + newStudents, enrollments = dd.enrollments + newEnrollments)
+                            }
+                            state.refresh()
+                        }
+                        excelMsg = "Imported ${newStudents.size} new students, enrolled $added across ${sheets.size - unmatched.size} class sheet(s)." +
+                            (if (unmatched.isNotEmpty()) " Could not match sheet name(s) to a class: ${unmatched.joinToString(", ")} — rename the sheet to match the class exactly (e.g. \"Senior 2\")." else "") +
+                            (if (skipped > 0) " $skipped row(s) skipped (already enrolled or missing name)." else "")
+                    } catch (e: Exception) {
+                        excelMsg = "Could not read that file: ${e.message}"
+                    }
+                }
+            }
+            if (excelMsg.isNotEmpty()) Text(excelMsg, color = if (excelMsg.contains("Could not")) Color(0xFFFF6B6B) else Theme.GOOD, fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp))
         }
     }
 }

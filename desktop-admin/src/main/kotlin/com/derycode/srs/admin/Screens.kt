@@ -184,10 +184,19 @@ fun ClassesScreen(state: AppState) {
     var customLevel by remember { mutableStateOf(Level.O_LEVEL) }
     var showCustom by remember { mutableStateOf(false) }
     var teacherPickerFor by remember { mutableStateOf("") }  // class id currently picking a teacher for
+    // v2.2.3: pick one level at a time so the page doesn't need scrolling through P1-S6 every time.
+    var selectedLevel by remember { mutableStateOf<Level?>(null) }
 
     ScreenTitle("Classes & Streams", "Primary 1 → Senior 6 already set up for every school. Just add streams (East/West, A/B…) where a class is split.")
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        Level.entries.forEach { lvl ->
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("Level:", color = Theme.MUTED, fontSize = 14.sp)
+            FilterChip(selected = selectedLevel == null, onClick = { selectedLevel = null }, label = { Text("All", fontSize = 13.sp) })
+            Level.entries.forEach { lvl ->
+                FilterChip(selected = selectedLevel == lvl, onClick = { selectedLevel = lvl }, label = { Text(levelLabel(lvl), fontSize = 13.sp) })
+            }
+        }
+        Level.entries.filter { selectedLevel == null || it == selectedLevel }.forEach { lvl ->
             val inLevel = d.classes.filter { it.level == lvl && it.active }
             if (inLevel.isNotEmpty()) {
                 CardBox {

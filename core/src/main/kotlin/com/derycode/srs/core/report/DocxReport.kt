@@ -22,6 +22,30 @@ object DocxReport {
     private class Doc {
         val body = StringBuilder()
         private var tableOpen = false
+        var logoBytes: ByteArray? = null
+        var logoExt: String = "png"
+
+        /** Inserts the school logo, centered, at the current position. Safe to call multiple times
+         *  (e.g. once per student page) — they all reference the same embedded image part. */
+        fun logo(bytes: ByteArray, ext: String) {
+            logoBytes = bytes
+            logoExt = if (ext.lowercase() in listOf("png", "jpg", "jpeg")) ext.lowercase() else "png"
+            val img = try { javax.imageio.ImageIO.read(java.io.ByteArrayInputStream(bytes)) } catch (_: Exception) { null }
+            val targetHeightPx = 72
+            val widthPx = if (img != null && img.height > 0) (img.width.toDouble() / img.height * targetHeightPx).toInt().coerceAtLeast(1) else targetHeightPx
+            val emuW = widthPx.toLong() * 9525L
+            val emuH = targetHeightPx.toLong() * 9525L
+            body.append("""<w:p><w:pPr><w:jc w:val="center"/><w:spacing w:after="80"/></w:pPr><w:r><w:drawing>""")
+                .append("""<wp:inline xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" distT="0" distB="0" distL="0" distR="0">""")
+                .append("""<wp:extent cx="$emuW" cy="$emuH"/><wp:docPr id="1" name="SchoolLogo"/>""")
+                .append("""<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">""")
+                .append("""<a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">""")
+                .append("""<pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">""")
+                .append("""<pic:nvPicPr><pic:cNvPr id="1" name="SchoolLogo"/><pic:cNvPicPr/></pic:nvPicPr>""")
+                .append("""<pic:blipFill><a:blip r:embed="rIdLogo0" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>""")
+                .append("""<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="$emuW" cy="$emuH"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>""")
+                .append("""</pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>""")
+        }
 
         private fun esc(s: String) = s.replace("&", "&amp;").replace("<", "&lt;")
             .replace(">", "&gt;").replace("\"", "&quot;")
@@ -85,16 +109,26 @@ object DocxReport {
             val document = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
 <w:body>${body}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="680" w:right="680" w:bottom="680" w:left="680" w:header="0" w:footer="0" w:gutter="0"/></w:sectPr></w:body></w:document>"""
+            val hasLogo = logoBytes != null
+            val logoMime = if (logoExt == "png") "png" else "jpeg"
             val contentTypes = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>"""
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>${if (hasLogo) """<Default Extension="$logoExt" ContentType="image/$logoMime"/>""" else ""}<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>"""
             val rels = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>"""
+            val documentRels = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdLogo0" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/logo.$logoExt"/></Relationships>"""
             val out = ByteArrayOutputStream()
             ZipOutputStream(out).use { zip ->
                 zip.putNextEntry(ZipEntry("[Content_Types].xml"))
                 zip.write(contentTypes.toByteArray(StandardCharsets.UTF_8)); zip.closeEntry()
                 zip.putNextEntry(ZipEntry("_rels/.rels"))
                 zip.write(rels.toByteArray(StandardCharsets.UTF_8)); zip.closeEntry()
+                if (hasLogo) {
+                    zip.putNextEntry(ZipEntry("word/_rels/document.xml.rels"))
+                    zip.write(documentRels.toByteArray(StandardCharsets.UTF_8)); zip.closeEntry()
+                    zip.putNextEntry(ZipEntry("word/media/logo.$logoExt"))
+                    zip.write(logoBytes!!); zip.closeEntry()
+                }
                 zip.putNextEntry(ZipEntry("word/document.xml"))
                 zip.write(document.toByteArray(StandardCharsets.UTF_8)); zip.closeEntry()
             }
@@ -102,11 +136,22 @@ object DocxReport {
         }
     }
 
+    /** Reads the school's logo bytes off disk if one is configured (safe: never throws). */
+    private fun readLogo(school: com.derycode.srs.core.model.School): Pair<ByteArray, String>? {
+        val path = school.logoPath ?: return null
+        return try {
+            val bytes = Files.readAllBytes(Path.of(path))
+            val ext = path.substringAfterLast('.', "png").lowercase()
+            bytes to (if (ext in listOf("png", "jpg", "jpeg")) ext else "png")
+        } catch (_: Exception) { null }
+    }
+
     // ── class merit list (broadsheet) ──────────────────────────────────────
     /** Word document: full class broadsheet — students x subjects with positions. */
     fun writeMeritList(out: Path, data: SchoolData, results: List<TermResult>, classLabel: String, termLabel: String): Path {
         val doc = Doc()
         val s = data.school
+        readLogo(s)?.let { (bytes, ext) -> doc.logo(bytes, ext) }
         doc.p(s.name, bold = true, size = 32, align = "center", spacingAfter = 20)
         val contact = listOf(s.address, s.phone).filter { it.isNotBlank() }.joinToString(" • ")
         if (contact.isNotBlank()) doc.p(contact, size = 18, align = "center", color = "666666", spacingAfter = 20)
@@ -138,6 +183,7 @@ object DocxReport {
                            currency: String, rows: List<List<String>>, totals: List<String>): Path {
         val doc = Doc()
         val s = data.school
+        readLogo(s)?.let { (bytes, ext) -> doc.logo(bytes, ext) }
         doc.p(s.name, bold = true, size = 32, align = "center", spacingAfter = 20)
         val contact = listOf(s.address, s.phone).filter { it.isNotBlank() }.joinToString(" • ")
         if (contact.isNotBlank()) doc.p(contact, size = 18, align = "center", color = "666666", spacingAfter = 20)
@@ -192,6 +238,7 @@ object DocxReport {
             .flatMap { y -> y.terms.asSequence().map { t -> y to t } }
             .firstOrNull { it.second.id == result.termId }
 
+        readLogo(school)?.let { (bytes, ext) -> doc.logo(bytes, ext) }
         doc.p(school.name, bold = true, size = 32, align = "center", color = ink, spacingAfter = 20)
         if (school.motto.isNotBlank()) doc.p("\u201C${school.motto}\u201D", italic = true, size = 20, align = "center", spacingAfter = 20)
         val addr = school.address + if (school.phone.isNotBlank()) " · Tel: ${school.phone}" else ""
