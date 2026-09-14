@@ -260,20 +260,34 @@ object DocxReport {
             ))
         )
 
-        // subject marks table
+        // subject performance — Zeraki-style: one column per assessment (BOT/MID/EOT…)
+        val subjectIds = result.subjectResults.map { it.subjectId }.toSet()
+        val comps = data.components.filter { c -> c.active && data.marks.any { m ->
+            m.studentId == student.id && m.termId == result.termId && m.componentId == c.id && m.subjectId in subjectIds } }
+        val compList = comps.take(4)
+        val compCode = { id: String -> data.components.firstOrNull { it.id == id }?.code?.ifBlank { null } ?: data.components.firstOrNull { it.id == id }?.name?.take(6) ?: "?" }
+        val num = { d: Double -> if (d == Math.floor(d)) d.toLong().toString() else fmt(d) }
+
         val subjectRows = data.subjects.filter { s -> result.subjectResults.any { it.subjectId == s.id } }
             .map { s ->
                 val r = result.subjectResults.first { it.subjectId == s.id }
-                listOf(
-                    s.name, r.total.toString(), fmt(r.percentage) + "%", r.grade,
-                    if (r.points > 0) r.points.toString() else "",
-                    if (r.remark.isBlank()) "" else r.remark
-                )
+                val perComp = compList.map { c ->
+                    val m = data.marks.firstOrNull { it.studentId == student.id && it.subjectId == s.id && it.termId == result.termId && it.componentId == c.id }
+                    when {
+                        m == null -> "—"
+                        m.type == com.derycode.srs.core.model.MarkType.ABS -> "ABS"
+                        m.type == com.derycode.srs.core.model.MarkType.MISSING -> "MISS"
+                        else -> num(m.score)
+                    }
+                }
+                listOf(s.name) + perComp + listOf(r.total.toInt().toString(), fmt(r.percentage) + "%", r.grade,
+                    if (r.positionInSubject > 0) r.positionInSubject.toString() else "",
+                    if (r.remark.isBlank()) "" else r.remark)
             }
         doc.p("Subject Performance", bold = true, size = 22, color = accent, spacingAfter = 40)
         doc.table(
-            listOf("Subject", "Total", "%", "Grade", "Pts", "Remark"),
-            subjectRows.ifEmpty { listOf(listOf("No marks recorded", "", "", "", "", "")) }
+            listOf("Subject") + compList.map { compCode(it.id) } + listOf("Total", "%", "Grade", "Pos", "Remark"),
+            subjectRows.ifEmpty { listOf(listOf("No marks recorded")) }
         )
 
         // summary
@@ -294,6 +308,42 @@ object DocxReport {
             listOf("Overall Result", "Position", "Average"),
             listOf(listOf(overall, posLine.ifBlank { "—" }, fmt(result.averagePercent) + "%"))
         )
+
+        // class performance analysis (Zeraki-style: how the student compares to the class)
+        val termObj = term?.second
+        val yearObj = term?.first
+        val classmates = data.enrollments
+            .filter { e -> e.academicYearId == (yearObj?.id ?: "") && e.classId == (cls?.id ?: "") }
+            .map { it.studentId }.toSet()
+        val classAverages = classmates.mapNotNull { sid ->
+            val ms = data.marks.filter { m -> m.studentId == sid && m.termId == result.termId && m.type == com.derycode.srs.core.model.MarkType.VALUE && m.maxScore > 0 }
+            if (ms.isEmpty()) null else ms.sumOf { it.score } / ms.sumOf { it.maxScore.toDouble() } * 100.0
+        }
+        if (classAverages.size >= 2) {
+            doc.p("Class Performance Analysis", bold = true, size = 22, color = accent, spacingAfter = 40)
+            val classAvg = classAverages.average()
+            val inClass = classmates.count { sid -> sid != student.id }
+            doc.table(
+                listOf("Class average", "Highest in class", "Lowest in class", "Students in class"),
+                listOf(listOf(fmt(classAvg) + "%", fmt(classAverages.max()) + "%", fmt(classAverages.min()) + "%", (inClass + 1).toString()))
+            )
+            doc.p("", size = 10, spacingAfter = 60)
+        }
+
+        // grading key (from the school's grading scheme for this level)
+        val gradeScheme = data.gradingSchemes.firstOrNull { it.id == result.schemeId }
+            ?: data.gradingSchemes.firstOrNull { it.level == cls?.level && it.active }
+        if (gradeScheme != null && gradeScheme.boundaries.isNotEmpty()) {
+            doc.p("Grading Key (${gradeScheme.name})", bold = true, size = 20, color = accent, spacingAfter = 40)
+            doc.table(
+                listOf("Grade", "Marks range", "Points", "Description"),
+                gradeScheme.boundaries.sortedByDescending { it.minScore }.map { b ->
+                    listOf(b.grade, "${num(b.minScore)}–${num(b.maxScore)}",
+                        if (b.points > 0) b.points.toString() else "", b.label.ifBlank { b.remark })
+                }
+            )
+            doc.p("", size = 10, spacingAfter = 60)
+        }
 
         // school fees summary (only when a fee structure exists for this class/term)
         val enrollment = data.enrollments.lastOrNull { it.studentId == student.id }
@@ -330,6 +380,10 @@ object DocxReport {
             .joinToString("\n") { it.text }
         doc.p("Class Teacher's Comments", bold = true, size = 22, color = accent, spacingAfter = 40)
         doc.p(classComments.ifBlank { " " }, size = 22, spacingAfter = 120)
+
+        doc.p("Head Teacher's Remarks", bold = true, size = 22, color = accent, spacingAfter = 40)
+        doc.p(" ", size = 22, spacingAfter = 100)
+        doc.p(" ", size = 22, spacingAfter = 100)
 
         val head = data.teachers.firstOrNull { it.role == com.derycode.srs.core.model.Role.HEAD_TEACHER }
         val classTeacher = cls?.classTeacherId?.let { id -> data.teachers.firstOrNull { it.id == id } }
