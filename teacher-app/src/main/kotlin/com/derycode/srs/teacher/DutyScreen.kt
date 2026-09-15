@@ -22,7 +22,7 @@ import java.util.Locale
 @Composable
 fun DutyScreen(state: TeacherState) {
     val d = state.data
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxSize()) {
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.fillMaxSize()) {
         item { Spacer(Modifier.height(4.dp)) }
         // ── On-duty toggle + duty log ──
         item {
@@ -42,7 +42,7 @@ fun DutyScreen(state: TeacherState) {
                     var role by remember { mutableStateOf("Teacher on duty") }
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         listOf("Teacher on duty", "Games", "Compound", "Library").forEach { r ->
-                            FilterChip(selected = role == r, onClick = { role = r }, label = { Text(r, fontSize = 12.sp) })
+                            FilterChip(selected = role == r, onClick = { role = r }, label = { Text(r, fontSize = 14.sp) })
                         }
                     }
                     Spacer(Modifier.height(8.dp))
@@ -94,14 +94,14 @@ fun DutyScreen(state: TeacherState) {
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             matches.forEach { s ->
                                 FilterChip(selected = sel == s.id, onClick = { sel = s.id },
-                                    label = { Text("${s.firstName} ${s.lastName}".take(14), fontSize = 12.sp) })
+                                    label = { Text("${s.firstName} ${s.lastName}".take(14), fontSize = 14.sp) })
                             }
                         }
                     }
                     Spacer(Modifier.height(6.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         listOf("Sick bay", "Home pass", "Errand", "Other").forEach { r ->
-                            FilterChip(selected = reason == r, onClick = { reason = r }, label = { Text(r, fontSize = 12.sp) })
+                            FilterChip(selected = reason == r, onClick = { reason = r }, label = { Text(r, fontSize = 14.sp) })
                         }
                     }
                     Spacer(Modifier.height(6.dp))
@@ -165,7 +165,7 @@ fun RegisterScreen(state: TeacherState) {
     var guardian by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var msg by remember { mutableStateOf("") }
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxSize()) {
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.fillMaxSize()) {
         item { Spacer(Modifier.height(4.dp)) }
         item {
             CardBox {
@@ -184,7 +184,7 @@ fun RegisterScreen(state: TeacherState) {
                 Cell("Sex", MUTED)
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     listOf("M", "F").forEach { s ->
-                        FilterChip(selected = sex == s, onClick = { sex = s }, label = { Text(s, fontSize = 12.sp) })
+                        FilterChip(selected = sex == s, onClick = { sex = s }, label = { Text(s, fontSize = 14.sp) })
                     }
                 }
                 Spacer(Modifier.height(8.dp))
@@ -192,7 +192,7 @@ fun RegisterScreen(state: TeacherState) {
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     d.classes.filter { it.active }.forEach { c ->
                         FilterChip(selected = classId == c.id, onClick = { classId = c.id },
-                            label = { Text((if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}").take(12), fontSize = 12.sp) })
+                            label = { Text((if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}").take(12), fontSize = 14.sp) })
                     }
                 }
                 Spacer(Modifier.height(8.dp))

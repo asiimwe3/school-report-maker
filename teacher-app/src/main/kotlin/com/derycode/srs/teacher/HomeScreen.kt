@@ -28,11 +28,11 @@ fun HomeScreen(state: TeacherState, onOpenClass: (String) -> Unit, onQuickAction
     val d = state.data
     val greeting = greetingWord()
 
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item {
-            Text("$greeting,", color = MUTED, fontSize = 15.sp)
-            Text(state.me?.let { "Mr./Mrs. ${it.name}" } ?: "Teacher", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-            Text("Teach \u00B7 Guide \u00B7 Build the future", color = MUTED, fontSize = 13.sp)
+            Text("$greeting,", color = MUTED, fontSize = 17.sp)
+            Text(state.me?.let { "Mr./Mrs. ${it.name}" } ?: "Teacher", color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Bold)
+            Text("Teach \u00B7 Guide \u00B7 Build the future", color = MUTED, fontSize = 15.sp)
             Spacer(Modifier.height(4.dp))
         }
         item {
@@ -45,13 +45,13 @@ fun HomeScreen(state: TeacherState, onOpenClass: (String) -> Unit, onQuickAction
             }
         }
         item {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 QuickActionCard(Modifier.weight(1f), "My Classes", "View & manage your classes", Icons.Filled.MenuBook, PURPLE) { onQuickAction(Route.Classes) }
                 QuickActionCard(Modifier.weight(1f), "Assessments", "Create & manage tests and marks", Icons.Filled.Assignment, TEAL) { onQuickAction(Route.Assessments) }
             }
         }
         item {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 QuickActionCard(Modifier.weight(1f), "Student Records", "View student performance", Icons.Filled.BarChart, PINK) { onQuickAction(Route.Students(null)) }
                 QuickActionCard(Modifier.weight(1f), "Reports", "Generate & export reports", Icons.Filled.Description, ORANGE) { onQuickAction(Route.More) }
             }
@@ -64,7 +64,7 @@ fun HomeScreen(state: TeacherState, onOpenClass: (String) -> Unit, onQuickAction
                         Spacer(Modifier.width(6.dp))
                         Cell("Today's Schedule", bold = true)
                     }
-                    Text("View all", color = BLUE, fontSize = 13.sp, modifier = Modifier.clickable { onQuickAction(Route.Classes) })
+                    Text("View all", color = BLUE, fontSize = 15.sp, modifier = Modifier.clickable { onQuickAction(Route.Classes) })
                 }
                 Spacer(Modifier.height(8.dp))
                 if (state.todaysSchedule.isEmpty()) {
@@ -96,7 +96,7 @@ fun HomeScreen(state: TeacherState, onOpenClass: (String) -> Unit, onQuickAction
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             d.teachers.take(4).forEach { t ->
                                 Button(onClick = { state.setMe(t.id) }, colors = ButtonDefaults.buttonColors(containerColor = BLUE)) {
-                                    Text(t.name, fontSize = 13.sp, color = Color.White)
+                                    Text(t.name, fontSize = 15.sp, color = Color.White)
                                 }
                             }
                         }
@@ -120,8 +120,8 @@ private fun greetingWord(): String {
 @Composable
 private fun StatItem(modifier: Modifier, value: String, label: String) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(value, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-        Text(label, color = MUTED, fontSize = 13.sp)
+        Text(value, color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Bold)
+        Text(label, color = MUTED, fontSize = 15.sp)
     }
 }
 
@@ -138,8 +138,8 @@ private fun QuickActionCard(modifier: Modifier, title: String, subtitle: String,
             Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(19.dp))
         }
         Spacer(Modifier.height(10.dp))
-        Text(title, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+        Text(title, color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(2.dp))
-        Text(subtitle, color = MUTED, fontSize = 12.sp, lineHeight = 13.sp)
+        Text(subtitle, color = MUTED, fontSize = 14.sp, lineHeight = 13.sp)
     }
 }

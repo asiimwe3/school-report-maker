@@ -13,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,7 +36,7 @@ class MainActivity : ComponentActivity() {
         CrashTracker.install(this)
         val state = TeacherState(this)
         state.checkForUpdate()   // auto-check on every launch; only asks GitHub, never sends data
-        setContent { MaterialTheme(colorScheme = darkColorScheme(background = NAVY, surface = CARD)) { TeacherApp(state) } }
+        setContent { MaterialTheme(colorScheme = darkColorScheme(background = NAVY, surface = CARD), typography = AppTypography) { TeacherApp(state) } }
     }
 }
 
@@ -304,6 +305,16 @@ fun classShort(c: SchoolClass): String {
 // Theme — dark navy dashboard, colored accent system
 // ─────────────────────────────────────────────────────────────────────────────
 
+internal val AppTypography = Typography(
+    labelLarge = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold),      // Buttons
+    bodyLarge = TextStyle(fontSize = 17.sp, fontWeight = FontWeight.SemiBold),   // Text fields
+    bodyMedium = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.SemiBold),
+    bodySmall = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.SemiBold),
+    titleLarge = TextStyle(fontSize = 23.sp, fontWeight = FontWeight.Bold),       // Top bars
+    titleMedium = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold),
+    titleSmall = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold),
+)
+
 internal val NAVY = Color(0xFF0A0E1A)
 internal val CARD = Color(0xFF141B2E)
 internal val CARD_ALT = Color(0xFF1B2438)
@@ -419,23 +430,23 @@ private fun TopBar(state: TeacherState, route: Route, onBack: () -> Unit) {
     val (title, showBack) = titleFor(state, route)
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         if (showBack) {
-            IconButton(onClick = onBack, modifier = Modifier.size(34.dp)) {
+            IconButton(onClick = onBack, modifier = Modifier.size(38.dp)) {
                 Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
             }
             Spacer(Modifier.width(4.dp))
         } else {
-            Box(Modifier.size(34.dp).clip(RoundedCornerShape(9.dp)).background(BLUE), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(38.dp).clip(RoundedCornerShape(10.dp)).background(BLUE), contentAlignment = Alignment.Center) {
                 Icon(Icons.Filled.School, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
             }
             Spacer(Modifier.width(8.dp))
         }
         Column(Modifier.weight(1f)) {
-            Text(title, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-            if (!showBack) Text(state.data.school.name.ifBlank { "SRS Teacher" }, color = MUTED, fontSize = 12.sp, maxLines = 1)
+            Text(title, color = Color.White, fontSize = 23.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+            if (!showBack) Text(state.data.school.name.ifBlank { "SRS Teacher" }, color = MUTED, fontSize = 14.sp, maxLines = 1)
         }
         if (!showBack) {
             Box {
-                IconButton(onClick = {}, modifier = Modifier.size(34.dp)) {
+                IconButton(onClick = {}, modifier = Modifier.size(38.dp)) {
                     Icon(Icons.Filled.Notifications, contentDescription = "Notifications", tint = Color.White)
                 }
                 if (state.updateAvailable != null) {
@@ -471,7 +482,7 @@ private fun titleFor(state: TeacherState, route: Route): Pair<String, Boolean> =
 @Composable
 private fun BottomNav(active: Tab, onSelect: (Tab) -> Unit) {
     Row(
-        Modifier.fillMaxWidth().background(CARD).padding(vertical = 8.dp, horizontal = 6.dp),
+        Modifier.fillMaxWidth().background(CARD).padding(vertical = 10.dp, horizontal = 6.dp),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
         Tab.values().forEach { tab ->
@@ -483,8 +494,8 @@ private fun BottomNav(active: Tab, onSelect: (Tab) -> Unit) {
                     .clickable { onSelect(tab) }
                     .padding(horizontal = 10.dp, vertical = 4.dp)
             ) {
-                Icon(tab.icon, contentDescription = tab.label, tint = if (selected) BLUE else MUTED, modifier = Modifier.size(21.dp))
-                Text(tab.label, color = if (selected) BLUE else MUTED, fontSize = 9.sp, maxLines = 1)
+                Icon(tab.icon, contentDescription = tab.label, tint = if (selected) BLUE else MUTED, modifier = Modifier.size(26.dp))
+                Text(tab.label, color = if (selected) BLUE else MUTED, fontSize = 12.sp, maxLines = 1, fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold)
             }
         }
     }
@@ -497,11 +508,11 @@ private fun UpdateBanner(u: UpdateInfo, onOpen: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(Modifier.weight(1f)) {
-            Text("Update ${u.versionName} available", color = GREEN, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-            Text("Open More \u2192 Support to install.", color = MUTED, fontSize = 12.sp)
+            Text("Update ${u.versionName} available", color = GREEN, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Text("Open More \u2192 Support to install.", color = MUTED, fontSize = 14.sp)
         }
-        Button(onClick = onOpen, colors = ButtonDefaults.buttonColors(containerColor = GREEN), modifier = Modifier.height(32.dp)) {
-            Text("Get it", color = NAVY, fontSize = 13.sp)
+        Button(onClick = onOpen, colors = ButtonDefaults.buttonColors(containerColor = GREEN), modifier = Modifier.height(42.dp)) {
+            Text("Get it", color = NAVY, fontSize = 16.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -511,10 +522,10 @@ private fun UpdateBanner(u: UpdateInfo, onOpen: () -> Unit) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-internal fun CardBox(padding: Int = 18, content: @Composable ColumnScope.() -> Unit) {
+internal fun CardBox(padding: Int = 20, content: @Composable ColumnScope.() -> Unit) {
     Column(
-        Modifier.fillMaxWidth().background(CARD, RoundedCornerShape(18.dp))
-            .border(1.dp, BLUE.copy(alpha = 0.16f), RoundedCornerShape(18.dp))
+        Modifier.fillMaxWidth().background(CARD, RoundedCornerShape(20.dp))
+            .border(1.dp, BLUE.copy(alpha = 0.25f), RoundedCornerShape(20.dp))
             .padding(padding.dp),
         content = content
     )
@@ -522,8 +533,8 @@ internal fun CardBox(padding: Int = 18, content: @Composable ColumnScope.() -> U
 
 @Composable
 internal fun Cell(text: String, color: Color = Color.White, bold: Boolean = false, modifier: Modifier = Modifier) =
-    Text(text, color = color, fontSize = 15.sp,
-         fontWeight = if (bold) FontWeight.SemiBold else FontWeight.Normal, modifier = modifier)
+    Text(text, color = color, fontSize = 17.sp,
+         fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal, modifier = modifier)
 
 @Composable
 internal fun Avatar(text: String, color: Color, size: Int = 40) {
@@ -538,7 +549,7 @@ internal fun ScoreBadge(pct: Double) {
         Modifier.clip(RoundedCornerShape(8.dp)).background(quickBandColor(pct).copy(alpha = 0.18f))
             .padding(horizontal = 10.dp, vertical = 5.dp)
     ) {
-        Text(pct.toInt().toString(), color = quickBandColor(pct), fontWeight = FontWeight.Bold, fontSize = 15.sp)
+        Text(pct.toInt().toString(), color = quickBandColor(pct), fontWeight = FontWeight.Bold, fontSize = 17.sp)
     }
 }
 

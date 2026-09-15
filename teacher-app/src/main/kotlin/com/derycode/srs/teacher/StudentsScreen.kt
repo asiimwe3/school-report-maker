@@ -43,7 +43,7 @@ fun StudentsListScreen(state: TeacherState, initialClassId: String?, onOpenStude
         }
         Text(subject?.let { "${it.name} \u2013 ${classes.firstOrNull { c -> c.id == classId }?.let { classLabel(it) } ?: ""}" }
             ?: classes.firstOrNull { it.id == classId }?.let { classLabel(it) } ?: "No class selected",
-            color = MUTED, fontSize = 14.sp)
+            color = MUTED, fontSize = 16.sp)
         Spacer(Modifier.height(8.dp))
         SearchField(query, { query = it }, "Search student name or index...")
         Spacer(Modifier.height(10.dp))
@@ -77,8 +77,8 @@ private fun StudentRow(s: Student, pct: Double?, onClick: () -> Unit) {
         Avatar(s.firstName.take(1) + s.lastName.take(1), avatarColor(s.id), 38)
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
-            Text(s.fullName, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-            Text(s.admissionNo, color = MUTED, fontSize = 12.sp)
+            Text(s.fullName, color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            Text(s.admissionNo, color = MUTED, fontSize = 14.sp)
         }
         if (pct != null) ScoreBadge(pct) else Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = MUTED)
     }
@@ -114,16 +114,16 @@ fun StudentDetailScreen(state: TeacherState, studentId: String) {
     val average = if (perSubject.isEmpty()) 0.0 else perSubject.map { it.third }.average()
     val absences = d.marks.count { it.studentId == studentId && it.type == MarkType.ABS }
 
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item {
             CardBox {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Avatar(s.firstName.take(1) + s.lastName.take(1), avatarColor(s.id), 52)
                     Spacer(Modifier.width(12.dp))
                     Column {
-                        Text(s.fullName, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        Text("Index: ${s.admissionNo}", color = MUTED, fontSize = 13.sp)
-                        Text("Class: ${cls?.let { classLabel(it) } ?: "\u2014"}", color = MUTED, fontSize = 13.sp)
+                        Text(s.fullName, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        Text("Index: ${s.admissionNo}", color = MUTED, fontSize = 15.sp)
+                        Text("Class: ${cls?.let { classLabel(it) } ?: "\u2014"}", color = MUTED, fontSize = 15.sp)
                     }
                 }
                 Spacer(Modifier.height(14.dp))
@@ -149,11 +149,11 @@ fun StudentDetailScreen(state: TeacherState, studentId: String) {
                                 Icon(Icons.Filled.MenuBook, contentDescription = null, tint = avatarColor(subj.id), modifier = Modifier.size(14.dp))
                             }
                             Spacer(Modifier.width(10.dp))
-                            Text(subj.name, color = Color.White, fontSize = 15.sp, modifier = Modifier.weight(1f))
-                            Text("${fmt1(m.score)} / ${m.maxScore}", color = MUTED, fontSize = 14.sp)
+                            Text(subj.name, color = Color.White, fontSize = 17.sp, modifier = Modifier.weight(1f))
+                            Text("${fmt1(m.score)} / ${m.maxScore}", color = MUTED, fontSize = 16.sp)
                             Spacer(Modifier.width(8.dp))
                             Box(Modifier.clip(RoundedCornerShape(6.dp)).background(quickBandColor(pct).copy(alpha = 0.18f)).padding(horizontal = 8.dp, vertical = 3.dp)) {
-                                Text(quickLetter(pct), color = quickBandColor(pct), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                Text(quickLetter(pct), color = quickBandColor(pct), fontSize = 15.sp, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -186,7 +186,7 @@ fun StudentDetailScreen(state: TeacherState, studentId: String) {
 @Composable
 private fun MiniStatBig(modifier: Modifier, value: String, label: String, color: Color) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(value, color = color, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-        Text(label, color = MUTED, fontSize = 12.sp)
+        Text(value, color = color, fontSize = 27.sp, fontWeight = FontWeight.Bold)
+        Text(label, color = MUTED, fontSize = 14.sp)
     }
 }

@@ -27,15 +27,15 @@ import com.derycode.srs.core.model.*
 @Composable
 fun MoreScreen(state: TeacherState, onOpen: (Route) -> Unit) {
     val d = state.data
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item {
             CardBox {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Avatar((state.me?.name ?: "Teacher").take(2), BLUE, 44)
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(state.me?.name ?: "No teacher selected", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
-                        Text(d.school.name.ifBlank { "SRS Teacher" }, color = MUTED, fontSize = 13.sp)
+                        Text(state.me?.name ?: "No teacher selected", color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Bold)
+                        Text(d.school.name.ifBlank { "SRS Teacher" }, color = MUTED, fontSize = 15.sp)
                     }
                 }
                 if (d.teachers.isNotEmpty()) {
@@ -82,8 +82,8 @@ private fun MoreRow(icon: ImageVector, title: String, subtitle: String, onClick:
         }
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
-            Text(title, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-            Text(subtitle, color = MUTED, fontSize = 12.sp)
+            Text(title, color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            Text(subtitle, color = MUTED, fontSize = 14.sp)
         }
         Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = MUTED, modifier = Modifier.size(16.dp))
     }
@@ -104,7 +104,7 @@ fun CommentsScreen(state: TeacherState) {
     var msg by remember { mutableStateOf("") }
     val termId = state.currentTermId
 
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item {
             CardBox {
                 Cell("Class", MUTED, true)
@@ -121,7 +121,7 @@ fun CommentsScreen(state: TeacherState) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text((if (studentId == s.id) "\u25CF " else "\u25CB "), color = if (studentId == s.id) BLUE else MUTED)
-                        Text(s.fullName, color = if (studentId == s.id) BLUE else Color.White, fontSize = 15.sp)
+                        Text(s.fullName, color = if (studentId == s.id) BLUE else Color.White, fontSize = 17.sp)
                     }
                 }
             }
@@ -137,7 +137,7 @@ fun CommentsScreen(state: TeacherState) {
                 val bank = d.commentTemplates.filter { it.category == "TEACHER" }
                 bank.take(8).forEach { c ->
                     Row(Modifier.fillMaxWidth().clickable { text = c.text }.padding(vertical = 5.dp)) {
-                        Text("\u2022 ${c.text}", color = MUTED, fontSize = 14.sp)
+                        Text("\u2022 ${c.text}", color = MUTED, fontSize = 16.sp)
                     }
                 }
                 Spacer(Modifier.height(10.dp))
@@ -172,7 +172,7 @@ fun SyncScreen(state: TeacherState) {
     var path by remember { mutableStateOf<String?>(null) }
     var importMsg by remember { mutableStateOf("") }
 
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item {
             CardBox {
                 Row(verticalAlignment = Alignment.CenterVertically) {

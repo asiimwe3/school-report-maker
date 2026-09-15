@@ -49,7 +49,7 @@ fun CloudScreen(state: TeacherState) {
 
     // ── v2.2.7: ONE-STEP join — invite code does everything ──
     if (mode == "quick" && !state.cloud.signedIn) {
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.verticalScroll(rememberScrollState())) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.verticalScroll(rememberScrollState())) {
             CardBox {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Filled.School, contentDescription = null, tint = BLUE, modifier = Modifier.size(20.dp))
@@ -103,11 +103,11 @@ fun CloudScreen(state: TeacherState) {
                         }
                     }
                 }, enabled = !busy, colors = ButtonDefaults.buttonColors(containerColor = BLUE), modifier = Modifier.fillMaxWidth()) {
-                    Text(if (busy) "Please wait…" else "Join & set up my phone", color = Color.White, fontWeight = FontWeight.SemiBold)
+                    Text(if (busy) "Please wait…" else "Join & set up my phone", color = Color.White, fontWeight = FontWeight.Bold)
                 }
                 Spacer(Modifier.height(6.dp))
                 TextButton(onClick = { mode = "login" }) {
-                    Text("I already have a cloud account", color = MUTED, fontSize = 13.sp)
+                    Text("I already have a cloud account", color = MUTED, fontSize = 15.sp)
                 }
             }
             if (msg.isNotEmpty()) {
@@ -122,7 +122,7 @@ fun CloudScreen(state: TeacherState) {
     }
 
     if (mode == "signup" || mode == "login") {
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.verticalScroll(rememberScrollState())) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.verticalScroll(rememberScrollState())) {
             CardBox {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Filled.Cloud, contentDescription = null, tint = BLUE, modifier = Modifier.size(20.dp))
@@ -159,10 +159,10 @@ fun CloudScreen(state: TeacherState) {
                         Text(if (busy) "Please wait…" else if (mode == "signup") "Create account" else "Sign in", color = Color.White)
                     }
                     TextButton(onClick = { mode = if (mode == "signup") "login" else "signup" }) {
-                        Text(if (mode == "signup") "I already have an account" else "Create a new account", color = MUTED, fontSize = 13.sp)
+                        Text(if (mode == "signup") "I already have an account" else "Create a new account", color = MUTED, fontSize = 15.sp)
                     }
                     TextButton(onClick = { mode = "quick" }) {
-                        Text("Use a school invite code instead (easiest)", color = BLUE, fontSize = 13.sp)
+                        Text("Use a school invite code instead (easiest)", color = BLUE, fontSize = 15.sp)
                     }
                 }
                 if (msg.isNotEmpty()) {
@@ -175,7 +175,7 @@ fun CloudScreen(state: TeacherState) {
     }
 
     // ── Signed-in main cloud view ──
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.verticalScroll(rememberScrollState())) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.verticalScroll(rememberScrollState())) {
         CardBox {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.CloudDone, contentDescription = null, tint = GOOD, modifier = Modifier.size(20.dp))
@@ -237,7 +237,7 @@ fun CloudScreen(state: TeacherState) {
                         report(res.first, res.second)
                     }
                 }, enabled = !busy && schools.isNotEmpty(), colors = ButtonDefaults.buttonColors(containerColor = BLUE)) {
-                    Text("Pull school setup", color = Color.White, fontSize = 13.sp)
+                    Text("Pull school setup", color = Color.White, fontSize = 15.sp)
                 }
                 Button(onClick = {
                     run {
@@ -251,21 +251,21 @@ fun CloudScreen(state: TeacherState) {
                         report(r.ok, r.msg)
                     }
                 }, enabled = !busy && schools.isNotEmpty(), colors = ButtonDefaults.buttonColors(containerColor = GOOD)) {
-                    Text("Send my marks", color = Color(0xFF06281A), fontSize = 13.sp)
+                    Text("Send my marks", color = Color(0xFF06281A), fontSize = 15.sp)
                 }
             }
         }
 
         if (msg.isNotEmpty()) {
             CardBox {
-                Text(msg, color = if (msgGood) GOOD else ORANGE, fontSize = 14.sp)
+                Text(msg, color = if (msgGood) GOOD else ORANGE, fontSize = 16.sp)
             }
         }
 
         CardBox {
             Button(onClick = { state.cloud.signOut(); mode = "signup"; schools = emptyList(); report(true, "Signed out. Your marks stay on this phone.") },
                 colors = ButtonDefaults.buttonColors(containerColor = CARD_ALT)) {
-                Text("Sign out (marks stay on phone)", color = Color.White, fontSize = 13.sp)
+                Text("Sign out (marks stay on phone)", color = Color.White, fontSize = 15.sp)
             }
         }
     }
