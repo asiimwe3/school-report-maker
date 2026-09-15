@@ -139,8 +139,13 @@ fun StudentsScreen(state: AppState) {
             CardBox {
                 FieldLabel("Enroll all imported students in (current year)")
                 val bulkClasses = d.classes.filter { it.level == levelFilter && it.active }
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
-                    bulkClasses.take(10).forEach { c ->
+                @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+                androidx.compose.foundation.layout.FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+                ) {
+                    bulkClasses.forEach { c ->
                         FilterChip(
                             selected = bulkClassId == c.id,
                             onClick = { bulkClassId = if (bulkClassId == c.id) "" else c.id },
@@ -161,7 +166,7 @@ fun StudentsScreen(state: AppState) {
                 )
                 Spacer(Modifier.height(12.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Btn("Import ${'$'}{bulkText.lines().count { it.isNotBlank() }} students") {
+                    Btn("Import ${bulkText.lines().count { it.isNotBlank() }} students") {
                         bulkOk = ""; bulkErr = ""
                         if (bulkClassId.isBlank()) { bulkErr = "Pick the class to enroll them in first."; return@Btn }
                         val lines = bulkText.lines().map { it.trim() }.filter { it.isNotBlank() }
@@ -172,21 +177,21 @@ fun StudentsScreen(state: AppState) {
                         val rows = mutableListOf<BulkRow>()
                         lines.forEachIndexed { i, line ->
                             val parts = line.split(Regex("[,\t]")).map { it.trim() }
-                            if (parts.size < 2 || parts[0].isBlank()) { bad.add("Line ${'$'}{i + 1}: needs admission no. and name"); return@forEachIndexed }
+                            if (parts.size < 2 || parts[0].isBlank()) { bad.add("Line ${i + 1}: needs admission no. and name"); return@forEachIndexed }
                             val adm = parts[0]
                             val tokens = parts[1].split(Regex("\\s+")).filter { it.isNotBlank() }
-                            if (tokens.isEmpty()) { bad.add("Line ${'$'}{i + 1}: empty name"); return@forEachIndexed }
+                            if (tokens.isEmpty()) { bad.add("Line ${i + 1}: empty name"); return@forEachIndexed }
                             val sexField = parts.drop(2).lastOrNull { bulkSex(it).isNotBlank() }
                             val phone = parts.drop(2).firstOrNull { it.matches(Regex("[+0][0-9 +()\\-]{6,}")) } ?: ""
-                            if (adm.lowercase() in existing) { bad.add("Line ${'$'}{i + 1}: ${'$'}adm already exists — skipped"); return@forEachIndexed }
-                            if (!seen.add(adm.lowercase())) { bad.add("Line ${'$'}{i + 1}: ${'$'}adm appears twice in this paste — skipped"); return@forEachIndexed }
+                            if (adm.lowercase() in existing) { bad.add("Line ${i + 1}: $adm already exists — skipped"); return@forEachIndexed }
+                            if (!seen.add(adm.lowercase())) { bad.add("Line ${i + 1}: $adm appears twice in this paste — skipped"); return@forEachIndexed }
                             rows.add(BulkRow(adm, tokens[0], tokens.drop(1).dropLast(1).joinToString(" "), if (tokens.size > 1) tokens.last() else "", if (sexField != null) bulkSex(sexField) else "M", phone))
                         }
                         val slots = planLimit - activeCount
-                        if (rows.size > slots) { bulkErr = "Plan limit — only ${'$'}slots student slots left on ${'$'}{d.settings.licencePlan}. Upgrade in Plans & Pricing."; return@Btn }
+                        if (rows.size > slots) { bulkErr = "Plan limit — only $slots student slots left on ${d.settings.licencePlan}. Upgrade in Plans & Pricing."; return@Btn }
                         if (rows.isEmpty()) { bulkErr = "Nothing imported:\n" + bad.joinToString("\n"); return@Btn }
-                        val clsName = d.classes.firstOrNull { it.id == bulkClassId }?.let { if (it.stream.isBlank()) it.name else "${'$'}{it.name} ${'$'}{it.stream}" } ?: "class"
-                        state.repo.mutate("STUDENTS_BULK_IMPORTED", "Students", new = "${'$'}{rows.size} into ${'$'}clsName") { dd ->
+                        val clsName = d.classes.firstOrNull { it.id == bulkClassId }?.let { if (it.stream.isBlank()) it.name else "${it.name} ${it.stream}" } ?: "class"
+                        state.repo.mutate("STUDENTS_BULK_IMPORTED", "Students", new = "${rows.size} into $clsName") { dd ->
                             var students = dd.students
                             var enrollments = dd.enrollments
                             rows.forEach { r ->
@@ -201,7 +206,7 @@ fun StudentsScreen(state: AppState) {
                             dd.copy(students = students, enrollments = enrollments)
                         }
                         state.refresh()
-                        bulkOk = "Imported ${'$'}{rows.size} students into ${'$'}clsName" + (if (bad.isEmpty()) "" else "  ·  skipped ${'$'}{bad.size}") + (if (bad.isEmpty()) "" else "\n" + bad.joinToString("\n"))
+                        bulkOk = "Imported ${rows.size} students into $clsName" + (if (bad.isEmpty()) "" else "  ·  skipped ${bad.size}") + (if (bad.isEmpty()) "" else "\n" + bad.joinToString("\n"))
                         bulkText = ""
                     }
                     if (bulkOk.isNotBlank()) Text(bulkOk, color = Theme.GOOD, fontSize = 13.sp)
@@ -370,8 +375,9 @@ fun ClassesScreen(state: AppState) {
                                             color = if (ct != null) Theme.GOOD else Theme.MUTED, fontSize = 11.sp,
                                             modifier = Modifier.clickable { teacherPickerFor = if (teacherPickerFor == s.id) "" else s.id }.padding(top = 2.dp))
                                         if (teacherPickerFor == s.id) {
-                                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(top = 4.dp)) {
-                                                d.teachers.take(8).forEach { t ->
+                                            @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+                                            androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(top = 4.dp)) {
+                                                d.teachers.forEach { t ->
                                                     FilterChip(selected = s.classTeacherId == t.id, onClick = {
                                                         state.repo.mutate("CLASS_TEACHER_SET", "SchoolClass", s.id, new = t.name) { dd ->
                                                             dd.copy(classes = dd.classes.map { c -> if (c.id == s.id) c.copy(classTeacherId = t.id) else c })
@@ -663,10 +669,16 @@ fun TeachersScreen(state: AppState) {
                     }
                     Column(Modifier.width(180.dp)) {
                         FieldLabel("Class")
-                        d.classes.filter { it.active }.take(20).forEach { c ->
-                            Text((if (assignClass == c.id) "● " else "○ ") + if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}",
-                                color = if (assignClass == c.id) Theme.ACCENT else Theme.TEXT, fontSize = 14.sp,
-                                modifier = Modifier.fillMaxWidth().clickable { assignClass = c.id }.padding(vertical = 3.dp))
+                        Level.entries.forEach { lvl ->
+                            val inLevel = d.classes.filter { it.active && it.level == lvl }
+                            if (inLevel.isNotEmpty()) {
+                                Text(levelLabel(lvl), color = Theme.ACCENT, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 5.dp))
+                                inLevel.forEach { c ->
+                                    Text((if (assignClass == c.id) "● " else "○ ") + if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}",
+                                        color = if (assignClass == c.id) Theme.ACCENT else Theme.TEXT, fontSize = 14.sp,
+                                        modifier = Modifier.fillMaxWidth().clickable { assignClass = c.id }.padding(vertical = 3.dp))
+                                }
+                            }
                         }
                     }
                     Column {

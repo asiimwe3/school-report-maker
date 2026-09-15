@@ -319,6 +319,40 @@ fun Cell(text: String, bold: Boolean = false, color: Color = Theme.TEXT) =
 @Composable
 fun ErrorText(msg: String) = Text(msg, color = Theme.WARN, fontSize = 13.sp)
 
+/**
+ * Class picker chips grouped by level (Primary / O-Level / A-Level) that WRAP
+ * onto the next line instead of sliding sideways — screens stay clean and the
+ * full list is always visible.
+ */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+fun ClassPickerChips(classes: List<SchoolClass>, selectedId: String, onSelect: (String) -> Unit) {
+    Level.entries.forEach { lvl ->
+        val inLevel = classes.filter { it.level == lvl }
+        if (inLevel.isNotEmpty()) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+            ) {
+                Text(levelLabel(lvl), color = Theme.ACCENT, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    inLevel.forEach { c ->
+                        FilterChip(
+                            selected = selectedId == c.id,
+                            onClick = { onSelect(c.id) },
+                            label = { Text(if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}", fontSize = 12.sp) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Screens — setup & dashboard
 // ─────────────────────────────────────────────────────────────────────────────

@@ -53,10 +53,16 @@ fun MarksScreen(state: AppState) {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Column(Modifier.width(200.dp)) {
                     FieldLabel("Class")
-                    d.classes.filter { it.active }.forEach { c ->
-                        Text((if (classId == c.id) "● " else "○ ") + if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}",
-                            color = if (classId == c.id) Theme.ACCENT else Theme.TEXT, fontSize = 14.sp,
-                            modifier = Modifier.fillMaxWidth().clickable { classId = c.id }.padding(vertical = 3.dp))
+                    Level.entries.forEach { lvl ->
+                        val inLevel = d.classes.filter { it.active && it.level == lvl }
+                        if (inLevel.isNotEmpty()) {
+                            Text(levelLabel(lvl), color = Theme.ACCENT, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 5.dp))
+                            inLevel.forEach { c ->
+                                Text((if (classId == c.id) "● " else "○ ") + if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}",
+                                    color = if (classId == c.id) Theme.ACCENT else Theme.TEXT, fontSize = 14.sp,
+                                    modifier = Modifier.fillMaxWidth().clickable { classId = c.id }.padding(vertical = 3.dp))
+                            }
+                        }
                     }
                 }
                 Column(Modifier.width(200.dp)) {
@@ -273,11 +279,9 @@ fun ResultsScreen(state: AppState) {
 
     ScreenTitle("Results Review", "Check calculations, approve and lock. Locked results need authorization to change.")
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column {
             Text("Class:", color = Theme.MUTED, fontSize = 14.sp)
-            d.classes.filter { it.active }.forEach { c ->
-                FilterChip(selected = classId == c.id, onClick = { classId = c.id }, label = { Text(if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}", fontSize = 13.sp) })
-            }
+            ClassPickerChips(d.classes.filter { it.active }, classId) { classId = it }
         }
         if (cls == null || term == null) {
             Text("Create an academic year with terms and add classes first.", color = Theme.MUTED, fontSize = 14.sp)
@@ -341,11 +345,9 @@ fun ReportsScreen(state: AppState) {
 
     ScreenTitle("Reports", "Print-ready HTML report cards — open in any browser, print to PDF.")
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column {
             Text("Class:", color = Theme.MUTED, fontSize = 14.sp)
-            d.classes.filter { it.active }.forEach { c ->
-                FilterChip(selected = classId == c.id, onClick = { classId = c.id }, label = { Text(if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}", fontSize = 13.sp) })
-            }
+            ClassPickerChips(d.classes.filter { it.active }, classId) { classId = it }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("Design:", color = Theme.MUTED, fontSize = 14.sp)
@@ -559,12 +561,7 @@ fun AnalyticsScreen(state: AppState) {
 
     ScreenTitle("Analytics", "Live performance insights — averages, rankings, subject trends, gender split.")
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            d.classes.filter { it.active }.forEach { c ->
-                FilterChip(selected = classId == c.id, onClick = { classId = c.id },
-                    label = { Text(if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}", fontSize = 13.sp) })
-            }
-        }
+        ClassPickerChips(d.classes.filter { it.active }, classId) { classId = it }
         if (results.isEmpty()) {
             CardBox { Text(if (cls == null || term == null) "Set up classes and an academic year first." else "No marks entered for this class/term yet — enter marks in the Marks Grid to see analytics.", color = Theme.MUTED, fontSize = 14.sp) }
         } else {
@@ -675,12 +672,7 @@ fun AttendanceScreen(state: AppState) {
 
     ScreenTitle("Attendance", "Daily register from teacher phones — present / absent / late, per class.")
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            d.classes.filter { it.active }.forEach { c ->
-                FilterChip(selected = classId == c.id, onClick = { classId = c.id },
-                    label = { Text(if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}", fontSize = 13.sp) })
-            }
-        }
+        ClassPickerChips(d.classes.filter { it.active }, classId) { classId = it }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             StatCard("Recorded days", recs.map { it.date }.distinct().count().toString(), Theme.GOOD)
             StatCard("Students", students.size.toString())
@@ -810,16 +802,10 @@ fun PromotionScreen(state: AppState) {
             Text("Leavers (P7 / S4 / S6 / U6) are NOT moved — graduate them by leaving the class as-is.", color = Theme.MUTED, fontSize = 13.sp)
             Spacer(Modifier.height(8.dp))
             Text("From:", color = Theme.MUTED, fontSize = 13.sp)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                active.forEach { c -> FilterChip(selected = fromId == c.id, onClick = { fromId = c.id },
-                    label = { Text(if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}", fontSize = 12.sp) }) }
-            }
+            ClassPickerChips(active, fromId) { fromId = it }
             Spacer(Modifier.height(6.dp))
             Text("To:", color = Theme.MUTED, fontSize = 13.sp)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                active.forEach { c -> FilterChip(selected = toId == c.id, onClick = { toId = c.id },
-                    label = { Text(if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}", fontSize = 12.sp) }) }
-            }
+            ClassPickerChips(active, toId) { toId = it }
             Spacer(Modifier.height(8.dp))
             Cell("${toMove.size} students will be promoted.", color = Theme.TEXT, bold = true)
             Spacer(Modifier.height(6.dp))

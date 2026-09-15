@@ -1,7 +1,6 @@
 package com.derycode.srs.admin
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -156,12 +155,7 @@ fun FeesScreen(state: AppState) {
                     }
                 }
                 Spacer(Modifier.height(6.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
-                    d.classes.filter { it.active && (feesLevel == null || it.level == feesLevel) }.forEach { c ->
-                        FilterChip(selected = classId == c.id, onClick = { classId = c.id },
-                            label = { Text(if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}", fontSize = 12.sp) })
-                    }
-                }
+                ClassPickerChips(d.classes.filter { it.active && (feesLevel == null || it.level == feesLevel) }, classId) { classId = it }
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                     TextField(if (structure != null && feeAmount.isBlank()) structure.amount.toLong().toString() else feeAmount,
@@ -180,10 +174,14 @@ fun FeesScreen(state: AppState) {
             CardBox {
                 Text("Record ${feeCategory.label.lowercase()}", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
-                    students.take(20).forEach { s ->
+                @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+                androidx.compose.foundation.layout.FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    students.forEach { s ->
                         FilterChip(selected = payStudent == s.id, onClick = { payStudent = s.id },
-                            label = { Text(s.fullName.take(14), fontSize = 12.sp) })
+                            label = { Text(s.fullName.take(18), fontSize = 12.sp) })
                     }
                 }
                 Spacer(Modifier.height(8.dp))
@@ -300,7 +298,11 @@ fun PlansScreen(state: AppState) {
         CardBox {
             Text("Your school: $n students → recommended plan: $rec", color = Theme.ACCENT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
+        @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+        androidx.compose.foundation.layout.FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             plans.forEach { (name, feats) ->
                 val pretty = name.lowercase().replaceFirstChar { it.uppercase() }.replace("-", " ")
                 val isTrial = plan == "Trial"

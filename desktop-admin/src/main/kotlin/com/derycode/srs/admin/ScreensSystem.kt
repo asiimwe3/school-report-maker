@@ -1,7 +1,6 @@
 package com.derycode.srs.admin
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.border
@@ -62,7 +61,11 @@ fun TemplatesScreen(state: AppState) {
             }
         }
         // ── Template gallery: visual preview cards ──
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
+        @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+        androidx.compose.foundation.layout.FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             d.templates.filter { !it.archived }.forEach { t ->
                 TemplateCard(state, t)
             }
@@ -220,19 +223,22 @@ fun PreviewScreen(state: AppState) {
     ScreenTitle("Report Preview", "Check one student's card before batch-printing the whole class.")
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         CardBox {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column {
                 Text("Class:", color = Theme.MUTED, fontSize = 14.sp)
-                d.classes.filter { it.active }.forEach { c ->
-                    FilterChip(selected = classId == c.id, onClick = { classId = c.id; studentId = "" },
-                        label = { Text(if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}", fontSize = 13.sp) })
-                }
+                ClassPickerChips(d.classes.filter { it.active }, classId) { classId = it; studentId = "" }
             }
             Spacer(Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column {
                 Text("Student:", color = Theme.MUTED, fontSize = 14.sp)
-                classStudents.take(12).forEach { s ->
-                    FilterChip(selected = studentId == s.id, onClick = { studentId = s.id },
-                        label = { Text(s.fullName, fontSize = 13.sp) })
+                @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+                androidx.compose.foundation.layout.FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    classStudents.forEach { s ->
+                        FilterChip(selected = studentId == s.id, onClick = { studentId = s.id },
+                            label = { Text(s.fullName, fontSize = 13.sp) })
+                    }
                 }
             }
             Spacer(Modifier.height(8.dp))

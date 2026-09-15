@@ -390,13 +390,16 @@ object DocxReport {
 
         // ── comments & signatures ──
         val classComments = data.comments
-            .filter { it.studentId == student.id && it.termId == result.termId }
+            .filter { it.studentId == student.id && it.termId == result.termId && it.type == com.derycode.srs.core.model.CommentType.CLASS_TEACHER }
+            .joinToString("\n") { it.text }
+        val headComments = data.comments
+            .filter { it.studentId == student.id && it.termId == result.termId && it.type == com.derycode.srs.core.model.CommentType.HEAD_TEACHER }
             .joinToString("\n") { it.text }
         doc.p("Class Teacher's Comments", bold = true, size = 20, color = accent, spacingAfter = 20)
         doc.p(classComments.ifBlank { " " }, size = 18, spacingAfter = 40)
 
         doc.p("Head Teacher's Remarks", bold = true, size = 20, color = accent, spacingAfter = 20)
-        doc.p(" ", size = 18, spacingAfter = 40)
+        doc.p(headComments.ifBlank { " " }, size = 18, spacingAfter = 40)
 
         val head = data.teachers.firstOrNull { it.role == com.derycode.srs.core.model.Role.HEAD_TEACHER }
         val classTeacher = cls?.classTeacherId?.let { id -> data.teachers.firstOrNull { it.id == id } }

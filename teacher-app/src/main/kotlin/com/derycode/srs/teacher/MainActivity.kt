@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -28,6 +29,7 @@ import com.derycode.srs.core.model.*
 import com.derycode.srs.core.seed.Seeds
 import com.derycode.srs.core.store.JsonStore
 import com.derycode.srs.core.support.UpdateInfo
+import kotlinx.coroutines.launch
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
@@ -393,10 +395,42 @@ fun TeacherApp(state: TeacherState) {
         is Route.More, is Route.Comments, is Route.Sync, is Route.Duty, is Route.Register, is Route.Attendance, is Route.Support, is Route.Cloud -> Tab.MORE
     }
 
+    // ── Side menu (drawer): every section reachable in one tap ──
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        gesturesEnabled = current !is Route.EnterMarks,
+        drawerContent = {
+            ModalDrawerSheet {
+                Spacer(Modifier.height(12.dp))
+                Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
+                    Text("SRS Teacher", color = NAVY, fontSize = 21.sp, fontWeight = FontWeight.Bold)
+                    Text(state.data.school.name.ifBlank { "School Report Maker" }, color = MUTED, fontSize = 13.sp)
+                }
+                Spacer(Modifier.height(6.dp))
+                HorizontalDivider()
+                Spacer(Modifier.height(6.dp))
+                DrawerItem(Icons.Filled.Home, "Home", current is Route.Home) { switchTab(Route.Home); scope.launch { drawerState.close() } }
+                DrawerItem(Icons.Filled.MenuBook, "Classes & Marks", current is Route.Classes || current is Route.ClassDetail || current is Route.EnterMarks) { switchTab(Route.Classes); scope.launch { drawerState.close() } }
+                DrawerItem(Icons.Filled.Assessment, "Assessments", current is Route.Assessments) { switchTab(Route.Assessments); scope.launch { drawerState.close() } }
+                DrawerItem(Icons.Filled.People, "Students", current is Route.Students || current is Route.StudentDetail) { switchTab(Route.Students(null)); scope.launch { drawerState.close() } }
+                DrawerItem(Icons.Filled.Comment, "Class Teacher Comments", current is Route.Comments) { switchTab(Route.Comments); scope.launch { drawerState.close() } }
+                DrawerItem(Icons.Filled.Shield, "Duty Desk", current is Route.Duty) { switchTab(Route.Duty); scope.launch { drawerState.close() } }
+                DrawerItem(Icons.Filled.PersonAdd, "Register student", current is Route.Register) { switchTab(Route.Register); scope.launch { drawerState.close() } }
+                DrawerItem(Icons.Filled.EventAvailable, "Attendance", current is Route.Attendance) { switchTab(Route.Attendance); scope.launch { drawerState.close() } }
+                DrawerItem(Icons.Filled.Cloud, "Cloud Sync", current is Route.Cloud) { switchTab(Route.Cloud); scope.launch { drawerState.close() } }
+                DrawerItem(Icons.Filled.Sync, "Sync & Export", current is Route.Sync) { switchTab(Route.Sync); scope.launch { drawerState.close() } }
+                DrawerItem(Icons.Filled.SupportAgent, "Support & Licence", current is Route.Support) { switchTab(Route.Support); scope.launch { drawerState.close() } }
+                Spacer(Modifier.height(12.dp))
+            }
+        }
+    ) {
     Column(Modifier.fillMaxSize().background(BG)) {
         Column(Modifier.weight(1f).padding(horizontal = 14.dp)) {
             Spacer(Modifier.height(10.dp))
-            TopBar(state, current, onBack = { pop() }, onProfile = { push(Route.More) })
+            TopBar(state, current, onBack = { pop() }, onProfile = { push(Route.More) }, onMenu = { scope.launch { drawerState.open() } })
             Spacer(Modifier.height(10.dp))
             state.updateAvailable?.let { u ->
                 UpdateBanner(u) { push(Route.More) }
@@ -426,10 +460,23 @@ fun TeacherApp(state: TeacherState) {
         }
         BottomNav(activeTab) { tab -> switchTab(tab.route) }
     }
+    }
 }
 
 @Composable
-private fun TopBar(state: TeacherState, route: Route, onBack: () -> Unit, onProfile: () -> Unit) {
+private fun DrawerItem(icon: ImageVector, label: String, selected: Boolean, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 11.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(icon, contentDescription = null, tint = if (selected) BLUE else NAVY, modifier = Modifier.size(22.dp))
+        Spacer(Modifier.width(12.dp))
+        Text(label, fontSize = 15.sp, color = if (selected) BLUE else NAVY, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal)
+    }
+}
+
+@Composable
+private fun TopBar(state: TeacherState, route: Route, onBack: () -> Unit, onProfile: () -> Unit, onMenu: () -> Unit = {}) {
     val (title, showBack) = titleFor(state, route)
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         if (showBack) {
@@ -438,8 +485,8 @@ private fun TopBar(state: TeacherState, route: Route, onBack: () -> Unit, onProf
             }
             Spacer(Modifier.width(6.dp))
         } else {
-            Box(Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(BLUE), contentAlignment = Alignment.Center) {
-                Icon(Icons.Filled.School, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
+            IconButton(onClick = onMenu, modifier = Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(CARD)) {
+                Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = NAVY, modifier = Modifier.size(24.dp))
             }
             Spacer(Modifier.width(10.dp))
         }

@@ -1,5 +1,6 @@
 package com.derycode.srs.core.report
 
+import com.derycode.srs.core.model.CommentType
 import com.derycode.srs.core.model.School
 import com.derycode.srs.core.model.SchoolData
 import com.derycode.srs.core.model.Student
@@ -50,7 +51,10 @@ object ReportEngine {
         }
 
         val classComments = data.comments
-            .filter { it.studentId == student.id && it.termId == result.termId }
+            .filter { it.studentId == student.id && it.termId == result.termId && it.type == CommentType.CLASS_TEACHER }
+            .joinToString("<br/>") { escape(it.text) }
+        val headComments = data.comments
+            .filter { it.studentId == student.id && it.termId == result.termId && it.type == CommentType.HEAD_TEACHER }
             .joinToString("<br/>") { escape(it.text) }
 
         val head = data.teachers.firstOrNull { it.role == com.derycode.srs.core.model.Role.HEAD_TEACHER }
@@ -109,7 +113,7 @@ object ReportEngine {
             </div>
             <div class="comments">
                 <div class="label">Head Teacher's Comments</div>
-                <div class="body">&nbsp;</div>
+                <div class="body">${if (headComments.isBlank()) "&nbsp;" else headComments}</div>
             </div>
 
             <div class="signatures">
