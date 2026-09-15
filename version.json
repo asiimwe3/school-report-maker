@@ -1,7 +1,7 @@
 {
- "console": "2.2.7",
- "teacher": "1.10.0",
- "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.7.msi",
- "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.10.0.apk",
+ "console": "2.2.8",
+ "teacher": "1.11.0",
+ "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.8.msi",
+ "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.11.0.apk",
  "released": "2026-09-15"
 }

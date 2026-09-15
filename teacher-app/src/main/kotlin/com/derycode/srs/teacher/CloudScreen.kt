@@ -29,7 +29,7 @@ fun CloudScreen(state: TeacherState) {
     var busy by remember { mutableStateOf(false) }
     var msg by remember { mutableStateOf("") }
     var msgGood by remember { mutableStateOf(true) }
-    var mode by remember { mutableStateOf(if (state.cloud.signedIn) "main" else "signup") }
+    var mode by remember { mutableStateOf(if (state.cloud.signedIn) "main" else "quick") }
     var schools by remember { mutableStateOf(state.cloudSchools) }
     var inviteCode by remember { mutableStateOf("") }
 
@@ -45,6 +45,80 @@ fun CloudScreen(state: TeacherState) {
         val t = state.cloud.freshToken()
         if (!t.ok) { report(false, t.msg); return@run }
         schools = state.cloud.linkedSchools(t.token)
+    }
+
+    // ── v2.2.7: ONE-STEP join — invite code does everything ──
+    if (mode == "quick" && !state.cloud.signedIn) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.verticalScroll(rememberScrollState())) {
+            CardBox {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Filled.School, contentDescription = null, tint = BLUE, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Cell("Join your school", MUTED, true)
+                }
+                Spacer(Modifier.height(4.dp))
+                Cell("Enter the invite code from your school's admin console (Cloud & Online). The code registers you, links you to the school and downloads your classes, students and subjects — no email or password needed.", MUTED)
+                Spacer(Modifier.height(12.dp))
+                OutlinedTextField(inviteCode, { inviteCode = it }, label = { Text("School invite code (e.g. ABC-1234)") },
+                    singleLine = true, modifier = Modifier.fillMaxWidth())
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(fullName, { fullName = it }, label = { Text("Your full name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(phone, { phone = it }, label = { Text("Phone (optional)") }, singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone), modifier = Modifier.fillMaxWidth())
+                Spacer(Modifier.height(12.dp))
+                Button(onClick = {
+                    run {
+                        val codeUp = inviteCode.trim().uppercase()
+                        if (codeUp.isBlank()) { report(false, "Enter the invite code from your school's admin console"); return@run }
+                        if (fullName.isBlank()) { report(false, "Enter your full name so the school knows who you are"); return@run }
+                        // 1. automatic cloud account — teacher never sees email/password
+                        report(true, "Creating your account…")
+                        val suffix = java.util.UUID.randomUUID().toString().replace("-", "").take(8)
+                        val autoEmail = "t$suffix@srs-teacher.app"
+                        val autoPass = java.util.UUID.randomUUID().toString()
+                        val r = state.cloud.signUp(autoEmail, autoPass, fullName)
+                        if (!r.ok) { report(false, r.msg); return@run }
+                        // 2. link to the school
+                        report(true, "Linking you to your school…")
+                        val j = state.cloud.joinSchool(r.token, codeUp, fullName)
+                        if (!j.ok) { report(false, j.msg); return@run }
+                        // 3. school details
+                        val list = state.cloud.linkedSchools(r.token)
+                        schools = list
+                        val target = list.firstOrNull()
+                        if (target == null) { mode = "main"; report(false, "Joined ✓ — tap 'Pull school setup' below to download the school"); return@run }
+                        // 4. pull the school's data (classes, students, subjects, config)
+                        report(true, "Downloading ${target.name}'s setup — classes, students, subjects…")
+                        val (payload, err) = state.cloud.pullSchoolConfig(r.token, target.id)
+                        if (payload.isBlank()) { mode = "main"; report(false, "Joined ${target.name} ✓ — now tap 'Pull school setup' below ($err)"); return@run }
+                        val res = state.importCloudConfig(payload)
+                        mode = "main"
+                        if (res.first) {
+                            val upd = try { UpdateChecker.checkBlocking(BuildConfig.VERSION_CODE) } catch (_: Exception) { null }
+                            report(true, "Joined ${target.name} ✓ — your classes, students and subjects are on this phone. Welcome, ${fullName.split(" ").first()}!" +
+                                (if (upd != null) "  A newer app version is available — update it from Support." else ""))
+                        } else {
+                            report(false, "Joined ${target.name} ✓ but the setup could not be imported: ${res.second} — tap 'Pull school setup' below")
+                        }
+                    }
+                }, enabled = !busy, colors = ButtonDefaults.buttonColors(containerColor = BLUE), modifier = Modifier.fillMaxWidth()) {
+                    Text(if (busy) "Please wait…" else "Join & set up my phone", color = Color.White, fontWeight = FontWeight.SemiBold)
+                }
+                Spacer(Modifier.height(6.dp))
+                TextButton(onClick = { mode = "login" }) {
+                    Text("I already have a cloud account", color = MUTED, fontSize = 13.sp)
+                }
+            }
+            if (msg.isNotEmpty()) {
+                CardBox {
+                    Cell(if (msgGood) "Status" else "Attention", MUTED, true)
+                    Spacer(Modifier.height(4.dp))
+                    Cell(msg, if (msgGood) GOOD else ORANGE)
+                }
+            }
+        }
+        return
     }
 
     if (mode == "signup" || mode == "login") {
@@ -86,6 +160,9 @@ fun CloudScreen(state: TeacherState) {
                     }
                     TextButton(onClick = { mode = if (mode == "signup") "login" else "signup" }) {
                         Text(if (mode == "signup") "I already have an account" else "Create a new account", color = MUTED, fontSize = 13.sp)
+                    }
+                    TextButton(onClick = { mode = "quick" }) {
+                        Text("Use a school invite code instead (easiest)", color = BLUE, fontSize = 13.sp)
                     }
                 }
                 if (msg.isNotEmpty()) {

@@ -134,30 +134,7 @@ fun StudentDetailScreen(state: TeacherState, studentId: String) {
                 }
             }
         }
-        item {
-            val feeLines = cls?.let { c -> d.feeStructures.filter { it.classId == c.id && it.termId == termId && it.amount > 0 } }.orEmpty()
-            CardBox {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.AccountBalanceWallet, contentDescription = null, tint = TEAL, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Cell("Fee status", MUTED, true)
-                }
-                Spacer(Modifier.height(8.dp))
-                if (feeLines.isEmpty()) Cell("No fee structures have been set for this class and term.", MUTED)
-                else feeLines.forEachIndexed { index, fee ->
-                    if (index > 0) Divider(color = STROKE, modifier = Modifier.padding(vertical = 6.dp))
-                    val paid = d.feePayments.filter { it.studentId == studentId && it.termId == termId && it.category == fee.category }.sumOf { it.amount }
-                    val balance = (fee.amount - paid).coerceAtLeast(0.0)
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text(fee.category.label, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                            Text("Paid ${d.settings.currencySymbol} ${paid.toLong()} · Due ${d.settings.currencySymbol} ${balance.toLong()}", color = MUTED, fontSize = 12.sp)
-                        }
-                        Text(if (balance <= 0) "Cleared" else "Due", color = if (balance <= 0) GREEN else ORANGE, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-        }
+        // v2.2.7: fee ledgers are admin-console business — removed from the teacher app.
         item {
             CardBox {
                 Cell("Subject Performance", MUTED, true)

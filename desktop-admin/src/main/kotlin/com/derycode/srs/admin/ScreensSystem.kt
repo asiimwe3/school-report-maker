@@ -342,7 +342,7 @@ fun SettingsScreen(state: AppState) {
                 Spacer(Modifier.height(8.dp))
                 Btn("Go to Cloud & Online") { state.screen = "cloud" }
             } else {
-                Text("Share this code — teachers enter it in the phone app to join your school and see their classes.", color = Theme.MUTED, fontSize = 13.sp)
+                Text("Share this code — a teacher enters it once in the phone app (Cloud tab) and is registered, linked to your school and gets your classes, students and subjects automatically. No email or password needed.", color = Theme.MUTED, fontSize = 13.sp)
                 Spacer(Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Box(Modifier.background(Theme.ACCENT_SOFT, RoundedCornerShape(8.dp)).padding(horizontal = 16.dp, vertical = 8.dp)) {
@@ -707,9 +707,51 @@ fun CalendarScreen(state: AppState) {
     var type by remember { mutableStateOf(CalendarEventType.OTHER) }
     var shownMonth by remember { mutableStateOf(java.time.YearMonth.now()) }
     var showAdd by remember { mutableStateOf(false) }
+    var msg by remember { mutableStateOf("") }
 
     ScreenTitle("School Calendar", "Term dates, exams, holidays and meetings — click a day to add an event.")
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        // ── Add event — at the top so it is always visible (v2.2.7 fix) ──
+        CardBox {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(if (date.isBlank()) "Add an event" else "Add event on $date", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                Btn(if (showAdd) "Close" else "+ Add event", primary = false) { showAdd = !showAdd; if (showAdd && date.isBlank()) date = java.time.LocalDate.now().toString(); if (!showAdd) msg = "" }
+            }
+            if (showAdd) {
+                Spacer(Modifier.height(10.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    TextField(title, { title = it }, Modifier.width(220.dp), "e.g. Beginning of Term 1")
+                    TextField(date, { date = it }, Modifier.width(130.dp), "2026-09-14")
+                }
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    CalendarEventType.entries.forEach { t ->
+                        FilterChip(selected = type == t, onClick = { type = t },
+                            label = { Text(t.name.lowercase().replace('_', ' ').replaceFirstChar { it.uppercase() }, fontSize = 11.sp) })
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Btn("Save event") {
+                        val parsed = parseFlexibleDate(date)
+                        when {
+                            title.isBlank() -> msg = "Enter a short title for the event."
+                            parsed == null -> msg = "Date not understood — use 2026-09-14, 14/09/2026 or 14-09-2026, or just click a day on the calendar."
+                            else -> {
+                                val id = state.repo.nextId()
+                                state.repo.mutate("CALENDAR_EVENT_ADDED", "CalendarEvent", id, new = "$title ($parsed)") { dd ->
+                                    dd.copy(calendarEvents = dd.calendarEvents + CalendarEvent(id = id, title = title, date = parsed, type = type))
+                                }
+                                msg = "Event saved ✓ — '$title' on $parsed"
+                                title = ""; showAdd = false
+                                state.refresh()
+                            }
+                        }
+                    }
+                    if (msg.isNotEmpty()) Text(msg, color = if (msg.contains("✓")) Theme.GOOD else Theme.WARN, fontSize = 13.sp)
+                }
+            }
+        }
         CardBox {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 Btn("‹", primary = false) { shownMonth = shownMonth.minusMonths(1) }
@@ -772,37 +814,6 @@ fun CalendarScreen(state: AppState) {
             }
         }
 
-        CardBox {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(if (date.isBlank()) "Add an event" else "Add event on $date", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                Btn(if (showAdd) "Close" else "+ Add event", primary = false) { showAdd = !showAdd; if (showAdd && date.isBlank()) date = java.time.LocalDate.now().toString() }
-            }
-            if (showAdd) {
-                Spacer(Modifier.height(10.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                    TextField(title, { title = it }, Modifier.width(220.dp), "e.g. Beginning of Term 1")
-                    TextField(date, { date = it }, Modifier.width(130.dp), "2026-09-14")
-                }
-                Spacer(Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    CalendarEventType.entries.forEach { t ->
-                        FilterChip(selected = type == t, onClick = { type = t },
-                            label = { Text(t.name.lowercase().replace('_', ' ').replaceFirstChar { it.uppercase() }, fontSize = 11.sp) })
-                    }
-                }
-                Spacer(Modifier.height(10.dp))
-                Btn("Save event") {
-                    if (title.isNotBlank() && date.matches(Regex("\\d{4}-\\d{2}-\\d{2}"))) {
-                        val id = state.repo.nextId()
-                        state.repo.mutate("CALENDAR_EVENT_ADDED", "CalendarEvent", id, new = "$title ($date)") { dd ->
-                            dd.copy(calendarEvents = dd.calendarEvents + CalendarEvent(id = id, title = title, date = date, type = type))
-                        }
-                        title = ""; showAdd = false
-                        state.refresh()
-                    }
-                }
-            }
-        }
 
         CardBox {
             Text("Upcoming events (${d.calendarEvents.size})", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
@@ -990,3 +1001,20 @@ fun ImportExportScreen(state: AppState) {
 }
 
 private fun csv(s: String): String = if (s.contains(',') || s.contains('"')) "\"${s.replace("\"", "\"\"")}\"" else s
+
+/** v2.2.7: Accept the date formats people actually type, return ISO yyyy-MM-dd or null. */
+private fun parseFlexibleDate(input: String): String? {
+    val s = input.trim().replace('.', '-').replace('/', '-').replace(' ', '-')
+    if (s.isEmpty()) return null
+    val parts = s.split('-').map { it.trim() }
+    fun iso(y: Int, m: Int, d: Int): String? = try {
+        java.time.LocalDate.of(y, m, d).toString()
+    } catch (_: Exception) { null }
+    return when {
+        parts.size == 3 && parts[0].length == 4 ->
+            iso(parts[0].toIntOrNull() ?: return null, parts[1].toIntOrNull() ?: return null, parts[2].toIntOrNull() ?: return null)
+        parts.size == 3 ->
+            iso(parts[2].toIntOrNull() ?: return null, parts[1].toIntOrNull() ?: return null, parts[0].toIntOrNull() ?: return null)
+        else -> null
+    }
+}
