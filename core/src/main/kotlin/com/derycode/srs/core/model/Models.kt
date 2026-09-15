@@ -446,7 +446,12 @@ data class AppSettings(
     val teacherCloudEnabled: Boolean = false
 )
 
-// ── School fees (structure per class/term + payments per student) ──
+// ── Fee ledgers (each category is collected and reported independently) ──
+
+@Serializable
+enum class FeeCategory(val label: String) {
+    SCHOOL_FEES("School fees"), BOARDING_FEES("Boarding fees"), BURSARY("Bursary")
+}
 
 @Serializable
 data class FeeStructure(
@@ -455,7 +460,8 @@ data class FeeStructure(
     val academicYearId: String = "",
     val termId: String = "",
     val name: String = "School fees",
-    val amount: Double = 0.0
+    val amount: Double = 0.0,
+    val category: FeeCategory = FeeCategory.SCHOOL_FEES
 )
 
 @Serializable
@@ -468,7 +474,8 @@ data class FeePayment(
     val date: Long = 0,
     val method: String = "Cash",
     val receipt: String = "",
-    val note: String = ""
+    val note: String = "",
+    val category: FeeCategory = FeeCategory.SCHOOL_FEES
 )
 
 enum class CalendarEventType { TERM_START, TERM_END, EXAM, HOLIDAY, MEETING, DEADLINE, OTHER }

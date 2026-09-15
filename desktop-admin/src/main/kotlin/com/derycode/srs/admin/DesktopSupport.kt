@@ -95,7 +95,7 @@ fun SupportScreenDesktop(state: AppState) {
     var docView by remember { mutableStateOf("") }
 
     ScreenTitle("Support & Licence", "Updates, crash reports, subscription plans, terms and privacy — all in one place.")
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.verticalScroll(rememberScrollState())) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         // ── Update ──
         CardBox {
             Text("App update", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)

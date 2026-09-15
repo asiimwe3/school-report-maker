@@ -36,6 +36,7 @@ fun FeesScreen(state: AppState) {
     // hard cutoff — previously only the FIRST 10 classes ever showed here, silently hiding
     // Senior 4, 5 and 6 for any school with 7 primary classes + streams.
     var feesLevel by remember { mutableStateOf<Level?>(null) }
+    var feeCategory by remember { mutableStateOf(FeeCategory.SCHOOL_FEES) }
     var feeAmount by remember { mutableStateOf("") }
     var msg by remember { mutableStateOf("") }
     var payStudent by remember { mutableStateOf("") }
@@ -46,14 +47,25 @@ fun FeesScreen(state: AppState) {
     val cls = d.classes.firstOrNull { it.id == classId }
     val students = d.enrollments.filter { it.classId == classId && (year == null || it.academicYearId == year.id) }
         .mapNotNull { e -> d.students.firstOrNull { s -> s.id == e.studentId && s.status == StudentStatus.ACTIVE } }
-    val structure = d.feeStructures.firstOrNull { it.classId == classId && term != null && it.termId == term.id }
+    val structure = d.feeStructures.firstOrNull { it.classId == classId && term != null && it.termId == term.id && it.category == feeCategory }
     val cur = d.settings.currencySymbol
 
-    ScreenTitle("School Fees", "Set the fee per class and term, record payments, see balances — appears on report cards.")
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.verticalScroll(rememberScrollState())) {
+    ScreenTitle("Fee Collection", "School, boarding and bursary ledgers stay independent from one another.")
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        CardBox {
+            Text("Collection ledger", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(6.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FeeCategory.entries.forEach { category ->
+                    FilterChip(selected = feeCategory == category, onClick = { feeCategory = category }, label = { Text(category.label, fontSize = 13.sp) })
+                }
+            }
+            Spacer(Modifier.height(4.dp))
+            Text("Balances and payments are calculated only within the selected ledger.", color = Theme.MUTED, fontSize = 13.sp)
+        }
         // ── Fee structure ──
         CardBox {
-            Text("Fee structure (${term?.let { "Term ${it.number} ${year?.year}" } ?: "no term"})", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Text("${feeCategory.label} structure (${term?.let { "Term ${it.number} ${year?.year}" } ?: "no term"})", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
             if (d.classes.isEmpty()) Text("Add classes first.", color = Theme.MUTED, fontSize = 14.sp)
             else {
@@ -80,10 +92,10 @@ fun FeesScreen(state: AppState) {
                         if (classId.isNotBlank() && term != null && amt != null && amt > 0) {
                             val id = structure?.id ?: state.repo.nextId()
                             state.repo.mutate("FEE_STRUCTURE_SET", "FeeStructure", id, new = "$amt") { dd ->
-                                dd.copy(feeStructures = (dd.feeStructures.filter { !(it.classId == classId && it.termId == term.id) } +
-                                    FeeStructure(id = id, classId = classId, academicYearId = year?.id ?: "", termId = term.id, amount = amt)))
+                                dd.copy(feeStructures = (dd.feeStructures.filter { !(it.classId == classId && it.termId == term.id && it.category == feeCategory) } +
+                                    FeeStructure(id = id, classId = classId, academicYearId = year?.id ?: "", termId = term.id, name = feeCategory.label, amount = amt, category = feeCategory)))
                             }
-                            feeAmount = ""; msg = "Fee set for ${cls?.name}: ${cur} ${amt.toLong()}"
+                            feeAmount = ""; msg = "${feeCategory.label} set for ${cls?.name}: ${cur} ${amt.toLong()}"
                             state.refresh()
                         }
                     }
@@ -95,7 +107,7 @@ fun FeesScreen(state: AppState) {
         // ── Record payment ──
         if (students.isNotEmpty()) {
             CardBox {
-                Text("Record a payment", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text("Record ${feeCategory.label.lowercase()}", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
                     students.take(20).forEach { s ->
@@ -128,10 +140,10 @@ fun FeesScreen(state: AppState) {
                                 dd.copy(feePayments = dd.feePayments + FeePayment(
                                     id = state.repo.nextId(), studentId = payStudent,
                                     academicYearId = year?.id ?: "", termId = term?.id ?: "",
-                                    amount = amt, date = System.currentTimeMillis(), method = payMethod, receipt = payReceipt))
+                                    amount = amt, date = System.currentTimeMillis(), method = payMethod, receipt = payReceipt, category = feeCategory))
                             }
                             payAmount = ""; payReceipt = ""
-                            msg = "Payment recorded: ${cur} ${amt.toLong()} for ${s?.fullName}"
+                            msg = "${feeCategory.label} recorded: ${cur} ${amt.toLong()} for ${s?.fullName}"
                             state.refresh()
                         }
                     }
@@ -142,7 +154,7 @@ fun FeesScreen(state: AppState) {
 
         // ── Balances ──
         CardBox {
-            Text("Balances — ${cls?.let { if (it.stream.isBlank()) it.name else "${it.name} ${it.stream}" } ?: "select a class"}",
+            Text("${feeCategory.label} balances — ${cls?.let { if (it.stream.isBlank()) it.name else "${it.name} ${it.stream}" } ?: "select a class"}",
                 color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
             if (structure == null) Text("No fee set for this class/term yet — set one above.", color = Theme.MUTED, fontSize = 14.sp)
@@ -157,7 +169,7 @@ fun FeesScreen(state: AppState) {
                 }
                 LazyColumn(Modifier.height(300.dp)) {
                     items(students) { s ->
-                        val paid = d.feePayments.filter { it.studentId == s.id && it.termId == term?.id }.sumOf { it.amount }
+                        val paid = d.feePayments.filter { it.studentId == s.id && it.termId == term?.id && it.category == feeCategory }.sumOf { it.amount }
                         totalPaid += paid
                         val bal = structure.amount - paid
                         Row(Modifier.fillMaxWidth().padding(vertical = 5.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -171,18 +183,18 @@ fun FeesScreen(state: AppState) {
                 }
                 Spacer(Modifier.height(8.dp))
                 val expected = structure.amount * students.size
-                val outstanding = students.sumOf { s -> (structure.amount - d.feePayments.filter { it.studentId == s.id && it.termId == term?.id }.sumOf { it.amount }).coerceAtLeast(0.0) }
+                val outstanding = students.sumOf { s -> (structure.amount - d.feePayments.filter { it.studentId == s.id && it.termId == term?.id && it.category == feeCategory }.sumOf { it.amount }).coerceAtLeast(0.0) }
                 Text("Expected: $cur ${expected.toLong()}    Collected: $cur ${totalPaid.toLong()}    Outstanding: $cur ${outstanding.toLong()}", color = Theme.GOOD, fontSize = 15.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(10.dp))
                 Btn("Print defaulter list (Word)", primary = false, onClick = {
                     val rows = students.mapNotNull { s ->
-                        val paid = d.feePayments.filter { it.studentId == s.id && it.termId == term?.id }.sumOf { it.amount }
+                        val paid = d.feePayments.filter { it.studentId == s.id && it.termId == term?.id && it.category == feeCategory }.sumOf { it.amount }
                         val bal = structure.amount - paid
                         if (bal > 0) listOf(s.fullName, structure.amount.toLong().toString(), paid.toLong().toString(), bal.toLong().toString()) else null
                     }
                     val label = cls?.let { if (it.stream.isBlank()) it.name else "${it.name} ${it.stream}" } ?: "Class"
-                    val f = dataDir.resolve("reports").resolve("defaulters-${label.replace(" ", "")}-term${term?.number}.docx")
-                    DocxReport.writeDefaulterList(f, d, label, "Term ${term?.number} ${year?.year ?: ""}",
+                    val f = dataDir.resolve("reports").resolve("defaulters-${feeCategory.name.lowercase()}-${label.replace(" ", "")}-term${term?.number}.docx")
+                    DocxReport.writeDefaulterList(f, d, label, "${feeCategory.label} · Term ${term?.number} ${year?.year ?: ""}",
                         cur, rows, listOf(expected.toLong().toString(), totalPaid.toLong().toString(), outstanding.toLong().toString()))
                     try { java.awt.Desktop.getDesktop().open(f.toFile()) } catch (_: Exception) { }
                 })
@@ -213,7 +225,7 @@ fun PlansScreen(state: AppState) {
         "MULTI-BRANCH" to listOf("Unlimited students & branches", "$cur 600,000 / year", "Central templates & schemes", "Onboarding call"))
 
     ScreenTitle("Plans & Pricing", "Pick the tier that fits your school — pricing scales with student numbers.")
-    Column(verticalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.verticalScroll(rememberScrollState())) {
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         CardBox {
             Text("Your school: $n students → recommended plan: $rec", color = Theme.ACCENT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
         }
@@ -305,7 +317,7 @@ private fun DocGuide() {
         "1. Getting started" to "Go to School Setup and save your school profile, then create an academic year and add its 3 terms. Create classes in Classes & Streams, then add students and enroll them.",
         "2. Subjects & grading" to "Subjects come preloaded — edit them to match your school. Grading Schemes hold the PLE/UCE/UACE boundaries; create a new version any time. Old reports keep the scheme they were printed with.",
         "3. Entering marks" to "Open Marks Grid, pick a class and subject, type values and press Save all entered marks. Use ABS for absent, EXEMPT for exempted students. Submit sheet sends it for review.",
-        "4. School fees" to "In School Fees, set the amount per class and term, record payments as they come in. Fee, paid and balance appear automatically on each student's report card.",
+        "4. Fee collection" to "Use the School fees, Boarding fees and Bursary tabs as separate ledgers. Set an amount per class and term, then record payments under the matching ledger. Each report card shows independent paid and balance figures. See docs/FEE-COLLECTION.md for the full operating procedure.",
         "5. Reports" to "In Reports, pick class + term + template and generate real Word (.docx) report cards. Use Report Preview to check one student first. Generated reports are archived in Report Archive.",
         "6. Backup — never lose data" to "Every change is saved instantly with a rotating backup (Backup History). Copy the data file to a USB stick for off-site safety, or restore any previous backup in one click.",
         "7. Teacher phones" to "Sync & Backup exports a school config file (no marks). Copy it to a teacher's phone, then import in the teacher app. Teachers enter marks offline and bring back a bundle file you import.",

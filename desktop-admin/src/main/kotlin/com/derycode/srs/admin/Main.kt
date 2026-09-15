@@ -198,7 +198,15 @@ fun App(state: AppState) {
         // stacked vertically. A Box stacks children on top of each other
         // (z-order) instead of one below the other — that was the cause of
         // titles/subtitles visually overlapping with the screen content below them.
-        Column(Modifier.weight(1f).fillMaxHeight().padding(24.dp)) {
+        // Screens used to be placed in a fixed-height Column.  A number of them
+        // are longer than a laptop-sized window, so their bottom controls were
+        // clipped (and could appear to overlap the content above).  Keep the
+        // navigation fixed and give the complete page one reliable scroll area.
+        Column(
+            Modifier.weight(1f).fillMaxHeight()
+                .verticalScroll(rememberScrollState())
+                .padding(24.dp)
+        ) {
             when (state.screen) {
                 "dashboard" -> DashboardScreen(state)
                 "setup" -> SetupScreen(state)
@@ -468,7 +476,7 @@ fun DashboardScreen(state: AppState) {
     val pendingSync = d.syncQueue.count { it.status == "PENDING" }
 
     ScreenTitle("Dashboard", "Everything below works 100% offline")
-    Column(verticalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.verticalScroll(rememberScrollState())) {
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Row3 {
             StatCard("Academic year", year?.year ?: "—")
             StatCard("Students", activeStudents.toString(), Theme.GOOD)

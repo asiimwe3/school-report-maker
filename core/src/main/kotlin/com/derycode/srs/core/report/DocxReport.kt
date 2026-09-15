@@ -345,13 +345,13 @@ object DocxReport {
             doc.p("", size = 10, spacingAfter = 60)
         }
 
-        // school fees summary (only when a fee structure exists for this class/term)
+        // Each fee category is an independent ledger on the report card.
         val enrollment = data.enrollments.lastOrNull { it.studentId == student.id }
-        val fee = enrollment?.let { e -> data.feeStructures.firstOrNull { it.classId == e.classId && it.termId == result.termId } }
-        if (fee != null && fee.amount > 0) {
-            val paid = data.feePayments.filter { it.studentId == student.id && it.termId == result.termId }.sumOf { it.amount }
-            val balance = fee.amount - paid
-            doc.p("School Fees (${data.settings.currencySymbol})", bold = true, size = 22, color = accent, spacingAfter = 40)
+        val feeLines = enrollment?.let { e -> data.feeStructures.filter { it.classId == e.classId && it.termId == result.termId && it.amount > 0 } }.orEmpty()
+        feeLines.forEach { fee ->
+            val paid = data.feePayments.filter { it.studentId == student.id && it.termId == result.termId && it.category == fee.category }.sumOf { it.amount }
+            val balance = (fee.amount - paid).coerceAtLeast(0.0)
+            doc.p("${fee.category.label} (${data.settings.currencySymbol})", bold = true, size = 22, color = accent, spacingAfter = 40)
             doc.table(
                 listOf("Term fees", "Paid to date", "Balance"),
                 listOf(listOf(fmt(fee.amount), fmt(paid), fmt(balance)))

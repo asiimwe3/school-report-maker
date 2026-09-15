@@ -39,7 +39,7 @@ fun TemplatesScreen(state: AppState) {
     var layout by remember { mutableStateOf(TemplateLayout.CLASSIC) }
 
     ScreenTitle("Report Template Library", "Designs for report cards — create, duplicate, set a default.")
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.verticalScroll(rememberScrollState())) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         CardBox {
             Text("Create / duplicate a template", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))

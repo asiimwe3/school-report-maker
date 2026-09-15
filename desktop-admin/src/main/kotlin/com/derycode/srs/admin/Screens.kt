@@ -30,6 +30,8 @@ fun StudentsScreen(state: AppState) {
     var adding by remember { mutableStateOf(false) }
     var newStudent by remember { mutableStateOf(NewStudentForm()) }
     var error by remember { mutableStateOf("") }
+    var editingStudent by remember { mutableStateOf<Student?>(null) }
+    var deletingStudent by remember { mutableStateOf<Student?>(null) }
     val planLimit = com.derycode.srs.core.support.LicenseKeys.limitFor(d.settings.licencePlan)
     val activeCount = d.students.count { it.status == StudentStatus.ACTIVE }
 
@@ -148,7 +150,8 @@ fun StudentsScreen(state: AppState) {
                         Box(Modifier.weight(0.5f)) { Cell(s.sex, color = Theme.MUTED) }
                         Box(Modifier.weight(1.5f)) { Cell(cls?.let { if (it.stream.isBlank()) it.name else "${it.name} ${it.stream}" } ?: "—", color = Theme.MUTED) }
                         Box(Modifier.weight(1f)) { Cell(s.status.name, color = if (s.status == StudentStatus.ACTIVE) Theme.GOOD else Theme.WARN) }
-                        Box(Modifier.weight(1f)) {
+                        Column(Modifier.weight(1f)) {
+                            TextButton(onClick = { editingStudent = s }) { Text("Edit", color = Theme.ACCENT, fontSize = 13.sp) }
                             if (s.status == StudentStatus.ACTIVE) {
                                 TextButton(onClick = {
                                     state.repo.mutate("STUDENT_ARCHIVED", "Student", s.id) { dd ->
@@ -157,11 +160,45 @@ fun StudentsScreen(state: AppState) {
                                     state.refresh()
                                 }) { Text("Archive", color = Theme.WARN, fontSize = 13.sp) }
                             }
+                            TextButton(onClick = { deletingStudent = s }) { Text("Delete", color = Theme.WARN, fontSize = 13.sp) }
                         }
                     }
                 }
             }
         }
+    }
+
+    editingStudent?.let { student ->
+        StudentEditorDialog(student, onDismiss = { editingStudent = null }) { updated ->
+            state.repo.mutate("STUDENT_UPDATED", "Student", student.id, old = student.fullName, new = updated.fullName) { dd ->
+                dd.copy(students = dd.students.map { if (it.id == updated.id) updated else it })
+            }
+            editingStudent = null
+            state.refresh()
+        }
+    }
+    deletingStudent?.let { student ->
+        AlertDialog(
+            onDismissRequest = { deletingStudent = null },
+            title = { Text("Delete ${student.fullName}?") },
+            text = { Text("This permanently removes the student and their enrolments, marks, results and saved reports. This cannot be undone.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    state.repo.mutate("STUDENT_DELETED", "Student", student.id, old = student.fullName) { dd ->
+                        dd.copy(
+                            students = dd.students.filter { it.id != student.id },
+                            enrollments = dd.enrollments.filter { it.studentId != student.id },
+                            marks = dd.marks.filter { it.studentId != student.id },
+                            termResults = dd.termResults.filter { it.studentId != student.id },
+                            reports = dd.reports.filter { it.studentId != student.id }
+                        )
+                    }
+                    deletingStudent = null
+                    state.refresh()
+                }) { Text("Delete", color = Theme.WARN) }
+            },
+            dismissButton = { TextButton(onClick = { deletingStudent = null }) { Text("Cancel") } }
+        )
     }
 }
 
@@ -170,6 +207,39 @@ data class NewStudentForm(
     val adm: String = "", val sex: String = "M", val guardian: String = "",
     val phone: String = "", val classId: String = ""
 )
+
+@Composable
+private fun StudentEditorDialog(student: Student, onDismiss: () -> Unit, onSave: (Student) -> Unit) {
+    var first by remember(student.id) { mutableStateOf(student.firstName) }
+    var middle by remember(student.id) { mutableStateOf(student.middleName) }
+    var last by remember(student.id) { mutableStateOf(student.lastName) }
+    var admissionNo by remember(student.id) { mutableStateOf(student.admissionNo) }
+    var guardian by remember(student.id) { mutableStateOf(student.guardianName) }
+    var phone by remember(student.id) { mutableStateOf(student.guardianPhone) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit student") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextField(first, { first = it }, Modifier.fillMaxWidth(), "First name")
+                TextField(middle, { middle = it }, Modifier.fillMaxWidth(), "Middle name")
+                TextField(last, { last = it }, Modifier.fillMaxWidth(), "Last name")
+                TextField(admissionNo, { admissionNo = it }, Modifier.fillMaxWidth(), "Admission number")
+                TextField(guardian, { guardian = it }, Modifier.fillMaxWidth(), "Parent / Guardian")
+                TextField(phone, { phone = it }, Modifier.fillMaxWidth(), "Guardian phone")
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                if (first.isNotBlank() && last.isNotBlank()) {
+                    onSave(student.copy(firstName = first, middleName = middle, lastName = last,
+                        admissionNo = admissionNo.ifBlank { student.id }, guardianName = guardian, guardianPhone = phone))
+                }
+            }) { Text("Save") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Classes & Streams (+ A-level combinations)
