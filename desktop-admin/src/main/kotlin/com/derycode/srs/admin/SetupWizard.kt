@@ -353,6 +353,12 @@ fun CloudScreen(state: AppState) {
     var msg by remember { mutableStateOf("") }
     var err by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
+    // v2.2.18 — personal teacher codes
+    var invName by remember { mutableStateOf("") }
+    var invList by remember { mutableStateOf(emptyList<CloudApi.TeacherInvite>()) }
+    var invMsg by remember { mutableStateOf("") }
+    var invErr by remember { mutableStateOf(false) }
+    var invBusy by remember { mutableStateOf(false) }
 
     fun say(e: Boolean, m: String) { err = e; msg = m }
 
@@ -438,6 +444,75 @@ fun CloudScreen(state: AppState) {
                 state.refresh()
             }.start()
         }, enabled = s.cloudSchoolId.isNotBlank() && !busy, shape = RoundedCornerShape(10.dp), colors = ButtonDefaults.buttonColors(containerColor = Theme.GOOD, contentColor = Color(0xFF06281A)), modifier = Modifier.height(42.dp)) { Text("Pull Teacher Marks", fontSize = 13.sp) }
+        Spacer(Modifier.height(18.dp))
+
+        // ── Personal teacher codes (v2.2.18) ─────────────────────────────────
+        // Each teacher gets their own single-use code. It dies after first
+        // use, so a code leaked on a WhatsApp group can never be reused by
+        // someone else. The school-wide code above still works as fallback.
+        if (s.cloudSchoolId.isNotBlank()) {
+            Text("Personal Teacher Codes", color = Theme.TEXT, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            Text("Generate a separate one-time code for each teacher — it works once, then dies.", color = Theme.MUTED, fontSize = 11.sp)
+            Spacer(Modifier.height(8.dp))
+            Box(Modifier.fillMaxWidth().background(Theme.CARD, RoundedCornerShape(12.dp)).border(1.dp, Color(0xFF22304E), RoundedCornerShape(12.dp)).padding(18.dp)) {
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        TextField(invName, { invName = it }, Modifier.width(240.dp), "Teacher name")
+                        Button({
+                            if (invName.isBlank()) { invErr = true; invMsg = "Enter the teacher's name first."; return@Button }
+                            invBusy = true; invMsg = ""
+                            val url = CloudSync.url(s); val key = CloudSync.key(s)
+                            val token = s.cloudAccessToken; val sid = s.cloudSchoolId
+                            val nm = invName.trim()
+                            Thread {
+                                val code = (1..8).map { "ABCDEFGHJKLMNPQRSTUVWXYZ23456789".random() }.joinToString("")
+                                val (inv, m) = CloudApi.createTeacherInvite(url, key, token, sid, nm, code)
+                                if (inv.code.isNotEmpty()) {
+                                    val (list, _) = CloudApi.listTeacherInvites(url, key, token, sid)
+                                    invList = list
+                                }
+                                invBusy = false
+                                invErr = inv.code.isEmpty()
+                                invMsg = if (inv.code.isNotEmpty()) "✓ Code for $nm: ${inv.code} — share it with them once." else m
+                            }.start()
+                        }, enabled = !invBusy, shape = RoundedCornerShape(10.dp), colors = ButtonDefaults.buttonColors(containerColor = Theme.ACCENT), modifier = Modifier.height(40.dp)) { Text("Generate code", fontSize = 12.sp) }
+                        OutlinedButton({
+                            invBusy = true
+                            val url = CloudSync.url(s); val key = CloudSync.key(s)
+                            val token = s.cloudAccessToken; val sid = s.cloudSchoolId
+                            Thread {
+                                val (list, m) = CloudApi.listTeacherInvites(url, key, token, sid)
+                                invList = list
+                                invBusy = false
+                                invErr = list.isEmpty() && m != "ok"
+                                invMsg = if (list.isEmpty() && m != "ok") m else ""
+                            }.start()
+                        }, enabled = !invBusy, shape = RoundedCornerShape(10.dp), modifier = Modifier.height(40.dp)) { Text("Refresh list", fontSize = 12.sp) }
+                    }
+                    if (invMsg.isNotEmpty()) Text(invMsg, color = if (invErr) Color(0xFFFF6B6B) else Theme.GOOD, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
+                    Spacer(Modifier.height(10.dp))
+                    if (invList.isEmpty()) {
+                        Text("No personal codes yet — generate one above. The school-wide code still works as a fallback.", color = Theme.MUTED, fontSize = 11.sp)
+                    } else invList.forEach { inv ->
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(vertical = 2.dp)) {
+                            Text(inv.code, color = if (inv.used) Theme.MUTED else Theme.ACCENT, fontSize = 15.sp, fontWeight = FontWeight.Black)
+                            Text(inv.name, color = Theme.TEXT, fontSize = 12.sp)
+                            Spacer(Modifier.weight(1f))
+                            Text(if (inv.used) "used ✓" else "not used yet", color = if (inv.used) Theme.MUTED else Theme.GOOD, fontSize = 11.sp)
+                            if (!inv.used) Button({
+                                try {
+                                    val sel = java.awt.datatransfer.StringSelection(inv.code)
+                                    java.awt.Toolkit.getDefaultToolkit().systemClipboard.setContents(sel, null)
+                                } catch (_: Exception) { }
+                            }, shape = RoundedCornerShape(8.dp), colors = ButtonDefaults.buttonColors(containerColor = Theme.ACCENT), modifier = Modifier.height(32.dp)) { Text("Copy", fontSize = 11.sp) }
+                            if (!inv.used) Button({
+                                shareInviteOnWhatsApp(state.data.school.name, inv.code, state.data.school.headTeacher.ifBlank { "The Head Teacher" })
+                            }, shape = RoundedCornerShape(8.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1FAF55)), modifier = Modifier.height(32.dp)) { Text("WhatsApp", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+                        }
+                    }
+                }
+            }
+        }
         Spacer(Modifier.height(18.dp))
 
         // Account setup / edit (when not connected)
