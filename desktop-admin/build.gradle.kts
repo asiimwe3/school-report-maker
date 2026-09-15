@@ -31,6 +31,8 @@ dependencies {
     implementation(compose.desktop.currentOs)
     implementation(compose.material3)
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+    implementation("org.apache.poi:poi-ooxml:5.2.5") // Excel bridge: read .xlsx/.xls uploads, export the register
+    testImplementation(kotlin("test"))
 }
 
 compose.desktop {

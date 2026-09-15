@@ -37,12 +37,18 @@ fun StudentsScreen(state: AppState) {
     var bulkClassId by remember { mutableStateOf("") }
     var bulkOk by remember { mutableStateOf("") }
     var bulkErr by remember { mutableStateOf("") }
+    var excelMsg by remember { mutableStateOf("") }
+    var exportMsg by remember { mutableStateOf("") }
     val planLimit = com.derycode.srs.core.support.LicenseKeys.limitFor(d.settings.licencePlan)
     val activeCount = d.students.count { it.status == StudentStatus.ACTIVE }
 
     val year = d.academicYears.firstOrNull()
     val enrollmentByClass: Map<String, List<Enrollment>> =
         d.enrollments.filter { year == null || it.academicYearId == year.id }.groupBy { it.classId }
+    val studentClass: Map<String, String> = d.enrollments
+        .filter { year == null || it.academicYearId == year.id }
+        .mapNotNull { e -> d.classes.firstOrNull { it.id == e.classId }?.let { c -> e.studentId to (if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}") } }
+        .toMap()
 
     val visible = d.students.filter { s ->
         (search.isBlank() || s.fullName.contains(search, true) || s.admissionNo.contains(search, true)) &&
@@ -64,9 +70,29 @@ fun StudentsScreen(state: AppState) {
                 } else { adding = !adding; error = ""; if (adding) bulkOpen = false }
             }
             Btn(if (bulkOpen) "Close bulk import" else "+ Bulk import", primary = false) {
-                bulkOpen = !bulkOpen; bulkOk = ""; bulkErr = ""; if (bulkOpen) { adding = false; error = "" }
+                bulkOpen = !bulkOpen; bulkOk = ""; bulkErr = ""; excelMsg = ""; if (bulkOpen) { adding = false; error = "" }
+            }
+            Btn("Export Excel", primary = false) {
+                val chooser = javax.swing.JFileChooser()
+                chooser.dialogTitle = "Export students to Excel"
+                chooser.selectedFile = java.io.File("students-" + java.text.SimpleDateFormat("yyyy-MM-dd").format(java.util.Date()) + ".xlsx")
+                if (chooser.showSaveDialog(null) == javax.swing.JFileChooser.APPROVE_OPTION) {
+                    val f = if (chooser.selectedFile.extension.lowercase() != "xlsx") java.io.File(chooser.selectedFile.absolutePath + ".xlsx") else chooser.selectedFile
+                    try {
+                        ExcelBridge.writeStudentsWorkbook(visible.map { st ->
+                            ExcelBridge.ExportRow(
+                                adm = st.admissionNo, first = st.firstName, middle = st.middleName, last = st.lastName,
+                                sex = st.sex, className = studentClass[st.id] ?: "", phone = st.guardianPhone,
+                                status = st.status.name.lowercase().replaceFirstChar { ch -> ch.uppercase() }
+                            )
+                        }, f)
+                        exportMsg = "Exported ${visible.size} students to ${f.name}"
+                        try { java.awt.Desktop.getDesktop().open(f) } catch (_: Exception) { }
+                    } catch (e: Exception) { exportMsg = "Could not export: ${e.message}" }
+                }
             }
         }
+        if (exportMsg.isNotBlank()) Text(exportMsg, color = Theme.GOOD, fontSize = 13.sp)
 
         if (adding) {
             CardBox {
@@ -154,7 +180,37 @@ fun StudentsScreen(state: AppState) {
                     }
                 }
                 Spacer(Modifier.height(10.dp))
-                FieldLabel("Paste students — one per line. Copy straight from Excel (Admission No, Name, Stream, Contacts, Gender) or write \"TRC1127, ABARUHANGA EDMON, M\".")
+                FieldLabel("Paste students — one per line (Admission No, Name, Sex, Phone) — or upload the Excel / CSV file straight from the school's list.")
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Btn("Upload Excel / CSV file") {
+                        val chooser = javax.swing.JFileChooser()
+                        chooser.dialogTitle = "Choose the student list"
+                        chooser.fileFilter = javax.swing.filechooser.FileNameExtensionFilter("Excel or CSV (.xlsx, .xls, .csv, .txt)", "xlsx", "xls", "csv", "txt")
+                        if (chooser.showOpenDialog(null) == javax.swing.JFileChooser.APPROVE_OPTION) {
+                            val res = ExcelBridge.readToBulkText(chooser.selectedFile)
+                            if (res.error != null) { bulkErr = res.error; bulkOk = ""; excelMsg = "" }
+                            else {
+                                bulkText = res.text; bulkErr = ""; bulkOk = ""
+                                excelMsg = "Loaded ${res.count} rows from ${chooser.selectedFile.name} — pick the class, check them below, then press Import."
+                            }
+                        }
+                    }
+                    TextButton(onClick = {
+                        val chooser = javax.swing.JFileChooser()
+                        chooser.dialogTitle = "Save the Excel template"
+                        chooser.selectedFile = java.io.File("student-template.xlsx")
+                        if (chooser.showSaveDialog(null) == javax.swing.JFileChooser.APPROVE_OPTION) {
+                            val f = if (chooser.selectedFile.extension.lowercase() != "xlsx") java.io.File(chooser.selectedFile.absolutePath + ".xlsx") else chooser.selectedFile
+                            try {
+                                ExcelBridge.writeTemplate(f)
+                                excelMsg = "Template saved: ${f.absolutePath}"
+                                try { java.awt.Desktop.getDesktop().open(f) } catch (_: Exception) { }
+                            } catch (e: Exception) { bulkErr = "Could not save template: ${e.message}" }
+                        }
+                    }) { Text("Download Excel template", color = Theme.ACCENT, fontSize = 13.sp) }
+                }
+                if (excelMsg.isNotBlank()) Text(excelMsg, color = Theme.GOOD, fontSize = 13.sp)
+                Spacer(Modifier.height(4.dp))
                 OutlinedTextField(
                     value = bulkText,
                     onValueChange = { bulkText = it },
@@ -167,7 +223,7 @@ fun StudentsScreen(state: AppState) {
                 Spacer(Modifier.height(12.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                     Btn("Import ${bulkText.lines().count { it.isNotBlank() }} students") {
-                        bulkOk = ""; bulkErr = ""
+                        bulkOk = ""; bulkErr = ""; excelMsg = ""
                         if (bulkClassId.isBlank()) { bulkErr = "Pick the class to enroll them in first."; return@Btn }
                         val lines = bulkText.lines().map { it.trim() }.filter { it.isNotBlank() }
                         if (lines.isEmpty()) { bulkErr = "Nothing to import — paste the list first."; return@Btn }
