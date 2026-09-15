@@ -354,6 +354,9 @@ fun SettingsScreen(state: AppState) {
                             java.awt.Toolkit.getDefaultToolkit().systemClipboard.setContents(sel, null)
                         } catch (_: Exception) { }
                     }
+                    Btn("Share on WhatsApp") {
+                        shareInviteOnWhatsApp(state.data.school.name, s.cloudInviteCode, state.data.school.headTeacher.ifBlank { "The Head Teacher" })
+                    }
                     Btn("Manage teachers", primary = false) { state.screen = "teachers" }
                 }
                 Spacer(Modifier.height(10.dp))

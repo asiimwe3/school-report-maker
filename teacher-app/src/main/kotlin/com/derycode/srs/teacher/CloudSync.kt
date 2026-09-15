@@ -159,7 +159,11 @@ class TeacherCloud(private val context: Context) {
 
     /** Join a school with its invite code (head teacher shares the code). */
     fun joinSchool(token: String, code: String, myName: String): CloudResult {
-        val b = "{\"p_code\":\"${esc(code.trim().uppercase())}\",\"p_name\":\"${esc(myName)}\"}"
+        // Simple to use: accept the code in any format — lowercase, spaces,
+        // dashes from WhatsApp, trailing periods… ("ABCD-2345" == "abcd 2345").
+        val clean = code.uppercase().filter { it.isLetterOrDigit() }
+        if (clean.isBlank()) return CloudResult(false, msg = "Enter the school code from your head teacher's console")
+        val b = "{\"p_code\":\"${esc(clean)}\",\"p_name\":\"${esc(myName)}\"}"
         val (code, body) = http("POST", "/rest/v1/rpc/srs_link_teacher", token, b)
         if (code !in 200..299) {
             val m = member(body, "message").ifBlank { "Invalid school code — ask the head teacher for the correct code" }

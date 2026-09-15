@@ -1,8 +1,8 @@
 {
- "console": "2.2.11",
- "teacher": "1.13.1",
- "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.11.msi",
- "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.13.1.apk",
- "releaseNotes": "Teacher 1.13.1 & Console 2.2.11: fixed update delivery (in-app update checks were silently failing). Teacher app: bright light theme. Console: bulk paste import.",
+ "console": "2.2.12",
+ "teacher": "1.13.2",
+ "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.12.msi",
+ "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.13.2.apk",
+ "releaseNotes": "Teacher 1.13.2 & Console 2.2.12: simpler teacher connection. Console: one-tap 'Share on WhatsApp' for the school code. Phone: accepts the code in any format.",
  "released": "2026-09-15"
 }

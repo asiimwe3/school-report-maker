@@ -319,6 +319,19 @@ private fun StepDone(state: AppState) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+/** Opens WhatsApp with a ready-to-send teacher invite message ("make it simple to use"). */
+fun shareInviteOnWhatsApp(schoolName: String, code: String, headTeacher: String) {
+    val msg = "Hello! Join $schoolName on the SRS Teacher app in 4 steps:" +
+        "\n\n1. Install the SRS Teacher app\n2. Open the Cloud tab" +
+        "\n3. Enter this school code: $code\n4. Type your full name and tap Join" +
+        "\n\nYour classes and students download automatically." +
+        "\n\n— $headTeacher"
+    try {
+        java.awt.Desktop.getDesktop().browse(java.net.URI(
+            "https://wa.me/?text=" + java.net.URLEncoder.encode(msg, "UTF-8")))
+    } catch (_: Exception) { }
+}
+
 // Cloud screen (nav: SYSTEM → Cloud & Online)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -345,6 +358,17 @@ fun CloudScreen(state: AppState) {
                     Text("Teacher school code", color = Theme.MUTED, fontSize = 11.sp)
                     Text(s.cloudInviteCode, color = Theme.ACCENT, fontSize = 22.sp, fontWeight = FontWeight.Black)
                     Text("Share this code with your teachers for phone app access.", color = Theme.MUTED, fontSize = 11.sp)
+                    Spacer(Modifier.height(10.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Button({
+                            try {
+                                val sel = java.awt.datatransfer.StringSelection(s.cloudInviteCode)
+                                java.awt.Toolkit.getDefaultToolkit().systemClipboard.setContents(sel, null)
+                            } catch (_: Exception) { }
+                        }, shape = RoundedCornerShape(10.dp), colors = ButtonDefaults.buttonColors(containerColor = Theme.ACCENT), modifier = Modifier.height(40.dp)) { Text("Copy code", fontSize = 12.sp) }
+                        Button({ shareInviteOnWhatsApp(state.data.school.name, s.cloudInviteCode, state.data.school.headTeacher.ifBlank { "The Head Teacher" }) },
+                            shape = RoundedCornerShape(10.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1FAF55)), modifier = Modifier.height(40.dp)) { Text("Share on WhatsApp", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold) }
+                    }
                     Spacer(Modifier.height(6.dp))
                     Text("Last cloud backup: ${s.cloudLastBackup.ifBlank { "never" }}", color = Theme.MUTED, fontSize = 12.sp)
                 } else {

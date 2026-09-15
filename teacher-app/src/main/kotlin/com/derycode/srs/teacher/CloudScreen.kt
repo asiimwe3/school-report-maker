@@ -59,7 +59,7 @@ fun CloudScreen(state: TeacherState) {
                 Spacer(Modifier.height(4.dp))
                 Cell("Enter the invite code from your school's admin console (Cloud & Online). The code registers you, links you to the school and downloads your classes, students and subjects — no email or password needed.", MUTED)
                 Spacer(Modifier.height(12.dp))
-                OutlinedTextField(inviteCode, { inviteCode = it }, label = { Text("School invite code (e.g. ABC-1234)") },
+                OutlinedTextField(inviteCode, { inviteCode = it }, label = { Text("School code — 8 characters, e.g. 7KPQ3MB2") },
                     singleLine = true, modifier = Modifier.fillMaxWidth())
                 Spacer(Modifier.height(8.dp))
                 OutlinedTextField(fullName, { fullName = it }, label = { Text("Your full name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
