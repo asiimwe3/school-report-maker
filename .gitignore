@@ -8,3 +8,7 @@ captures/
 .kotlin/
 *.bundle
 srs-teacher-*.zip
+
+# Old release APKs live on GitHub Releases now — never commit them to the tree
+*.apk
+!teacher-app/src/main/**/*.apk

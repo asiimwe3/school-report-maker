@@ -52,13 +52,13 @@ object DesktopCrashTracker {
 // ─────────────────────────────────────────────────────────────────────────────
 
 object DesktopUpdateChecker {
-    const val CURRENT_VERSION = "2.0.0"
+    const val CURRENT_VERSION = APP_VERSION   // audit fix: was hardcoded "2.0.0"
 
     fun check(): UpdateInfo? = try {
         val conn = URL(Support.VERSION_URL).openConnection()
         conn.connectTimeout = 8000; conn.readTimeout = 8000
         val text = conn.getInputStream().bufferedReader().readText()
-        parseVersionJson(text)?.takeIf { it.versionName.isNotBlank() && it.versionName != CURRENT_VERSION }
+        parseVersionJson(text)?.takeIf { it.consoleVersion.isNotBlank() && it.consoleVersion != CURRENT_VERSION }
     } catch (_: Exception) { null }
 
     fun downloadAndRunInstaller(url: String): String {
@@ -109,12 +109,12 @@ fun SupportScreenDesktop(state: AppState) {
             }
             update?.let { u ->
                 Spacer(Modifier.height(6.dp))
-                Text("✓ Update ${u.versionName} available", color = Theme.GOOD, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                Text("✓ Update ${u.consoleVersion} available", color = Theme.GOOD, fontSize = 15.sp, fontWeight = FontWeight.Bold)
                 if (u.releaseNotes.isNotBlank()) Text(u.releaseNotes.take(300), color = Theme.MUTED, fontSize = 14.sp)
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Btn("Download & run installer") {
-                        Thread { msg = DesktopUpdateChecker.downloadAndRunInstaller(u.msiUrl.ifBlank { Support.RELEASES_PAGE }) }.start()
+                        Thread { msg = DesktopUpdateChecker.downloadAndRunInstaller(u.consoleMsiUrl.ifBlank { Support.RELEASES_PAGE }) }.start()
                         msg = "Downloading…"
                     }
                     Btn("Open releases page", primary = false, onClick = {

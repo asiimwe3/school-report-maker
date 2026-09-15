@@ -59,12 +59,17 @@ object CrashTracker {
 // ─────────────────────────────────────────────────────────────────────────────
 
 object UpdateChecker {
-    fun checkBlocking(currentCode: Int): UpdateInfo? = try {
+    // Compares the published "teacher" version (version.json) with the installed
+    // version name. v2 audit fix: the old versionCode comparison always failed
+    // because version.json never carried a versionCode field.
+    fun checkBlocking(currentVersion: String): UpdateInfo? = try {
         val conn = java.net.URL(Support.VERSION_URL).openConnection() as java.net.HttpURLConnection
         conn.connectTimeout = 8000; conn.readTimeout = 8000
-        if (conn.responseCode == 200) parseVersionJson(conn.inputStream.bufferedReader().readText())
-            ?.takeIf { it.versionCode > currentCode }
-        else null.also { conn.disconnect() } ?: run { conn.disconnect(); null }
+        try {
+            if (conn.responseCode == 200) parseVersionJson(conn.inputStream.bufferedReader().readText())
+                ?.takeIf { it.teacherVersion.isNotBlank() && it.teacherVersion != currentVersion }
+            else null
+        } finally { conn.disconnect() }
     } catch (_: Exception) { null }
 
     fun downloadApkBlocking(context: Context, url: String): File? = try {
@@ -118,7 +123,7 @@ fun SupportScreen(state: TeacherState) {
                     onClick = {
                         checking = true
                         scope.launch(Dispatchers.IO) {
-                            val u = UpdateChecker.checkBlocking(BuildConfig.VERSION_CODE)
+                            val u = UpdateChecker.checkBlocking(BuildConfig.VERSION_NAME)
                             update = u
                             checking = false
                         }
@@ -129,14 +134,14 @@ fun SupportScreen(state: TeacherState) {
             }
             update?.let { u ->
                 Spacer(Modifier.height(6.dp))
-                Cell("✓ Update ${u.versionName} available", GOOD, true)
+                Cell("✓ Update ${u.teacherVersion} available", GOOD, true)
                 if (u.releaseNotes.isNotBlank()) Cell(u.releaseNotes.take(200), MUTED)
                 Spacer(Modifier.height(6.dp))
                 Button(
                     onClick = {
                         downloadMsg = "Downloading…"
                         scope.launch(Dispatchers.IO) {
-                            val apk = UpdateChecker.downloadApkBlocking(context, u.apkUrl)
+                            val apk = UpdateChecker.downloadApkBlocking(context, u.teacherApkUrl)
                             downloadMsg = if (apk != null) "Downloaded ✓ — install when prompted" else "Download failed — check internet"
                             if (apk != null) UpdateChecker.installPrompt(context, apk)
                         }

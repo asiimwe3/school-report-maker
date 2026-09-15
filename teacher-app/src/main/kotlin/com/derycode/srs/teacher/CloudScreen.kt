@@ -95,7 +95,7 @@ fun CloudScreen(state: TeacherState) {
                         val res = state.importCloudConfig(payload)
                         mode = "main"
                         if (res.first) {
-                            val upd = try { UpdateChecker.checkBlocking(BuildConfig.VERSION_CODE) } catch (_: Exception) { null }
+                            val upd = try { UpdateChecker.checkBlocking(BuildConfig.VERSION_NAME) } catch (_: Exception) { null }
                             report(true, "Joined ${target.name} ✓ — your classes, students and subjects are on this phone. Welcome, ${fullName.split(" ").first()}!" +
                                 (if (upd != null) "  A newer app version is available — update it from Support." else ""))
                         } else {

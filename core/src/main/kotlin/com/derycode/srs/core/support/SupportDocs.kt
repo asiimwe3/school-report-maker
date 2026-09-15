@@ -17,12 +17,24 @@ object Support {
 
 @Serializable
 data class UpdateInfo(
+    // Legacy / generic fields (kept for back-compat with old release JSONs)
     val versionCode: Int = 0,
     val versionName: String = "",
     val apkUrl: String = "",
     val msiUrl: String = "",
-    val releaseNotes: String = ""
-)
+    val releaseNotes: String = "",
+    // Fields actually published in version.json (see repo root)
+    val console: String = "",
+    val teacher: String = "",
+    val consoleDownload: String = "",
+    val teacherDownload: String = "",
+    val released: String = ""
+) {
+    val consoleVersion: String get() = console.ifBlank { versionName }
+    val teacherVersion: String get() = teacher.ifBlank { versionName }
+    val teacherApkUrl: String get() = teacherDownload.ifBlank { apkUrl }
+    val consoleMsiUrl: String get() = consoleDownload.ifBlank { msiUrl }
+}
 
 fun parseVersionJson(text: String): UpdateInfo? = try {
     Json { ignoreUnknownKeys = true }.decodeFromString(UpdateInfo.serializer(), text)

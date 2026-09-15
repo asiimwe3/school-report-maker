@@ -189,7 +189,7 @@ class TeacherState(context: Context) {
 
     fun checkForUpdate() {
         Thread {
-            val u = UpdateChecker.checkBlocking(BuildConfig.VERSION_CODE)
+            val u = UpdateChecker.checkBlocking(BuildConfig.VERSION_NAME)
             if (u != null) updateAvailable = u
         }.start()
     }
@@ -519,7 +519,7 @@ private fun UpdateBanner(u: UpdateInfo, onOpen: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(Modifier.weight(1f)) {
-            Text("Update ${u.versionName} available", color = GREEN, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Text("Update ${u.teacherVersion} available", color = GREEN, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Text("Open More \u2192 Support to install.", color = MUTED, fontSize = 14.sp)
         }
         Button(onClick = onOpen, colors = ButtonDefaults.buttonColors(containerColor = GREEN), modifier = Modifier.height(42.dp)) {
