@@ -365,8 +365,8 @@ fun SetupScreen(state: AppState) {
     var savedMsg by remember { mutableStateOf("") }
 
     ScreenTitle("School Setup", "Offline school account — everything stays on this computer")
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        item {
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {  // v2.2.15 fix: unbounded LazyColumn inside verticalScroll crashed on open
+        run {
             CardBox {
                 FieldLabel("School name"); TextField(school.name, { school = school.copy(name = it) }, Modifier.fillMaxWidth().padding(bottom = 10.dp), "e.g. St. Mary's College")
                 Row3 {
@@ -430,8 +430,8 @@ fun SetupScreen(state: AppState) {
                 }
             }
         }
-        item { AcademicYearsSection(state) }
-    }
+        AcademicYearsSection(state)
+        }
 }
 
 @Composable

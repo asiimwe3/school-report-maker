@@ -1,8 +1,8 @@
 {
- "console": "2.2.14",
+ "console": "2.2.15",
  "teacher": "1.13.4",
- "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.14.msi",
+ "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.15.msi",
  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.13.4.apk",
- "releaseNotes": "Teacher 1.13.4: stability fix \u2014 the launcher icon shipped in teacher releases 1.10.0 to 1.13.3 was corrupted, which caused crashes on some phones. Clean icon restored. Console 2.2.14 included the matching installer fix.",
+ "releaseNotes": "Console 2.2.15: fixes the crash on opening School Setup (scrollable layout conflict).",
  "released": "2026-09-15"
 }
