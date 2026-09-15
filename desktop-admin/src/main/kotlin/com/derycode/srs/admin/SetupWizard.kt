@@ -320,6 +320,18 @@ private fun StepDone(state: AppState) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 /** Opens WhatsApp with a ready-to-send teacher invite message ("make it simple to use"). */
+fun shareTeacherInvite(schoolName: String, code: String, teacherName: String) {
+    val msg = "Hello ${teacherName.ifBlank { ""}}! Here is YOUR personal join code for $schoolName on the SRS Teacher app:" +
+        "\n\nCode: $code\n\n1. Install the SRS Teacher app\n2. Open the Cloud tab" +
+        "\n3. Enter this code: $code\n4. Choose your role and tap Join" +
+        "\n\nYour classes and students download automatically. This code is yours alone — it stops working once you use it." +
+        "\n\n— $schoolName"
+    try {
+        java.awt.Desktop.getDesktop().browse(java.net.URI(
+            "https://wa.me/?text=" + java.net.URLEncoder.encode(msg, "UTF-8")))
+    } catch (_: Exception) { }
+}
+
 fun shareInviteOnWhatsApp(schoolName: String, code: String, headTeacher: String) {
     val msg = "Hello! Join $schoolName on the SRS Teacher app in 4 steps:" +
         "\n\n1. Install the SRS Teacher app\n2. Open the Cloud tab" +

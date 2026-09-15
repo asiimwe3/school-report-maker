@@ -32,6 +32,7 @@ fun CloudScreen(state: TeacherState) {
     var mode by remember { mutableStateOf(if (state.cloud.signedIn) "main" else "quick") }
     var schools by remember { mutableStateOf(state.cloudSchools) }
     var inviteCode by remember { mutableStateOf("") }
+    var myRole by remember { mutableStateOf("TEACHER") }
 
     var email by remember { mutableStateOf(state.cloud.account.email) }
     var password by remember { mutableStateOf("") }
@@ -57,15 +58,23 @@ fun CloudScreen(state: TeacherState) {
                     Cell("Join your school", MUTED, true)
                 }
                 Spacer(Modifier.height(4.dp))
-                Cell("Enter the invite code from your school's admin console (Cloud & Online). The code registers you, links you to the school and downloads your classes, students and subjects — no email or password needed.", MUTED)
+                Cell("Enter YOUR personal invite code from your head teacher — each teacher gets their own code. It registers you, links you to the school, saves the role you pick below, and downloads your classes, students and subjects — no email or password needed.", MUTED)
                 Spacer(Modifier.height(12.dp))
-                OutlinedTextField(inviteCode, { inviteCode = it }, label = { Text("School code — 8 characters, e.g. 7KPQ3MB2") },
+                OutlinedTextField(inviteCode, { inviteCode = it }, label = { Text("Your personal code — 8 characters") },
                     singleLine = true, modifier = Modifier.fillMaxWidth())
                 Spacer(Modifier.height(8.dp))
                 OutlinedTextField(fullName, { fullName = it }, label = { Text("Your full name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 Spacer(Modifier.height(8.dp))
                 OutlinedTextField(phone, { phone = it }, label = { Text("Phone (optional)") }, singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone), modifier = Modifier.fillMaxWidth())
+                Spacer(Modifier.height(8.dp))
+                Cell("Your role at the school", MUTED, true)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    listOf("Teacher" to "TEACHER", "Head Teacher" to "HEAD_TEACHER", "Admin" to "SCHOOL_ADMIN", "Data Entry" to "DATA_ENTRY").forEach { (label, value) ->
+                        FilterChip(selected = myRole == value, onClick = { myRole = value }, label = { Text(label, fontSize = 12.sp) },
+                            colors = FilterChipDefaults.filterChipColors(containerColor = if (myRole == value) BLUE else Color.White))
+                    }
+                }
                 Spacer(Modifier.height(12.dp))
                 Button(onClick = {
                     run {
@@ -81,7 +90,7 @@ fun CloudScreen(state: TeacherState) {
                         if (!r.ok) { report(false, r.msg); return@run }
                         // 2. link to the school
                         report(true, "Linking you to your school…")
-                        val j = state.cloud.joinSchool(r.token, codeUp, fullName)
+                        val j = state.cloud.joinSchool(r.token, codeUp, fullName, myRole)
                         if (!j.ok) { report(false, j.msg); return@run }
                         // 3. school details
                         val list = state.cloud.linkedSchools(r.token)
@@ -187,7 +196,7 @@ fun CloudScreen(state: TeacherState) {
             }
             Spacer(Modifier.height(10.dp))
             if (schools.isEmpty()) {
-                Cell("No school linked yet. Ask your head teacher for the school's invite code (it's shown on the Admin Console), then enter it below.", MUTED)
+                Cell("No school linked yet. Ask your head teacher for YOUR personal invite code (Teachers screen on the Admin Console), then enter it below.", MUTED)
             } else {
                 Cell("Your schools:", MUTED, true)
                 schools.forEach { Cell("• ${it.name.ifBlank { it.id.take(8) }}", NAVY) }
@@ -207,7 +216,7 @@ fun CloudScreen(state: TeacherState) {
                 run {
                     val t = state.cloud.freshToken()
                     if (!t.ok) { report(false, t.msg); return@run }
-                    val r = state.cloud.joinSchool(t.token, inviteCode, state.me?.name ?: fullName.ifBlank { "Teacher" })
+                    val r = state.cloud.joinSchool(t.token, inviteCode, state.me?.name ?: fullName.ifBlank { "Teacher" }, myRole)
                     if (!r.ok) { report(false, r.msg); return@run }
                     schools = state.cloud.linkedSchools(t.token)
                     report(true, "Joined ✓ — pull the school's setup below.")

@@ -169,6 +169,79 @@ object CloudApi {
         return r.first in 200..299
     }
 
+    // ── Per-teacher invite codes (v2 cloud) ────────────────────────────────
+    // Each teacher gets their own single-use code. The console creates it
+    // here; the teacher app consumes it in srs_link_teacher (RPC v2).
+
+    data class TeacherInvite(val id: String = "", val code: String = "", val name: String = "", val used: Boolean = false)
+    data class LinkedTeacher(val uid: String = "", val name: String = "", val role: String = "TEACHER")
+
+    /** Create a personal single-use invite code for one teacher. */
+    fun createTeacherInvite(url: String, key: String, token: String, schoolId: String, teacherName: String, code: String): Pair<TeacherInvite, String> {
+        val body = "{\"school_id\":\"$schoolId\",\"code\":\"${esc(code)}\",\"teacher_name\":\"${esc(teacherName)}\"}"
+        val r = http("POST", "$url/rest/v1/srs_teacher_invites?select=id,code,teacher_name,used_by_uid", key, token, body)
+        if (r.first < 200 || r.first > 299) {
+            // clear message when the school hasn't run the v2 cloud script yet
+            val friendly = if (r.second.contains("srs_teacher_invites", true) || r.first == 404)
+                "The cloud needs the v2 update script (docs/supabase-setup-v2.sql) — run it once in the Supabase dashboard, then try again."
+            else "Server error (${r.first}): ${r.second.take(120)}"
+            return Pair(TeacherInvite(), friendly)
+        }
+        return try {
+            val root = Json.parseToJsonElement(r.second)
+            var inv = TeacherInvite()
+            if (root is JsonArray) {
+                val first = root.firstOrNull() as? JsonObject
+                if (first != null) {
+                    inv = TeacherInvite(
+                        id = first["id"]?.jsonPrimitive?.content ?: "",
+                        code = first["code"]?.jsonPrimitive?.content ?: "",
+                        name = first["teacher_name"]?.jsonPrimitive?.content ?: "",
+                        used = first["used_by_uid"]?.toString()?.isNotEmpty() == true && first["used_by_uid"]?.toString() != "null"
+                    )
+                }
+            }
+            if (inv.code.isNotEmpty()) Pair(inv, "ok") else Pair(TeacherInvite(), "Server did not return the invite code")
+        } catch (e: Exception) { Pair(TeacherInvite(), "Unexpected server response") }
+    }
+
+    /** All invites for this school, newest first. */
+    fun listTeacherInvites(url: String, key: String, token: String, schoolId: String): Pair<List<TeacherInvite>, String> {
+        val r = http("GET", "$url/rest/v1/srs_teacher_invites?school_id=eq.$schoolId&order=created_at.desc&select=id,code,teacher_name,used_by_uid", key, token, null)
+        if (r.first < 200 || r.first > 299) return Pair(emptyList(), "Could not load invites (${r.first})")
+        return try {
+            val root = Json.parseToJsonElement(r.second)
+            val out = ArrayList<TeacherInvite>()
+            if (root is JsonArray) for (el in root) if (el is JsonObject) {
+                val used = el["used_by_uid"]
+                val usedFlag = used != null && used.toString() != "null" && used.jsonPrimitive.content.isNotEmpty()
+                out.add(TeacherInvite(
+                    id = el["id"]?.jsonPrimitive?.content ?: "",
+                    code = el["code"]?.jsonPrimitive?.content ?: "",
+                    name = el["teacher_name"]?.jsonPrimitive?.content ?: "",
+                    used = usedFlag))
+            }
+            Pair(out as List<TeacherInvite>, "ok")
+        } catch (e: Exception) { Pair(emptyList(), "Unexpected server response") }
+    }
+
+    /** Linked teachers with the name + role they chose when joining. */
+    fun listLinkedTeachers(url: String, key: String, token: String, schoolId: String): Pair<List<LinkedTeacher>, String> {
+        val r = http("GET", "$url/rest/v1/srs_teacher_schools?school_id=eq.$schoolId&select=teacher_uid,teacher_name,role", key, token, null)
+        if (r.first < 200 || r.first > 299) return Pair(emptyList(), "Could not load the teacher list (${r.first})")
+        return try {
+            val root = Json.parseToJsonElement(r.second)
+            val out = ArrayList<LinkedTeacher>()
+            if (root is JsonArray) for (el in root) if (el is JsonObject) {
+                out.add(LinkedTeacher(
+                    uid = el["teacher_uid"]?.jsonPrimitive?.content ?: "",
+                    name = el["teacher_name"]?.jsonPrimitive?.content ?: "",
+                    role = el["role"]?.jsonPrimitive?.content ?: "TEACHER"))
+            }
+            Pair(out as List<LinkedTeacher>, "ok")
+        } catch (e: Exception) { Pair(emptyList(), "Unexpected server response") }
+    }
+
     private fun esc(s: String) = s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", " ").replace("\r", " ")
 }
 
