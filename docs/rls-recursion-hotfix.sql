@@ -81,4 +81,3 @@ create policy srs_invites_owner on srs_teacher_invites
   using (public.srs_is_school_owner(school_id))
   with check (public.srs_is_school_owner(school_id));
 
-drop policy if exists srs_ts_read_owner on srs_teacher_schools; -- no-op, already dropped above
