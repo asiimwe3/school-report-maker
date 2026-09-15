@@ -32,6 +32,11 @@ fun StudentsScreen(state: AppState) {
     var error by remember { mutableStateOf("") }
     var editingStudent by remember { mutableStateOf<Student?>(null) }
     var deletingStudent by remember { mutableStateOf<Student?>(null) }
+    var bulkOpen by remember { mutableStateOf(false) }
+    var bulkText by remember { mutableStateOf("") }
+    var bulkClassId by remember { mutableStateOf("") }
+    var bulkOk by remember { mutableStateOf("") }
+    var bulkErr by remember { mutableStateOf("") }
     val planLimit = com.derycode.srs.core.support.LicenseKeys.limitFor(d.settings.licencePlan)
     val activeCount = d.students.count { it.status == StudentStatus.ACTIVE }
 
@@ -56,7 +61,10 @@ fun StudentsScreen(state: AppState) {
             Btn(if (adding) "Cancel" else "+ Add student") {
                 if (!adding && activeCount >= planLimit) {
                     error = "Plan limit reached — $planLimit students on ${d.settings.licencePlan}. Upgrade in Plans & Pricing."
-                } else { adding = !adding; error = "" }
+                } else { adding = !adding; error = ""; if (adding) bulkOpen = false }
+            }
+            Btn(if (bulkOpen) "Close bulk import" else "+ Bulk import", primary = false) {
+                bulkOpen = !bulkOpen; bulkOk = ""; bulkErr = ""; if (bulkOpen) { adding = false; error = "" }
             }
         }
 
@@ -123,6 +131,81 @@ fun StudentsScreen(state: AppState) {
                         }
                     }
                     if (error.isNotBlank()) ErrorText(error)
+                }
+            }
+        }
+
+        if (bulkOpen) {
+            CardBox {
+                FieldLabel("Enroll all imported students in (current year)")
+                val bulkClasses = d.classes.filter { it.level == levelFilter && it.active }
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
+                    bulkClasses.take(10).forEach { c ->
+                        FilterChip(
+                            selected = bulkClassId == c.id,
+                            onClick = { bulkClassId = if (bulkClassId == c.id) "" else c.id },
+                            label = { Text(if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}", fontSize = 12.sp) }
+                        )
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
+                FieldLabel("Paste students — one per line. Copy straight from Excel (Admission No, Name, Stream, Contacts, Gender) or write \"TRC1127, ABARUHANGA EDMON, M\".")
+                OutlinedTextField(
+                    value = bulkText,
+                    onValueChange = { bulkText = it },
+                    modifier = Modifier.fillMaxWidth().height(180.dp),
+                    placeholder = { Text("TRC1127\tABARUHANGA EDMON\tA\t\tMale\nTRC1154\tAINOMUGISHA RONAH\tA\t\tFemale", color = Color(0xFF5A6B8C), fontSize = 13.sp) },
+                    singleLine = false,
+                    shape = RoundedCornerShape(8.dp),
+                    textStyle = androidx.compose.ui.text.TextStyle(color = Theme.TEXT, fontSize = 14.sp)
+                )
+                Spacer(Modifier.height(12.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Btn("Import ${'$'}{bulkText.lines().count { it.isNotBlank() }} students") {
+                        bulkOk = ""; bulkErr = ""
+                        if (bulkClassId.isBlank()) { bulkErr = "Pick the class to enroll them in first."; return@Btn }
+                        val lines = bulkText.lines().map { it.trim() }.filter { it.isNotBlank() }
+                        if (lines.isEmpty()) { bulkErr = "Nothing to import — paste the list first."; return@Btn }
+                        val existing = d.students.map { it.admissionNo.lowercase() }.toSet()
+                        val seen = mutableSetOf<String>()
+                        val bad = mutableListOf<String>()
+                        val rows = mutableListOf<BulkRow>()
+                        lines.forEachIndexed { i, line ->
+                            val parts = line.split(Regex("[,\t]")).map { it.trim() }
+                            if (parts.size < 2 || parts[0].isBlank()) { bad.add("Line ${'$'}{i + 1}: needs admission no. and name"); return@forEachIndexed }
+                            val adm = parts[0]
+                            val tokens = parts[1].split(Regex("\\s+")).filter { it.isNotBlank() }
+                            if (tokens.isEmpty()) { bad.add("Line ${'$'}{i + 1}: empty name"); return@forEachIndexed }
+                            val sexField = parts.drop(2).lastOrNull { bulkSex(it).isNotBlank() }
+                            val phone = parts.drop(2).firstOrNull { it.matches(Regex("[+0][0-9 +()\\-]{6,}")) } ?: ""
+                            if (adm.lowercase() in existing) { bad.add("Line ${'$'}{i + 1}: ${'$'}adm already exists — skipped"); return@forEachIndexed }
+                            if (!seen.add(adm.lowercase())) { bad.add("Line ${'$'}{i + 1}: ${'$'}adm appears twice in this paste — skipped"); return@forEachIndexed }
+                            rows.add(BulkRow(adm, tokens[0], tokens.drop(1).dropLast(1).joinToString(" "), if (tokens.size > 1) tokens.last() else "", if (sexField != null) bulkSex(sexField) else "M", phone))
+                        }
+                        val slots = planLimit - activeCount
+                        if (rows.size > slots) { bulkErr = "Plan limit — only ${'$'}slots student slots left on ${'$'}{d.settings.licencePlan}. Upgrade in Plans & Pricing."; return@Btn }
+                        if (rows.isEmpty()) { bulkErr = "Nothing imported:\n" + bad.joinToString("\n"); return@Btn }
+                        val clsName = d.classes.firstOrNull { it.id == bulkClassId }?.let { if (it.stream.isBlank()) it.name else "${'$'}{it.name} ${'$'}{it.stream}" } ?: "class"
+                        state.repo.mutate("STUDENTS_BULK_IMPORTED", "Students", new = "${'$'}{rows.size} into ${'$'}clsName") { dd ->
+                            var students = dd.students
+                            var enrollments = dd.enrollments
+                            rows.forEach { r ->
+                                val sid = state.repo.nextId()
+                                students = students + Student(
+                                    id = sid, admissionNo = r.adm,
+                                    firstName = r.first, middleName = r.middle, lastName = r.last,
+                                    sex = r.sex, guardianPhone = r.phone
+                                )
+                                enrollments = enrollments + Enrollment(id = state.repo.nextId(), studentId = sid, academicYearId = year?.id ?: "no-year", classId = bulkClassId)
+                            }
+                            dd.copy(students = students, enrollments = enrollments)
+                        }
+                        state.refresh()
+                        bulkOk = "Imported ${'$'}{rows.size} students into ${'$'}clsName" + (if (bad.isEmpty()) "" else "  ·  skipped ${'$'}{bad.size}") + (if (bad.isEmpty()) "" else "\n" + bad.joinToString("\n"))
+                        bulkText = ""
+                    }
+                    if (bulkOk.isNotBlank()) Text(bulkOk, color = Theme.GOOD, fontSize = 13.sp)
+                    if (bulkErr.isNotBlank()) Text(bulkErr, color = Theme.WARN, fontSize = 13.sp)
                 }
             }
         }
@@ -622,4 +705,15 @@ fun roleLabel(r: Role) = when (r) {
     Role.HEAD_TEACHER -> "Head Teacher"
     Role.TEACHER -> "Teacher"
     Role.DATA_ENTRY -> "Data Entry"
+}
+
+private data class BulkRow(
+    val adm: String, val first: String, val middle: String,
+    val last: String, val sex: String, val phone: String
+)
+
+private fun bulkSex(s: String): String = when (s.trim().lowercase()) {
+    "m", "male", "boy" -> "M"
+    "f", "female", "girl" -> "F"
+    else -> ""
 }
