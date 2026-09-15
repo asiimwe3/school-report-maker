@@ -344,7 +344,10 @@ fun CloudScreen(state: AppState) {
 
     fun say(e: Boolean, m: String) { err = e; msg = m }
 
-    Column(Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState())) {
+    // v2.2.16 fix: this screen lives inside the page-level verticalScroll column in
+    // Main.kt — its own verticalScroll created infinite height constraints and crashed
+    // the app the moment Cloud & Online was opened. The page already scrolls.
+    Column(Modifier.fillMaxWidth()) {
         Text("Cloud & Online Backup", color = Theme.TEXT, fontSize = 20.sp, fontWeight = FontWeight.Bold)
         Text("Supabase cloud — automatic off-site backup and teacher sync.", color = Theme.MUTED, fontSize = 12.sp)
         Spacer(Modifier.height(16.dp))

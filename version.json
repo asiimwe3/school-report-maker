@@ -1,8 +1,8 @@
 {
- "console": "2.2.15",
+ "console": "2.2.16",
  "teacher": "1.13.4",
- "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.15.msi",
+ "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.16.msi",
  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.13.4.apk",
- "releaseNotes": "Console 2.2.15: fixes the crash on opening School Setup (scrollable layout conflict).",
+ "releaseNotes": "Console 2.2.16: fixes the crash when opening Cloud & Online \u2014 cloud accounts, backups and teacher codes now open normally.",
  "released": "2026-09-15"
 }
