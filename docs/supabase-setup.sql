@@ -120,3 +120,9 @@ begin
   on conflict (teacher_uid, school_id) do nothing;
   return v_school;
 end $$;
+
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- IMPORTANT: after this script, also run docs/supabase-setup-v2.sql — it adds
+-- per-teacher invite codes and teacher-chosen roles (console 2.2.17+).
+-- ─────────────────────────────────────────────────────────────────────────────
