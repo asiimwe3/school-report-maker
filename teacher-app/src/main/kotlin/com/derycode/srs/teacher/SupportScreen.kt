@@ -180,7 +180,7 @@ fun SupportScreen(state: TeacherState) {
                     onClick = { docView = if (docView == text) "" else text },
                     colors = ButtonDefaults.buttonColors(containerColor = CARD),
                     modifier = Modifier.padding(vertical = 2.dp)
-                ) { Text(if (docView == text) "Hide $label" else label, color = Color.White, fontSize = 16.sp) }
+                ) { Text(if (docView == text) "Hide $label" else label, color = NAVY, fontSize = 16.sp) }
             }
         }
         if (docView.isNotEmpty()) {

@@ -34,7 +34,7 @@ fun MoreScreen(state: TeacherState, onOpen: (Route) -> Unit) {
                     Avatar((state.me?.name ?: "Teacher").take(2), BLUE, 44)
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(state.me?.name ?: "No teacher selected", color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Bold)
+                        Text(state.me?.name ?: "No teacher selected", color = NAVY, fontSize = 19.sp, fontWeight = FontWeight.Bold)
                         Text(d.school.name.ifBlank { "SRS Teacher" }, color = MUTED, fontSize = 15.sp)
                     }
                 }
@@ -82,7 +82,7 @@ private fun MoreRow(icon: ImageVector, title: String, subtitle: String, onClick:
         }
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
-            Text(title, color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            Text(title, color = NAVY, fontSize = 17.sp, fontWeight = FontWeight.Bold)
             Text(subtitle, color = MUTED, fontSize = 14.sp)
         }
         Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = MUTED, modifier = Modifier.size(16.dp))
@@ -121,7 +121,7 @@ fun CommentsScreen(state: TeacherState) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text((if (studentId == s.id) "\u25CF " else "\u25CB "), color = if (studentId == s.id) BLUE else MUTED)
-                        Text(s.fullName, color = if (studentId == s.id) BLUE else Color.White, fontSize = 17.sp)
+                        Text(s.fullName, color = if (studentId == s.id) BLUE else NAVY, fontSize = 17.sp)
                     }
                 }
             }
@@ -191,7 +191,7 @@ fun SyncScreen(state: TeacherState) {
                         Text("Import")
                     }
                     Button(onClick = { state.setMe(null) }, colors = ButtonDefaults.buttonColors(containerColor = CARD_ALT)) {
-                        Text("Change teacher", color = Color.White)
+                        Text("Change teacher", color = NAVY)
                     }
                 }
                 if (state.pendingSchoolName != null) {

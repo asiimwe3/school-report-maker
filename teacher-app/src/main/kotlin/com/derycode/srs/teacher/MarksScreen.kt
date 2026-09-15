@@ -54,7 +54,7 @@ fun EnterMarksScreen(state: TeacherState, classId: String, initialSubjectId: Str
                     Spacer(Modifier.width(10.dp))
                     Column {
                         Text((subjects.firstOrNull { it.id == subjectId }?.name ?: "Subject") + " \u2013 " + (cls?.let { classShort(it) } ?: ""),
-                            color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                            color = NAVY, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                         Text("${components.firstOrNull { it.id == componentId }?.name ?: ""} \u00B7 ${students.size} students", color = MUTED, fontSize = 15.sp)
                     }
                 }
@@ -187,7 +187,7 @@ internal fun FieldLabel(text: String) {
 internal fun DarkTextField(value: String, onChange: (String) -> Unit) {
     androidx.compose.foundation.text.BasicTextField(
         value = value, onValueChange = onChange, singleLine = true,
-        textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 18.sp),
+        textStyle = androidx.compose.ui.text.TextStyle(color = NAVY, fontSize = 18.sp),
         cursorBrush = androidx.compose.ui.graphics.SolidColor(BLUE),
         keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(CARD_ALT).padding(horizontal = 12.dp, vertical = 12.dp)
@@ -199,7 +199,7 @@ private fun DarkTextFieldSmall(value: String, onChange: (String) -> Unit, enable
     androidx.compose.foundation.text.BasicTextField(
         value = value, onValueChange = onChange, singleLine = true, enabled = enabled,
         readOnly = !enabled,
-        textStyle = androidx.compose.ui.text.TextStyle(color = if (enabled) Color.White else MUTED, fontSize = 17.sp),
+        textStyle = androidx.compose.ui.text.TextStyle(color = if (enabled) NAVY else MUTED, fontSize = 17.sp),
         cursorBrush = androidx.compose.ui.graphics.SolidColor(BLUE),
         modifier = Modifier.width(72.dp).clip(RoundedCornerShape(8.dp)).background(CARD_ALT).padding(horizontal = 8.dp, vertical = 9.dp)
     )
@@ -210,7 +210,7 @@ private fun OptionRow(icon: androidx.compose.ui.graphics.vector.ImageVector, lab
     Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
         Icon(icon, contentDescription = null, tint = MUTED, modifier = Modifier.size(17.dp))
         Spacer(Modifier.width(10.dp))
-        Text(label, color = Color.White, fontSize = 17.sp, modifier = Modifier.weight(1f))
+        Text(label, color = NAVY, fontSize = 17.sp, modifier = Modifier.weight(1f))
         Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = MUTED, modifier = Modifier.size(16.dp))
     }
 }
@@ -242,7 +242,7 @@ fun AssessmentsOverviewScreen(state: TeacherState, onOpenClass: (String) -> Unit
                 }
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("${subject?.name ?: "No subject"} \u2013 ${classShort(c)}", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                    Text("${subject?.name ?: "No subject"} \u2013 ${classShort(c)}", color = NAVY, fontSize = 17.sp, fontWeight = FontWeight.Bold)
                     Text("$entered / ${students.size} marks entered", color = MUTED, fontSize = 15.sp)
                 }
                 Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = MUTED)

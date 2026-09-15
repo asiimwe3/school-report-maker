@@ -70,7 +70,7 @@ private fun ClassCard(state: TeacherState, c: SchoolClass, onClick: () -> Unit) 
         }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            Text(classLabel(c), color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text(classLabel(c), color = NAVY, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.People, contentDescription = null, tint = MUTED, modifier = Modifier.size(12.dp))
                 Spacer(Modifier.width(3.dp))
@@ -121,7 +121,7 @@ internal fun SearchField(value: String, onChange: (String) -> Unit, placeholder:
 private fun BasicTextFieldLine(value: String, onChange: (String) -> Unit, placeholder: String) {
     androidx.compose.foundation.text.BasicTextField(
         value = value, onValueChange = onChange, singleLine = true,
-        textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 17.sp),
+        textStyle = androidx.compose.ui.text.TextStyle(color = NAVY, fontSize = 17.sp),
         cursorBrush = androidx.compose.ui.graphics.SolidColor(BLUE),
         modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
         decorationBox = { inner ->
@@ -190,7 +190,7 @@ fun ClassDetailScreen(state: TeacherState, classId: String, onEnterMarks: (Strin
                     CardBox {
                         Cell("Recent Assessment", MUTED, true)
                         Spacer(Modifier.height(6.dp))
-                        Text(component?.name ?: "No assessment yet", color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Bold)
+                        Text(component?.name ?: "No assessment yet", color = NAVY, fontSize = 19.sp, fontWeight = FontWeight.Bold)
                         Text(todayLabel(), color = MUTED, fontSize = 15.sp)
                         Spacer(Modifier.height(12.dp))
                         Row(Modifier.fillMaxWidth()) {
@@ -241,7 +241,7 @@ private fun QuickRow(icon: androidx.compose.ui.graphics.vector.ImageVector, labe
     ) {
         Icon(icon, contentDescription = null, tint = BLUE, modifier = Modifier.size(18.dp))
         Spacer(Modifier.width(10.dp))
-        Text(label, color = Color.White, fontSize = 17.sp, modifier = Modifier.weight(1f))
+        Text(label, color = NAVY, fontSize = 17.sp, modifier = Modifier.weight(1f))
         Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = MUTED, modifier = Modifier.size(16.dp))
     }
 }

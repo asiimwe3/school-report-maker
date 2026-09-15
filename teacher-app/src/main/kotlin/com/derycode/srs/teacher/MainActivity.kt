@@ -6,6 +6,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -36,7 +38,7 @@ class MainActivity : ComponentActivity() {
         CrashTracker.install(this)
         val state = TeacherState(this)
         state.checkForUpdate()   // auto-check on every launch; only asks GitHub, never sends data
-        setContent { MaterialTheme(colorScheme = darkColorScheme(background = NAVY, surface = CARD), typography = AppTypography) { TeacherApp(state) } }
+        setContent { MaterialTheme(colorScheme = lightColorScheme(background = BG, surface = CARD, onBackground = NAVY, onSurface = NAVY, primary = BLUE), typography = AppTypography) { TeacherApp(state) } }
     }
 }
 
@@ -302,7 +304,7 @@ fun classShort(c: SchoolClass): String {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Theme — dark navy dashboard, colored accent system
+// Theme — light, airy dashboard with bold colored accent system
 // ─────────────────────────────────────────────────────────────────────────────
 
 internal val AppTypography = Typography(
@@ -315,10 +317,11 @@ internal val AppTypography = Typography(
     titleSmall = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold),
 )
 
-internal val NAVY = Color(0xFF0A0E1A)
-internal val CARD = Color(0xFF141B2E)
-internal val CARD_ALT = Color(0xFF1B2438)
-internal val STROKE = Color(0xFF232C42)
+internal val BG = Color(0xFFF1F5FE)          // app background — light lavender-blue
+internal val NAVY = Color(0xFF16213E)         // primary dark text/icons on light surfaces
+internal val CARD = Color(0xFFFFFFFF)         // white cards
+internal val CARD_ALT = Color(0xFFEFF3FB)     // soft alt surface (inputs, pills)
+internal val STROKE = Color(0xFFE3E9F7)       // hairline borders
 internal val BLUE = Color(0xFF3B82F6)
 internal val PURPLE = Color(0xFF8B5CF6)
 internal val TEAL = Color(0xFF14B8A6)
@@ -326,7 +329,7 @@ internal val ORANGE = Color(0xFFF59E0B)
 internal val GREEN = Color(0xFF22C55E)
 internal val RED = Color(0xFFEF4444)
 internal val PINK = Color(0xFFEC4899)
-internal val MUTED = Color(0xFF8B96AC)
+internal val MUTED = Color(0xFF6C7793)
 internal val GOOD = GREEN
 internal val ACCENT = BLUE
 
@@ -390,10 +393,10 @@ fun TeacherApp(state: TeacherState) {
         is Route.More, is Route.Comments, is Route.Sync, is Route.Duty, is Route.Register, is Route.Attendance, is Route.Support, is Route.Cloud -> Tab.MORE
     }
 
-    Column(Modifier.fillMaxSize().background(NAVY)) {
+    Column(Modifier.fillMaxSize().background(BG)) {
         Column(Modifier.weight(1f).padding(horizontal = 14.dp)) {
             Spacer(Modifier.height(10.dp))
-            TopBar(state, current, onBack = { pop() })
+            TopBar(state, current, onBack = { pop() }, onProfile = { push(Route.More) })
             Spacer(Modifier.height(10.dp))
             state.updateAvailable?.let { u ->
                 UpdateBanner(u) { push(Route.More) }
@@ -426,32 +429,40 @@ fun TeacherApp(state: TeacherState) {
 }
 
 @Composable
-private fun TopBar(state: TeacherState, route: Route, onBack: () -> Unit) {
+private fun TopBar(state: TeacherState, route: Route, onBack: () -> Unit, onProfile: () -> Unit) {
     val (title, showBack) = titleFor(state, route)
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         if (showBack) {
-            IconButton(onClick = onBack, modifier = Modifier.size(38.dp)) {
-                Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+            IconButton(onClick = onBack, modifier = Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(CARD)) {
+                Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = NAVY)
             }
-            Spacer(Modifier.width(4.dp))
+            Spacer(Modifier.width(6.dp))
         } else {
-            Box(Modifier.size(38.dp).clip(RoundedCornerShape(10.dp)).background(BLUE), contentAlignment = Alignment.Center) {
-                Icon(Icons.Filled.School, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+            Box(Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(BLUE), contentAlignment = Alignment.Center) {
+                Icon(Icons.Filled.School, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
             }
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(10.dp))
         }
         Column(Modifier.weight(1f)) {
-            Text(title, color = Color.White, fontSize = 23.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-            if (!showBack) Text(state.data.school.name.ifBlank { "SRS Teacher" }, color = MUTED, fontSize = 14.sp, maxLines = 1)
+            Text(title, color = NAVY, fontSize = 23.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+            if (!showBack) Text(state.data.school.name.ifBlank { "SRS Teacher" }, color = MUTED, fontSize = 14.sp, maxLines = 1, fontWeight = FontWeight.SemiBold)
         }
         if (!showBack) {
             Box {
-                IconButton(onClick = {}, modifier = Modifier.size(38.dp)) {
-                    Icon(Icons.Filled.Notifications, contentDescription = "Notifications", tint = Color.White)
+                IconButton(onClick = {}, modifier = Modifier.size(40.dp).clip(CircleShape).background(CARD)) {
+                    Icon(Icons.Filled.Notifications, contentDescription = "Notifications", tint = NAVY)
                 }
                 if (state.updateAvailable != null) {
-                    Box(Modifier.size(8.dp).align(Alignment.TopEnd).clip(CircleShape).background(RED))
+                    Box(Modifier.size(9.dp).align(Alignment.TopEnd).clip(CircleShape).background(RED).border(1.5.dp, CARD, CircleShape))
                 }
+            }
+            Spacer(Modifier.width(6.dp))
+            Box(
+                Modifier.size(40.dp).clip(CircleShape).background(BLUE.copy(alpha = 0.15f))
+                    .clickable(onClick = onProfile),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Filled.Person, contentDescription = "Profile", tint = BLUE, modifier = Modifier.size(21.dp))
             }
         }
     }
@@ -482,7 +493,7 @@ private fun titleFor(state: TeacherState, route: Route): Pair<String, Boolean> =
 @Composable
 private fun BottomNav(active: Tab, onSelect: (Tab) -> Unit) {
     Row(
-        Modifier.fillMaxWidth().background(CARD).padding(vertical = 10.dp, horizontal = 6.dp),
+        Modifier.fillMaxWidth().background(CARD).border(BorderStroke(1.dp, STROKE)).padding(vertical = 10.dp, horizontal = 6.dp),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
         Tab.values().forEach { tab ->
@@ -524,15 +535,17 @@ private fun UpdateBanner(u: UpdateInfo, onOpen: () -> Unit) {
 @Composable
 internal fun CardBox(padding: Int = 20, content: @Composable ColumnScope.() -> Unit) {
     Column(
-        Modifier.fillMaxWidth().background(CARD, RoundedCornerShape(20.dp))
-            .border(1.dp, BLUE.copy(alpha = 0.25f), RoundedCornerShape(20.dp))
+        Modifier.fillMaxWidth()
+            .shadow(3.dp, RoundedCornerShape(20.dp), ambientColor = STROKE, spotColor = STROKE)
+            .background(CARD, RoundedCornerShape(20.dp))
+            .border(1.dp, STROKE, RoundedCornerShape(20.dp))
             .padding(padding.dp),
         content = content
     )
 }
 
 @Composable
-internal fun Cell(text: String, color: Color = Color.White, bold: Boolean = false, modifier: Modifier = Modifier) =
+internal fun Cell(text: String, color: Color = NAVY, bold: Boolean = false, modifier: Modifier = Modifier) =
     Text(text, color = color, fontSize = 17.sp,
          fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal, modifier = modifier)
 

@@ -53,7 +53,7 @@ fun DutyScreen(state: TeacherState) {
                     Cell("\u2713 ON DUTY \u2014 ${duty.role}", GREEN, true)
                     Spacer(Modifier.height(6.dp))
                     Button(onClick = { state.endDuty() }, colors = ButtonDefaults.buttonColors(containerColor = CARD_ALT)) {
-                        Text("End duty", color = Color.White)
+                        Text("End duty", color = NAVY)
                     }
                     Spacer(Modifier.height(10.dp))
                     Cell("Duty log", MUTED, true)
@@ -143,7 +143,7 @@ fun DutyScreen(state: TeacherState) {
                 if (all.isEmpty()) Cell("No one has marked themselves on duty yet.", MUTED)
                 all.forEach { r ->
                     val t = d.teachers.firstOrNull { it.id == r.teacherId }
-                    Cell("\u2022 ${t?.name ?: r.teacherId} \u2014 ${r.role} \u2014 ${r.incidents.size} log entries", Color.White)
+                    Cell("\u2022 ${t?.name ?: r.teacherId} \u2014 ${r.role} \u2014 ${r.incidents.size} log entries", NAVY)
                 }
             }
         }

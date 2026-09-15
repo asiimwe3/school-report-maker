@@ -72,7 +72,7 @@ fun AttendanceScreen(state: TeacherState) {
             CardBox {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
-                        Cell("${s.firstName} ${s.lastName}", Color.White, true)
+                        Cell("${s.firstName} ${s.lastName}", NAVY, true)
                         if (s.admissionNo.isNotBlank()) Cell(s.admissionNo, MUTED)
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {

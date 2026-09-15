@@ -190,7 +190,7 @@ fun CloudScreen(state: TeacherState) {
                 Cell("No school linked yet. Ask your head teacher for the school's invite code (it's shown on the Admin Console), then enter it below.", MUTED)
             } else {
                 Cell("Your schools:", MUTED, true)
-                schools.forEach { Cell("• ${it.name.ifBlank { it.id.take(8) }}", Color.White) }
+                schools.forEach { Cell("• ${it.name.ifBlank { it.id.take(8) }}", NAVY) }
                 Cell("School on this phone: ${state.data.school.name.ifBlank { "not imported yet" }}", MUTED)
             }
         }
@@ -265,7 +265,7 @@ fun CloudScreen(state: TeacherState) {
         CardBox {
             Button(onClick = { state.cloud.signOut(); mode = "signup"; schools = emptyList(); report(true, "Signed out. Your marks stay on this phone.") },
                 colors = ButtonDefaults.buttonColors(containerColor = CARD_ALT)) {
-                Text("Sign out (marks stay on phone)", color = Color.White, fontSize = 15.sp)
+                Text("Sign out (marks stay on phone)", color = NAVY, fontSize = 15.sp)
             }
         }
     }

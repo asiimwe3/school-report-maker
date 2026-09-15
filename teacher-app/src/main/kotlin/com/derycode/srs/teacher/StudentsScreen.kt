@@ -77,7 +77,7 @@ private fun StudentRow(s: Student, pct: Double?, onClick: () -> Unit) {
         Avatar(s.firstName.take(1) + s.lastName.take(1), avatarColor(s.id), 38)
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
-            Text(s.fullName, color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            Text(s.fullName, color = NAVY, fontSize = 17.sp, fontWeight = FontWeight.Bold)
             Text(s.admissionNo, color = MUTED, fontSize = 14.sp)
         }
         if (pct != null) ScoreBadge(pct) else Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = MUTED)
@@ -121,7 +121,7 @@ fun StudentDetailScreen(state: TeacherState, studentId: String) {
                     Avatar(s.firstName.take(1) + s.lastName.take(1), avatarColor(s.id), 52)
                     Spacer(Modifier.width(12.dp))
                     Column {
-                        Text(s.fullName, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        Text(s.fullName, color = NAVY, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                         Text("Index: ${s.admissionNo}", color = MUTED, fontSize = 15.sp)
                         Text("Class: ${cls?.let { classLabel(it) } ?: "\u2014"}", color = MUTED, fontSize = 15.sp)
                     }
@@ -149,7 +149,7 @@ fun StudentDetailScreen(state: TeacherState, studentId: String) {
                                 Icon(Icons.Filled.MenuBook, contentDescription = null, tint = avatarColor(subj.id), modifier = Modifier.size(14.dp))
                             }
                             Spacer(Modifier.width(10.dp))
-                            Text(subj.name, color = Color.White, fontSize = 17.sp, modifier = Modifier.weight(1f))
+                            Text(subj.name, color = NAVY, fontSize = 17.sp, modifier = Modifier.weight(1f))
                             Text("${fmt1(m.score)} / ${m.maxScore}", color = MUTED, fontSize = 16.sp)
                             Spacer(Modifier.width(8.dp))
                             Box(Modifier.clip(RoundedCornerShape(6.dp)).background(quickBandColor(pct).copy(alpha = 0.18f)).padding(horizontal = 8.dp, vertical = 3.dp)) {
@@ -169,7 +169,7 @@ fun StudentDetailScreen(state: TeacherState, studentId: String) {
                     Cell("Notes", MUTED, true)
                 }
                 Spacer(Modifier.height(6.dp))
-                Cell(comment?.text ?: "No comment recorded yet for this term.", if (comment != null) Color.White else MUTED)
+                Cell(comment?.text ?: "No comment recorded yet for this term.", if (comment != null) NAVY else MUTED)
             }
         }
         item {
