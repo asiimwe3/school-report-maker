@@ -433,6 +433,7 @@ data class AppSettings(
     val licenceRef: String = "",
     val licenceExpiry: String = "",
     val adminPinHash: String = "",
+    val feePinHash: String = "",  // v2.2.7: PIN required to edit fee structures/balances
     // ── Onboarding & cloud (v2.2.0) ──
     val setupComplete: Boolean = false,
     val cloudUrl: String = "",

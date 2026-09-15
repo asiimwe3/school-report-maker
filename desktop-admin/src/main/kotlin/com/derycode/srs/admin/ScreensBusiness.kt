@@ -43,12 +43,32 @@ fun FeesScreen(state: AppState) {
     var payAmount by remember { mutableStateOf("") }
     var payMethod by remember { mutableStateOf("Mobile Money") }
     var payReceipt by remember { mutableStateOf("") }
+    // v2.2.7 balance protection: admin PIN before fee amounts can be edited
+    var pinGate by remember { mutableStateOf(false) }
+    var gatePin by remember { mutableStateOf("") }
+    var gateMsg by remember { mutableStateOf("") }
+    var newPin by remember { mutableStateOf("") }
+    var confirmPin by remember { mutableStateOf("") }
+    var pinMsg by remember { mutableStateOf("") }
 
     val cls = d.classes.firstOrNull { it.id == classId }
     val students = d.enrollments.filter { it.classId == classId && (year == null || it.academicYearId == year.id) }
         .mapNotNull { e -> d.students.firstOrNull { s -> s.id == e.studentId && s.status == StudentStatus.ACTIVE } }
     val structure = d.feeStructures.firstOrNull { it.classId == classId && term != null && it.termId == term.id && it.category == feeCategory }
     val cur = d.settings.currencySymbol
+
+    val saveStructure = {
+        val amt = feeAmount.toDoubleOrNull() ?: structure?.amount
+        if (classId.isNotBlank() && term != null && amt != null && amt > 0) {
+            val id = structure?.id ?: state.repo.nextId()
+            state.repo.mutate("FEE_STRUCTURE_SET", "FeeStructure", id, new = "$amt") { dd ->
+                dd.copy(feeStructures = (dd.feeStructures.filter { !(it.classId == classId && it.termId == term.id && it.category == feeCategory) } +
+                    FeeStructure(id = id, classId = classId, academicYearId = year?.id ?: "", termId = term.id, name = feeCategory.label, amount = amt, category = feeCategory)))
+            }
+            feeAmount = ""; msg = "${feeCategory.label} set for ${cls?.name}: ${cur} ${amt.toLong()}"
+            state.refresh()
+        } else msg = "Enter a valid amount."
+    }
 
     ScreenTitle("Fee Collection", "School, boarding and bursary ledgers stay independent from one another.")
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -62,6 +82,66 @@ fun FeesScreen(state: AppState) {
             }
             Spacer(Modifier.height(4.dp))
             Text("Balances and payments are calculated only within the selected ledger.", color = Theme.MUTED, fontSize = 13.sp)
+        }
+        // ── Balance protection (v2.2.7): admin PIN required to edit fee amounts ──
+        CardBox {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Balance protection (PIN)", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.weight(1f))
+                Text(if (d.settings.feePinHash.isNotBlank()) "ON ✓" else "OFF", color = if (d.settings.feePinHash.isNotBlank()) Theme.GOOD else Theme.MUTED, fontSize = 12.sp)
+            }
+            Spacer(Modifier.height(4.dp))
+            Text("When ON, changing a class's expected fee amount (what every student owes) asks for this PIN first — balances can't be quietly edited.",
+                color = Theme.MUTED, fontSize = 13.sp)
+            Spacer(Modifier.height(8.dp))
+            if (d.settings.feePinHash.isBlank()) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    TextField(newPin, { newPin = it.filter { c -> c.isDigit() }.take(6) }, Modifier.width(150.dp), "New PIN (4–6 digits)")
+                    TextField(confirmPin, { confirmPin = it.filter { c -> c.isDigit() }.take(6) }, Modifier.width(140.dp), "Repeat PIN")
+                    Btn("Protect balances") {
+                        when {
+                            newPin.length < 4 -> pinMsg = "PIN must be 4–6 digits."
+                            newPin != confirmPin -> pinMsg = "PINs don't match."
+                            else -> {
+                                state.repo.mutate("FEE_PIN_SET", "AppSettings", "feePin", new = "***") { dd ->
+                                    dd.copy(settings = dd.settings.copy(feePinHash = com.derycode.srs.core.support.LicenseKeys.hash("feepin|" + newPin)))
+                                }
+                                newPin = ""; confirmPin = ""; pinMsg = "Fee balance protection is ON ✓"
+                                state.refresh()
+                            }
+                        }
+                    }
+                }
+            } else {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("To change the PIN: remove it (current PIN needed), then set a new one.", color = Theme.MUTED, fontSize = 13.sp, modifier = Modifier.weight(1f))
+                    TextField(gatePin, { gatePin = it.filter { c -> c.isDigit() }.take(6) }, Modifier.width(130.dp), "Current PIN")
+                    Btn("Remove protection", primary = false) {
+                        if (com.derycode.srs.core.support.LicenseKeys.hash("feepin|" + gatePin) == d.settings.feePinHash) {
+                            state.repo.mutate("FEE_PIN_REMOVED", "AppSettings", "feePin") { dd ->
+                                dd.copy(settings = dd.settings.copy(feePinHash = ""))
+                            }
+                            gatePin = ""; pinMsg = "Fee balance protection removed."
+                            state.refresh()
+                        } else pinMsg = "Wrong PIN."
+                    }
+                }
+            }
+            if (pinMsg.isNotBlank()) Text(pinMsg, color = if (pinMsg.contains("✓")) Theme.GOOD else Theme.WARN, fontSize = 13.sp)
+        }
+        if (pinGate) CardBox {
+            Text("PIN required to change ${feeCategory.label} for ${cls?.name ?: "this class"}", color = Theme.TEXT, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(6.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                TextField(gatePin, { gatePin = it.filter { c -> c.isDigit() }.take(6) }, Modifier.width(130.dp), "PIN")
+                Btn("Confirm") {
+                    if (com.derycode.srs.core.support.LicenseKeys.hash("feepin|" + gatePin) == d.settings.feePinHash) {
+                        pinGate = false; gatePin = ""; gateMsg = ""; saveStructure()
+                    } else gateMsg = "Wrong PIN."
+                }
+                Btn("Cancel", primary = false) { pinGate = false; gatePin = ""; gateMsg = "" }
+            }
+            if (gateMsg.isNotBlank()) Text(gateMsg, color = Theme.WARN, fontSize = 13.sp)
         }
         // ── Fee structure ──
         CardBox {
@@ -88,16 +168,7 @@ fun FeesScreen(state: AppState) {
                         { feeAmount = it }, Modifier.width(160.dp), "Amount per term")
                     Text(cur, color = Theme.MUTED, fontSize = 14.sp)
                     Btn(if (structure == null) "Set fee" else "Update fee") {
-                        val amt = feeAmount.toDoubleOrNull() ?: structure?.amount
-                        if (classId.isNotBlank() && term != null && amt != null && amt > 0) {
-                            val id = structure?.id ?: state.repo.nextId()
-                            state.repo.mutate("FEE_STRUCTURE_SET", "FeeStructure", id, new = "$amt") { dd ->
-                                dd.copy(feeStructures = (dd.feeStructures.filter { !(it.classId == classId && it.termId == term.id && it.category == feeCategory) } +
-                                    FeeStructure(id = id, classId = classId, academicYearId = year?.id ?: "", termId = term.id, name = feeCategory.label, amount = amt, category = feeCategory)))
-                            }
-                            feeAmount = ""; msg = "${feeCategory.label} set for ${cls?.name}: ${cur} ${amt.toLong()}"
-                            state.refresh()
-                        }
+                        if (d.settings.feePinHash.isNotBlank()) { gatePin = ""; gateMsg = ""; pinGate = true } else saveStructure()
                     }
                     if (structure != null) Text("Current: ${cur} ${structure.amount.toLong()}", color = Theme.GOOD, fontSize = 14.sp)
                 }

@@ -24,6 +24,8 @@ object DocxReport {
         private var tableOpen = false
         var logoBytes: ByteArray? = null
         var logoExt: String = "png"
+        /** Shown centered in every printed page footer, with page numbers. */
+        var footerText: String = ""
 
         /** Inserts the school logo, centered, at the current position. Safe to call multiple times
          *  (e.g. once per student page) — they all reference the same embedded image part. */
@@ -86,8 +88,9 @@ object DocxReport {
         }
 
         private fun tr(header: Boolean, cells: List<String>, accent: String) {
-            body.append("<w:tr>")
-            if (header) body.append("<w:trPr><w:tblHeader/></w:trPr>")
+            body.append("<w:tr><w:trPr><w:cantSplit/>")
+            if (header) body.append("<w:tblHeader/>")
+            body.append("</w:trPr>")
             cells.forEach { c ->
                 body.append("<w:tc><w:tcPr><w:shd w:val=\"clear\" w:color=\"auto\" w:fill=\"")
                     .append(if (header) accent else "FFFFFF").append("\"/></w:tcPr>")
@@ -106,17 +109,20 @@ object DocxReport {
         }
 
         fun toBytes(): ByteArray {
-            val document = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-<w:body>${body}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="680" w:right="680" w:bottom="680" w:left="680" w:header="0" w:footer="0" w:gutter="0"/></w:sectPr></w:body></w:document>"""
             val hasLogo = logoBytes != null
+            val hasFooter = footerText.isNotBlank()
             val logoMime = if (logoExt == "png") "png" else "jpeg"
+            val footerXml = if (hasFooter) """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:pPr><w:jc w:val="center"/><w:spacing w:after="0"/></w:pPr><w:r><w:rPr><w:color w:val="999999"/><w:sz w:val="14"/></w:rPr><w:t xml:space="preserve">""" + esc(footerText) + """ — Page </w:t></w:r><w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText xml:space="preserve"> PAGE </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:rPr><w:color w:val="999999"/><w:sz w:val="14"/></w:rPr><w:t>1</w:t></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r></w:p></w:ftr>""" else ""
+            val document = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<w:body>${body}<w:sectPr>${if (hasFooter) """<w:footerReference w:type="default" r:id="rIdFooter1"/>""" else ""}<w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="680" w:right="680" w:bottom="680" w:left="680" w:header="0" w:footer="340" w:gutter="0"/></w:sectPr></w:body></w:document>"""
             val contentTypes = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>${if (hasLogo) """<Default Extension="$logoExt" ContentType="image/$logoMime"/>""" else ""}<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>"""
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>${if (hasLogo) """<Default Extension="$logoExt" ContentType="image/$logoMime"/>""" else ""}<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>${if (hasFooter) """<Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>""" else ""}</Types>"""
             val rels = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>"""
             val documentRels = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdLogo0" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/logo.$logoExt"/></Relationships>"""
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${if (hasLogo) """<Relationship Id="rIdLogo0" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/logo.$logoExt"/>""" else ""}${if (hasFooter) """<Relationship Id="rIdFooter1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/>""" else ""}</Relationships>"""
             val out = ByteArrayOutputStream()
             ZipOutputStream(out).use { zip ->
                 zip.putNextEntry(ZipEntry("[Content_Types].xml"))
@@ -124,10 +130,16 @@ object DocxReport {
                 zip.putNextEntry(ZipEntry("_rels/.rels"))
                 zip.write(rels.toByteArray(StandardCharsets.UTF_8)); zip.closeEntry()
                 if (hasLogo) {
-                    zip.putNextEntry(ZipEntry("word/_rels/document.xml.rels"))
-                    zip.write(documentRels.toByteArray(StandardCharsets.UTF_8)); zip.closeEntry()
                     zip.putNextEntry(ZipEntry("word/media/logo.$logoExt"))
                     zip.write(logoBytes!!); zip.closeEntry()
+                }
+                if (hasLogo || hasFooter) {
+                    zip.putNextEntry(ZipEntry("word/_rels/document.xml.rels"))
+                    zip.write(documentRels.toByteArray(StandardCharsets.UTF_8)); zip.closeEntry()
+                }
+                if (hasFooter) {
+                    zip.putNextEntry(ZipEntry("word/footer1.xml"))
+                    zip.write(footerXml.toByteArray(StandardCharsets.UTF_8)); zip.closeEntry()
                 }
                 zip.putNextEntry(ZipEntry("word/document.xml"))
                 zip.write(document.toByteArray(StandardCharsets.UTF_8)); zip.closeEntry()
@@ -237,18 +249,27 @@ object DocxReport {
         val term = data.academicYears.asSequence()
             .flatMap { y -> y.terms.asSequence().map { t -> y to t } }
             .firstOrNull { it.second.id == result.termId }
-
-        readLogo(school)?.let { (bytes, ext) -> doc.logo(bytes, ext) }
-        doc.p(school.name, bold = true, size = 32, align = "center", color = ink, spacingAfter = 20)
-        if (school.motto.isNotBlank()) doc.p("\u201C${school.motto}\u201D", italic = true, size = 20, align = "center", spacingAfter = 20)
-        val addr = school.address + if (school.phone.isNotBlank()) " · Tel: ${school.phone}" else ""
-        if (addr.isNotBlank()) doc.p(addr, size = 18, align = "center", color = "777777", spacingAfter = 60)
-        doc.p("TERMLY REPORT CARD", bold = true, size = 24, align = "center", color = accent, spacingAfter = 120)
-
         val cls = data.enrollments.lastOrNull { it.studentId == student.id }
             ?.let { e -> data.classes.firstOrNull { it.id == e.classId } }
         val clsName = cls?.let { if (it.stream.isBlank()) it.name else "${it.name} ${it.stream}" } ?: "—"
+        // scheme early: the grade description (indicator) column and the grading key both read from it
+        val gradeScheme = data.gradingSchemes.firstOrNull { it.id == result.schemeId }
+            ?: data.gradingSchemes.firstOrNull { it.level == cls?.level && it.active }
+            ?: data.gradingSchemes.firstOrNull()
+        doc.footerText = school.name.ifBlank { "School Report Maker" }
 
+        // ── header — compact: the whole card must print on ONE page ──
+        readLogo(school)?.let { (bytes, ext) -> doc.logo(bytes, ext) }
+        doc.p(school.name, bold = true, size = 28, align = "center", color = ink, spacingAfter = 10)
+        val contact = listOfNotNull(
+            school.address.ifBlank { null },
+            school.phone.ifBlank { null }?.let { "Tel: $it" }).joinToString(" · ")
+        val mottoLine = school.motto.ifBlank { null }?.let { "\u201C$it\u201D" }
+        val line2 = listOfNotNull(mottoLine, contact.ifBlank { null }).joinToString(" · ")
+        if (line2.isNotBlank()) doc.p(line2, italic = true, size = 16, align = "center", color = "777777", spacingAfter = 20)
+        doc.p("TERMLY REPORT CARD", bold = true, size = 22, align = "center", color = accent, spacingAfter = 30)
+
+        // ── student identity ──
         doc.table(
             listOf("Student", "Admission No", "Class", "Term", "Year"),
             listOf(listOf(
@@ -260,7 +281,7 @@ object DocxReport {
             ))
         )
 
-        // subject performance — Zeraki-style: one column per assessment (BOT/MID/EOT…)
+        // ── subject performance: per-assessment columns + grade description (indicator) ──
         val subjectIds = result.subjectResults.map { it.subjectId }.toSet()
         val comps = data.components.filter { c -> c.active && data.marks.any { m ->
             m.studentId == student.id && m.termId == result.termId && m.componentId == c.id && m.subjectId in subjectIds } }
@@ -272,7 +293,7 @@ object DocxReport {
             .map { s ->
                 val r = result.subjectResults.first { it.subjectId == s.id }
                 val perComp = compList.map { c ->
-                    val m = data.marks.firstOrNull { it.studentId == student.id && it.subjectId == s.id && it.termId == result.termId && it.componentId == c.id }
+                    val m = data.marks.firstOrNull { mm -> mm.studentId == student.id && mm.subjectId == s.id && mm.termId == result.termId && mm.componentId == c.id }
                     when {
                         m == null -> "—"
                         m.type == com.derycode.srs.core.model.MarkType.ABS -> "ABS"
@@ -280,17 +301,19 @@ object DocxReport {
                         else -> num(m.score)
                     }
                 }
-                listOf(s.name) + perComp + listOf(r.total.toInt().toString(), fmt(r.percentage) + "%", r.grade,
+                val desc = gradeScheme?.boundaries?.firstOrNull { it.grade == r.grade }
+                    ?.let { it.label.ifBlank { it.remark } }.orEmpty()
+                listOf(s.name) + perComp + listOf(r.total.toInt().toString(), fmt(r.percentage) + "%", r.grade, desc,
                     if (r.positionInSubject > 0) r.positionInSubject.toString() else "",
                     if (r.remark.isBlank()) "" else r.remark)
             }
-        doc.p("Subject Performance", bold = true, size = 22, color = accent, spacingAfter = 40)
+        doc.p("Subject Performance", bold = true, size = 20, color = accent, spacingAfter = 20)
         doc.table(
-            listOf("Subject") + compList.map { compCode(it.id) } + listOf("Total", "%", "Grade", "Pos", "Remark"),
+            listOf("Subject") + compList.map { compCode(it.id) } + listOf("Total", "%", "Grade", "Description", "Pos", "Remark"),
             subjectRows.ifEmpty { listOf(listOf("No marks recorded")) }
         )
 
-        // summary
+        // ── overall summary ──
         val overall = buildString {
             result.aggregate?.let { append("Aggregate $it") }
             result.division?.let { if (isNotEmpty()) append(" · "); append(it) }
@@ -303,13 +326,12 @@ object DocxReport {
             if (result.classPosition > 0) add("Class position: ${result.classPosition}")
             if (result.streamPosition > 0) add("Stream position: ${result.streamPosition}")
         }.joinToString(" · ")
-
         doc.table(
             listOf("Overall Result", "Position", "Average"),
             listOf(listOf(overall, posLine.ifBlank { "—" }, fmt(result.averagePercent) + "%"))
         )
 
-        // class performance analysis (Zeraki-style: how the student compares to the class)
+        // ── class performance analysis ──
         val termObj = term?.second
         val yearObj = term?.first
         val classmates = data.enrollments
@@ -320,87 +342,74 @@ object DocxReport {
             if (ms.isEmpty()) null else ms.sumOf { it.score } / ms.sumOf { it.maxScore.toDouble() } * 100.0
         }
         if (classAverages.size >= 2) {
-            doc.p("Class Performance Analysis", bold = true, size = 22, color = accent, spacingAfter = 40)
             val classAvg = classAverages.average()
-            val inClass = classmates.count { sid -> sid != student.id }
+            doc.p("Class Performance Analysis", bold = true, size = 20, color = accent, spacingAfter = 20)
             doc.table(
                 listOf("Class average", "Highest in class", "Lowest in class", "Students in class"),
-                listOf(listOf(fmt(classAvg) + "%", fmt(classAverages.max()) + "%", fmt(classAverages.min()) + "%", (inClass + 1).toString()))
+                listOf(listOf(fmt(classAvg) + "%", fmt(classAverages.max()) + "%", fmt(classAverages.min()) + "%", classmates.size.toString()))
             )
-            doc.p("", size = 10, spacingAfter = 60)
         }
 
-        // grading key (from the school's grading scheme for this level)
-        val gradeScheme = data.gradingSchemes.firstOrNull { it.id == result.schemeId }
-            ?: data.gradingSchemes.firstOrNull { it.level == cls?.level && it.active }
+        // ── grading key + how to read the marks (indicator & description) ──
         if (gradeScheme != null && gradeScheme.boundaries.isNotEmpty()) {
-            doc.p("Grading Key (${gradeScheme.name})", bold = true, size = 20, color = accent, spacingAfter = 40)
-            doc.table(
-                listOf("Grade", "Marks range", "Points", "Description"),
-                gradeScheme.boundaries.sortedByDescending { it.minScore }.map { b ->
-                    listOf(b.grade, "${num(b.minScore)}–${num(b.maxScore)}",
-                        if (b.points > 0) b.points.toString() else "", b.label.ifBlank { b.remark })
-                }
-            )
-            doc.p("", size = 10, spacingAfter = 60)
+            val keyLine = gradeScheme.boundaries.sortedByDescending { it.minScore }
+                .joinToString("  ·  ") { "${it.grade}: ${num(it.minScore)}–${num(it.maxScore)}% — ${it.label.ifBlank { it.remark }}" }
+            doc.p("Grading key (${gradeScheme.name}): $keyLine", size = 14, color = "555555", spacingAfter = 20)
         }
+        val legend = buildList {
+            compList.forEach { c -> add("${compCode(c.id)} = ${c.name}") }
+            add("Total = sum of assessments")
+            add("% = share of maximum mark")
+            add("Pos = position in subject")
+            add("ABS = absent · MISS = missing mark")
+        }
+        doc.p("How to read the marks: " + legend.joinToString("  ·  "), size = 14, color = "555555", spacingAfter = 30)
 
-        // Each fee category is an independent ledger on the report card.
+        // ── fees — one compact table, all categories (each stays its own ledger) ──
         val enrollment = data.enrollments.lastOrNull { it.studentId == student.id }
         val feeLines = enrollment?.let { e -> data.feeStructures.filter { it.classId == e.classId && it.termId == result.termId && it.amount > 0 } }.orEmpty()
-        feeLines.forEach { fee ->
-            val paid = data.feePayments.filter { it.studentId == student.id && it.termId == result.termId && it.category == fee.category }.sumOf { it.amount }
-            val balance = (fee.amount - paid).coerceAtLeast(0.0)
-            doc.p("${fee.category.label} (${data.settings.currencySymbol})", bold = true, size = 22, color = accent, spacingAfter = 40)
-            doc.table(
-                listOf("Term fees", "Paid to date", "Balance"),
-                listOf(listOf(fmt(fee.amount), fmt(paid), fmt(balance)))
-            )
-            doc.p("", size = 10, spacingAfter = 60)
+        if (feeLines.isNotEmpty()) {
+            val feeRows = feeLines.map { fee ->
+                val paid = data.feePayments.filter { it.studentId == student.id && it.termId == result.termId && it.category == fee.category }.sumOf { it.amount }
+                listOf(fee.category.label, fmt(fee.amount), fmt(paid), fmt((fee.amount - paid).coerceAtLeast(0.0)))
+            }
+            doc.p("Fees (${data.settings.currencySymbol})", bold = true, size = 20, color = accent, spacingAfter = 20)
+            doc.table(listOf("Category", "Term fees", "Paid to date", "Balance"), feeRows)
         }
 
-        // attendance summary (only when the school records attendance)
+        // ── attendance — one compact line ──
         val att = data.attendance.filter { it.studentId == student.id }
         if (att.isNotEmpty()) {
             val present = att.count { it.status == "PRESENT" }
             val late = att.count { it.status == "LATE" }
             val absent = att.count { it.status == "ABSENT" }
             val pct = (present * 100.0 / att.size)
-            doc.p("Attendance (${att.size} recorded days)", bold = true, size = 22, color = accent, spacingAfter = 40)
-            doc.table(
-                listOf("Present", "Late", "Absent", "Attendance %"),
-                listOf(listOf(present.toString(), late.toString(), absent.toString(), fmt(pct) + "%"))
-            )
-            doc.p("", size = 10, spacingAfter = 60)
+            doc.p("Attendance: $present of ${att.size} days present (${fmt(pct)}%) · late $late · absent $absent",
+                size = 14, color = "555555", spacingAfter = 30)
         }
 
-        // comments
+        // ── comments & signatures ──
         val classComments = data.comments
             .filter { it.studentId == student.id && it.termId == result.termId }
             .joinToString("\n") { it.text }
-        doc.p("Class Teacher's Comments", bold = true, size = 22, color = accent, spacingAfter = 40)
-        doc.p(classComments.ifBlank { " " }, size = 22, spacingAfter = 120)
+        doc.p("Class Teacher's Comments", bold = true, size = 20, color = accent, spacingAfter = 20)
+        doc.p(classComments.ifBlank { " " }, size = 18, spacingAfter = 40)
 
-        doc.p("Head Teacher's Remarks", bold = true, size = 22, color = accent, spacingAfter = 40)
-        doc.p(" ", size = 22, spacingAfter = 100)
-        doc.p(" ", size = 22, spacingAfter = 100)
+        doc.p("Head Teacher's Remarks", bold = true, size = 20, color = accent, spacingAfter = 20)
+        doc.p(" ", size = 18, spacingAfter = 40)
 
         val head = data.teachers.firstOrNull { it.role == com.derycode.srs.core.model.Role.HEAD_TEACHER }
         val classTeacher = cls?.classTeacherId?.let { id -> data.teachers.firstOrNull { it.id == id } }
         doc.p("Class Teacher: ${classTeacher?.name ?: "____________________"}          Head Teacher: ${head?.name ?: "____________________"}",
-            size = 20, spacingAfter = 200)
-        doc.p("Sign: ______________________          Sign: ______________________", size = 20, spacingAfter = 100)
+            size = 18, spacingAfter = 80)
+        doc.p("Sign: ______________________          Sign: ______________________", size = 18, spacingAfter = 40)
 
         val serial = reportSerial(data, result)
-        doc.p("Report Serial No: $serial", bold = true, size = 16, align = "center", color = ink, spacingAfter = 20)
+        doc.p("Report Serial No: $serial", bold = true, size = 16, align = "center", color = ink, spacingAfter = 10)
         doc.p("Verify this report with the school administration using serial $serial — any report without it is invalid.",
-            size = 12, align = "center", color = "999999", spacingAfter = 20)
-
-        val scheme = data.gradingSchemes.firstOrNull { it.id == result.schemeId }
-        val key = scheme?.boundaries?.sortedByDescending { it.minScore }
-            ?.joinToString(" · ") { "${it.grade} ${it.minScore.toInt()}-${it.maxScore.toInt()}%" }
-        doc.p((if (key != null) "Grading: $key — " else "") + "Printed by DeryCode School Report Maker",
-            size = 14, align = "center", color = "999999")
+            size = 12, align = "center", color = "999999", spacingAfter = 10)
+        val today = java.text.SimpleDateFormat("d MMM yyyy", java.util.Locale.ENGLISH).format(java.util.Date())
+        doc.p("Printed $today by DeryCode School Report Maker", size = 14, align = "center", color = "999999", spacingAfter = 0)
     }
 
     /** Unique, tamper-evident serial for a report — derived from school + student + term. */
