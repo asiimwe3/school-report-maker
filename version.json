@@ -1,8 +1,8 @@
 {
  "console": "2.2.14",
- "teacher": "1.13.2",
+ "teacher": "1.13.4",
  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.14.msi",
- "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.13.2.apk",
- "releaseNotes": "Console 2.2.14: critical fix \u2014 v2.2.6 through 2.2.13 shipped a corrupted installer (damaged icon files bloated the MSI and broke Windows install). Restored clean app icons. No feature changes.",
+ "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.13.4.apk",
+ "releaseNotes": "Teacher 1.13.4: stability fix \u2014 the launcher icon shipped in teacher releases 1.10.0 to 1.13.3 was corrupted, which caused crashes on some phones. Clean icon restored. Console 2.2.14 included the matching installer fix.",
  "released": "2026-09-15"
 }
