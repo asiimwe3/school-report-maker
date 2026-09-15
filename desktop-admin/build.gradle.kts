@@ -1,4 +1,22 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.compose.desktop.application.tasks.AbstractJvmToolOperationTask
+
+// ── Packaging JDK pin ─────────────────────────────────────────────────────────
+// jpackage must come from Amazon Corretto 17 (built from the ORIGINAL 17.0.20
+// upstream). The Temurin 17.0.20.1 re-spin that CI runners started caching on
+// 2026-09-15 ships a broken jpackage: MSIs balloon from 72MB to 230MB and embed
+// a byte-mangled app image, so the console fails to open after install.
+// Gradle auto-provisions Corretto via the foojay resolver (settings.gradle.kts),
+// so this works on any machine regardless of the locally installed JDK.
+val packagingJdkLauncher = javaToolchains.launcherFor {
+    languageVersion.set(JavaLanguageVersion.of(17))
+    vendor.set(JvmVendorSpec.AMAZON)
+}
+
+tasks.withType<AbstractJvmToolOperationTask>().configureEach {
+    javaHome.set(packagingJdkLauncher.map { it.metadata.installationPath.toString() })
+}
+// ──────────────────────────────────────────────────────────────────────────────
 
 plugins {
     id("org.jetbrains.kotlin.jvm")
@@ -8,7 +26,7 @@ plugins {
 
 kotlin { jvmToolchain(17) }
 
-val consoleVersion = "2.2.13"   // single source of truth — also drives packageVersion below
+val consoleVersion = "2.2.14"   // single source of truth — also drives packageVersion below
 
 // Generate AppVersion.kt so runtime code always matches the packaged version
 // (audit fix: DesktopSupport had a stale hardcoded "2.0.0")
@@ -55,3 +73,4 @@ compose.desktop {
         }
     }
 }
+

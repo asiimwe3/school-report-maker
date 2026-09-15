@@ -1,8 +1,8 @@
 {
- "console": "2.2.12",
+ "console": "2.2.14",
  "teacher": "1.13.2",
- "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.12.msi",
+ "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.14.msi",
  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.13.2.apk",
- "releaseNotes": "Teacher 1.13.2 & Console 2.2.12: simpler teacher connection. Console: one-tap 'Share on WhatsApp' for the school code. Phone: accepts the code in any format.",
+ "releaseNotes": "Console 2.2.14: critical fix \u2014 v2.2.6 through 2.2.13 shipped a corrupted installer (damaged icon files bloated the MSI and broke Windows install). Restored clean app icons. No feature changes.",
  "released": "2026-09-15"
 }
