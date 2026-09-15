@@ -1,8 +1,8 @@
 {
- "console": "2.2.17",
+ "console": "2.2.18",
  "teacher": "1.13.5",
- "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.17.msi",
+ "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.18.msi",
  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.13.5.apk",
- "releaseNotes": "Console 2.2.17 + Teacher 1.13.5: personal invite codes \u2014 each teacher gets their own single-use code from the admin and picks their own role when joining.",
+ "releaseNotes": "Console 2.2.18: Personal Teacher Codes card on Cloud & Online \u2014 generate a one-time code per teacher, see used/unused status, copy or WhatsApp-share each code.",
  "released": "2026-09-15"
 }
