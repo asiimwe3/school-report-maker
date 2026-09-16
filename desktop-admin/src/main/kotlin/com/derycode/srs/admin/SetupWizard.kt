@@ -362,6 +362,26 @@ fun CloudScreen(state: AppState) {
 
     fun say(e: Boolean, m: String) { err = e; msg = m }
 
+    // v2.2.23 — self-heal an orphaned cloud link. If the school this console
+    // points to was deleted/reset on the server (support cleanup, a fresh
+    // demo reset, etc.) the console kept saying "Connected" forever and every
+    // action below failed with a confusing error (e.g. "needs v2 script" on
+    // Generate code, when the real cause is: this school no longer exists).
+    // Detect it once when the screen opens and drop back to "not connected"
+    // so the Create/Connect box reappears and the admin can reconnect.
+    LaunchedEffect(s.cloudSchoolId) {
+        if (s.cloudSchoolId.isNotBlank()) {
+            val exists = CloudSync.withFreshToken(state.repo, errorOf = { "" }) { tok ->
+                CloudApi.schoolExists(CloudSync.url(s), CloudSync.key(s), tok, s.cloudSchoolId)
+            }
+            if (!exists) {
+                state.repo.mutate("cloud-orphan-reset", "Settings") { d -> d.copy(settings = d.settings.copy(
+                    cloudSchoolId = "", cloudInviteCode = "", cloudAccessToken = "", cloudRefreshToken = "")) }
+                say(true, "Your cloud school link is no longer valid on the server (it may have been reset). Your local data on this computer is safe — reconnect below to get a fresh school code, then tap Back Up Now to re-sync everything to the cloud.")
+            }
+        }
+    }
+
     // v2.2.16 fix: this screen lives inside the page-level verticalScroll column in
     // Main.kt — its own verticalScroll created infinite height constraints and crashed
     // the app the moment Cloud & Online was opened. The page already scrolls.

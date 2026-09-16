@@ -96,6 +96,17 @@ object CloudApi {
         } catch (e: Exception) { "" }
     }
 
+    /** True if this school id still exists server-side. Used to detect an orphaned local cloud link
+     *  (e.g. the school was deleted/reset on the server after the console had already connected to it). */
+    fun schoolExists(url: String, key: String, token: String, schoolId: String): Boolean {
+        val r = http("GET", "$url/rest/v1/srs_schools?id=eq.$schoolId&select=id", key, token, null)
+        if (r.first !in 200..299) return true // network/auth hiccup — don't wrongly disconnect the user
+        return try {
+            val root = Json.parseToJsonElement(r.second)
+            root is JsonArray && root.isNotEmpty()
+        } catch (e: Exception) { true }
+    }
+
     /** Create the school row (owner_uid defaults to auth.uid() server-side). Returns school id or error. */
     fun createSchool(url: String, key: String, token: String, name: String, district: String, address: String,
                      headTeacher: String, plan: String, licenseKey: String, studentCount: Int, inviteCode: String): Pair<String, String> {

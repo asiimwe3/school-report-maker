@@ -1,8 +1,8 @@
 {
- "console": "2.2.22",
+ "console": "2.2.23",
  "teacher": "1.13.7",
- "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.22.msi",
+ "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.23.msi",
  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.13.7.apk",
- "releaseNotes": "Console 2.2.22: fixed \"Server error (401): JWT expired\" on Generate code / Refresh list / Pull Teacher Submissions in Cloud & Online. Supabase sessions expire after ~1 hour; these three buttons now silently refresh the token and retry, same as Back Up Now already did.",
+ "releaseNotes": "Console 2.2.23: the console now detects an orphaned cloud link (school was reset or deleted on the server) and automatically drops back to the Connect screen with a clear message, instead of showing confusing errors like 'needs v2 script' or failed Generate code forever. Local data is never touched — reconnect and Back Up Now to re-sync.",
  "released": "2026-09-16"
 }
