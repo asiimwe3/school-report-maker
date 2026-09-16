@@ -720,10 +720,12 @@ fun TeachersScreen(state: AppState) {
                     }
                     Column(Modifier.width(180.dp)) {
                         FieldLabel("Subject")
-                        d.subjects.filter { it.active }.take(20).forEach { s ->
-                            Text((if (assignSubject == s.id) "● " else "○ ") + s.name,
-                                color = if (assignSubject == s.id) Theme.ACCENT else Theme.TEXT, fontSize = 14.sp,
-                                modifier = Modifier.fillMaxWidth().clickable { assignSubject = s.id }.padding(vertical = 3.dp))
+                        LazyColumn(Modifier.height(280.dp)) {
+                            items(d.subjects.filter { it.active }) { s ->
+                                Text((if (assignSubject == s.id) "● " else "○ ") + s.name,
+                                    color = if (assignSubject == s.id) Theme.ACCENT else Theme.TEXT, fontSize = 14.sp,
+                                    modifier = Modifier.fillMaxWidth().clickable { assignSubject = s.id }.padding(vertical = 3.dp))
+                            }
                         }
                     }
                     Column(Modifier.width(180.dp)) {

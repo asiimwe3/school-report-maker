@@ -932,26 +932,32 @@ fun TimetableScreen(state: AppState) {
                     }
                     Column(Modifier.width(180.dp)) {
                         FieldLabel("Class")
-                        d.classes.filter { it.active }.take(12).forEach { c ->
-                            Text((if (pClass == c.id) "● " else "○ ") + if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}",
-                                color = if (pClass == c.id) Theme.ACCENT else Theme.TEXT, fontSize = 14.sp,
-                                modifier = Modifier.fillMaxWidth().clickable { pClass = c.id }.padding(vertical = 3.dp))
+                        LazyColumn(Modifier.height(280.dp)) {
+                            items(d.classes.filter { it.active }) { c ->
+                                Text((if (pClass == c.id) "● " else "○ ") + if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}",
+                                    color = if (pClass == c.id) Theme.ACCENT else Theme.TEXT, fontSize = 14.sp,
+                                    modifier = Modifier.fillMaxWidth().clickable { pClass = c.id }.padding(vertical = 3.dp))
+                            }
                         }
                     }
                     Column(Modifier.width(150.dp)) {
                         FieldLabel("Subject (optional)")
-                        d.subjects.filter { it.active }.take(12).forEach { s ->
-                            Text((if (pSubject == s.id) "● " else "○ ") + s.name,
-                                color = if (pSubject == s.id) Theme.ACCENT else Theme.TEXT, fontSize = 14.sp,
-                                modifier = Modifier.fillMaxWidth().clickable { pSubject = if (pSubject == s.id) "" else s.id }.padding(vertical = 3.dp))
+                        LazyColumn(Modifier.height(280.dp)) {
+                            items(d.subjects.filter { it.active }) { s ->
+                                Text((if (pSubject == s.id) "● " else "○ ") + s.name,
+                                    color = if (pSubject == s.id) Theme.ACCENT else Theme.TEXT, fontSize = 14.sp,
+                                    modifier = Modifier.fillMaxWidth().clickable { pSubject = if (pSubject == s.id) "" else s.id }.padding(vertical = 3.dp))
+                            }
                         }
                     }
                     Column(Modifier.width(150.dp)) {
                         FieldLabel("Teacher (optional)")
-                        d.teachers.take(12).forEach { t ->
-                            Text((if (pTeacher == t.id) "● " else "○ ") + t.name,
-                                color = if (pTeacher == t.id) Theme.ACCENT else Theme.TEXT, fontSize = 14.sp,
-                                modifier = Modifier.fillMaxWidth().clickable { pTeacher = if (pTeacher == t.id) "" else t.id }.padding(vertical = 3.dp))
+                        LazyColumn(Modifier.height(280.dp)) {
+                            items(d.teachers) { t ->
+                                Text((if (pTeacher == t.id) "● " else "○ ") + t.name,
+                                    color = if (pTeacher == t.id) Theme.ACCENT else Theme.TEXT, fontSize = 14.sp,
+                                    modifier = Modifier.fillMaxWidth().clickable { pTeacher = if (pTeacher == t.id) "" else t.id }.padding(vertical = 3.dp))
+                            }
                         }
                     }
                     Column {

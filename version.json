@@ -1,8 +1,8 @@
 {
- "console": "2.2.19",
+ "console": "2.2.20",
  "teacher": "1.13.6",
- "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.19.msi",
+ "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.20.msi",
  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.13.6.apk",
- "releaseNotes": "Console 2.2.19 + Teacher 1.13.6: school timetable - admin builds the weekly timetable, teachers see their periods (My Timetable + Today's Schedule). Plus calendar events card, duty roster in Teachers screen, cloud submissions renamed.",
+ "releaseNotes": "Console 2.2.20: launch-day hardening - timetable and assignment pickers now show ALL classes, subjects and teachers (scrollable), not just the first 12/20. Teacher app unchanged (1.13.6).",
  "released": "2026-09-16"
 }
