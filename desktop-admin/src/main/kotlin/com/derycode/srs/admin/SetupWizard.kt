@@ -419,7 +419,9 @@ fun CloudScreen(state: AppState) {
             busy = true; say(false, "Checking for teacher submissions…")
             Thread {
                 val st = state.data.settings
-                val (bundles, m) = CloudApi.pullTeacherBundles(CloudSync.url(st), CloudSync.key(st), st.cloudAccessToken, st.cloudSchoolId)
+                val (bundles, m) = CloudSync.withFreshToken(state.repo, errorOf = { it.second }) { tok ->
+                    CloudApi.pullTeacherBundles(CloudSync.url(st), CloudSync.key(st), tok, st.cloudSchoolId)
+                }
                 if (bundles.isEmpty()) { busy = false; say(m != "ok", if (m == "ok") "No new teacher submissions." else m); return@Thread }
                 var imported = 0
                 var summary = ""
@@ -438,7 +440,7 @@ fun CloudScreen(state: AppState) {
                     }
                 }
                 tmp.delete()
-                if (imported > 0) CloudApi.consumeTeacherBundles(CloudSync.url(st), CloudSync.key(st), st.cloudAccessToken, st.cloudSchoolId)
+                if (imported > 0) CloudApi.consumeTeacherBundles(CloudSync.url(st), CloudSync.key(st), state.repo.data.settings.cloudAccessToken, st.cloudSchoolId)
                 busy = false
                 say(imported == 0, if (imported > 0) "✓ Imported $imported teacher submission(s). $summary" else "Nothing imported.")
                 state.refresh()
@@ -466,9 +468,13 @@ fun CloudScreen(state: AppState) {
                             val nm = invName.trim()
                             Thread {
                                 val code = (1..8).map { "ABCDEFGHJKLMNPQRSTUVWXYZ23456789".random() }.joinToString("")
-                                val (inv, m) = CloudApi.createTeacherInvite(url, key, token, sid, nm, code)
+                                val (inv, m) = CloudSync.withFreshToken(state.repo, errorOf = { it.second }) { tok ->
+                                    CloudApi.createTeacherInvite(url, key, tok, sid, nm, code)
+                                }
                                 if (inv.code.isNotEmpty()) {
-                                    val (list, _) = CloudApi.listTeacherInvites(url, key, token, sid)
+                                    val (list, _) = CloudSync.withFreshToken(state.repo, errorOf = { it.second }) { tok ->
+                                        CloudApi.listTeacherInvites(url, key, tok, sid)
+                                    }
                                     invList = list
                                 }
                                 invBusy = false
@@ -481,7 +487,9 @@ fun CloudScreen(state: AppState) {
                             val url = CloudSync.url(s); val key = CloudSync.key(s)
                             val token = s.cloudAccessToken; val sid = s.cloudSchoolId
                             Thread {
-                                val (list, m) = CloudApi.listTeacherInvites(url, key, token, sid)
+                                val (list, m) = CloudSync.withFreshToken(state.repo, errorOf = { it.second }) { tok ->
+                                    CloudApi.listTeacherInvites(url, key, tok, sid)
+                                }
                                 invList = list
                                 invBusy = false
                                 invErr = list.isEmpty() && m != "ok"

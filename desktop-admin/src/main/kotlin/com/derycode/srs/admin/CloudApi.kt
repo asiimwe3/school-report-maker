@@ -256,6 +256,25 @@ object CloudSync {
     fun url(s: com.derycode.srs.core.model.AppSettings) = s.cloudUrl.ifBlank { CloudApi.DEFAULT_URL }
     fun key(s: com.derycode.srs.core.model.AppSettings) = s.cloudKey.ifBlank { CloudApi.DEFAULT_KEY }
 
+    /**
+     * Runs [call] with the current access token; on a 401/403 (expired JWT —
+     * Supabase tokens live ~1 hour) it silently refreshes using the stored
+     * refresh token, saves the new pair, and retries once. Every cloud button
+     * that isn't already covered by pushNow/pullNow should go through this so
+     * a stale token never surfaces as a raw "JWT expired" error to the admin.
+     */
+    fun <T> withFreshToken(repo: SchoolRepository, errorOf: (T) -> String, call: (String) -> T): T {
+        val s = repo.data.settings
+        val first = call(s.cloudAccessToken)
+        val msg = errorOf(first)
+        val expired = msg.contains("401") || msg.contains("403") || msg.contains("JWT expired", ignoreCase = true)
+        if (!expired || s.cloudRefreshToken.isBlank()) return first
+        val r = CloudApi.refresh(url(s), key(s), s.cloudRefreshToken)
+        if (!r.ok) return first
+        repo.mutate("cloud-refresh", "settings") { d -> d.copy(settings = d.settings.copy(cloudAccessToken = r.accessToken, cloudRefreshToken = r.refreshToken)) }
+        return call(r.accessToken)
+    }
+
     fun scheduleAutoPush(repo: SchoolRepository) {
         val s = repo.data.settings
         if (s.cloudSchoolId.isBlank() || s.cloudAccessToken.isBlank()) return
