@@ -25,3 +25,30 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release upload "$GITHUB_REF_NAME" desktop-admin/build/compose/binaries/main/msi/*.msi --clobber
+
+  android-apk:
+    name: Build teacher APK and attach to release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.9
+      - uses: android-actions/setup-android@v3
+      - name: Build teacher APK
+        run: gradle :teacher-app:assembleDebug
+      - name: Rename APK with version
+        run: |
+          VERSION=$(grep -o 'versionName = "[^"]*"' teacher-app/build.gradle.kts | head -1 | sed 's/versionName = "//;s/"//')
+          cp teacher-app/build/outputs/apk/debug/teacher-app-debug.apk "srs-teacher-${VERSION}.apk"
+          echo "APK=srs-teacher-${VERSION}.apk" >> "$GITHUB_ENV"
+      - name: Attach APK to the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$GITHUB_REF_NAME" "$APK" --clobber

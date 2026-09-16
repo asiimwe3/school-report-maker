@@ -1,8 +1,8 @@
 {
- "console": "2.2.23",
- "teacher": "1.13.7",
- "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.23.msi",
- "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.13.7.apk",
- "releaseNotes": "Console 2.2.23: the console now detects an orphaned cloud link (school was reset or deleted on the server) and automatically drops back to the Connect screen with a clear message, instead of showing confusing errors like 'needs v2 script' or failed Generate code forever. Local data is never touched — reconnect and Back Up Now to re-sync.",
+ "console": "2.2.24",
+ "teacher": "1.13.8",
+ "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.24.msi",
+ "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.13.8.apk",
+ "releaseNotes": "Teacher app 1.13.8: fixes the update that would not install or open on phones that already had an older version. The 1.13.7 build carried a LOWER internal version number than the versions before it, so Android refused the update, and each build was signed with a different throwaway key, which Android also rejects. 1.13.8 uses one permanent signing key and a correct, higher version number. IMPORTANT: because the signing key changed, phones with an old version must uninstall the old app once, then install the new APK. If the old app still opens, use Cloud Sync first so nothing is lost. Console 2.2.24 matches this release (no console changes since 2.2.23).",
  "released": "2026-09-16"
 }

@@ -12,8 +12,23 @@ android {
         applicationId = "com.derycode.srs.teacher"
         minSdk = 26
         targetSdk = 34
-        versionCode = 14
-        versionName = "1.13.7"
+        versionCode = 21
+        versionName = "1.13.8"
+    }
+
+    // v1.13.8 — ONE permanent signing key, checked into the repo.
+    // Before this, every CI run signed with a throwaway debug key, so Android
+    // rejected updates on phones that already had the app (signature mismatch),
+    // and the 1.13.7 build accidentally shipped versionCode 14 (LOWER than the
+    // existing 20), which Android also refuses as a downgrade. Both together
+    // made the app look like "it won't install / won't open" on teachers' phones.
+    signingConfigs {
+        create("upload") {
+            storeFile = rootProject.file("keys/teacher-upload.keystore")
+            storePassword = "derycode-teacher"
+            keyAlias = "teacher-upload"
+            keyPassword = "derycode-teacher"
+        }
     }
 
     compileOptions {
@@ -22,6 +37,15 @@ android {
     }
     kotlinOptions { jvmTarget = "17" }
     buildFeatures { compose = true; buildConfig = true }
+    buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("upload")
+        }
+        release {
+            signingConfig = signingConfigs.getByName("upload")
+            isMinifyEnabled = false
+        }
+    }
 }
 
 dependencies {
