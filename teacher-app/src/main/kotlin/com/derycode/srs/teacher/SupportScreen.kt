@@ -61,6 +61,52 @@ object CrashTracker {
     fun clear(context: Context) { logFile(context).delete() }
 }
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Crash reporter — delivers crash-log.txt to the developer on the next launch.
+// Runs BEFORE the UI so the trace gets out even if the app crash-loops at
+// startup: the upload thread is joined (max 3s) while the file still exists.
+// ─────────────────────────────────────────────────────────────────────────────
+object CrashReporter {
+    private const val ENDPOINT = "https://superagent-d41c313d.base44.app/functions/saveSrsCrash"
+
+    /** Post the crash log if there is an unsent one. No-op (0ms) on healthy phones. */
+    fun sendPending(context: Context) {
+        try {
+            val log = File(context.filesDir, CrashTracker.FILE)
+            if (!log.exists() || log.length() == 0L) return
+            val marker = File(context.filesDir, "crash-log-posted.txt")
+            if (marker.exists() && marker.readText().trim() == log.length().toString()) return
+
+            val payload = org.json.JSONObject()
+                .put("source", "srs-teacher")
+                .put("appVersion", BuildConfig.VERSION_NAME)
+                .put("appVersionCode", BuildConfig.VERSION_CODE.toString())
+                .put("phoneModel", android.os.Build.MANUFACTURER + " " + android.os.Build.MODEL)
+                .put("androidVersion", "Android " + android.os.Build.VERSION.RELEASE + " (API " + android.os.Build.VERSION.SDK_INT + ")")
+                .put("report", log.readText().take(60000))
+
+            val t = Thread {
+                try {
+                    val conn = java.net.URL(ENDPOINT).openConnection() as java.net.HttpURLConnection
+                    conn.requestMethod = "POST"
+                    conn.connectTimeout = 2500
+                    conn.readTimeout = 2500
+                    conn.doOutput = true
+                    conn.setRequestProperty("Content-Type", "application/json")
+                    conn.outputStream.use { it.write(payload.toString().toByteArray()) }
+                    if (conn.responseCode == 200) marker.writeText(log.length().toString())
+                    conn.disconnect()
+                } catch (_: Exception) { }
+            }
+            t.isDaemon = false
+            t.start()
+            t.join(3000)   // only reached when an unsent crash log exists
+        } catch (_: Exception) { }
+    }
+}
+
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Auto-update — checks GitHub on startup; downloads & installs when you accept
 // ─────────────────────────────────────────────────────────────────────────────

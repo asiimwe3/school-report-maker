@@ -39,6 +39,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         CrashTracker.install(this)
+        CrashReporter.sendPending(this)   // deliver any previous crash BEFORE the UI (survives startup crash-loops)
         val state = TeacherState(this)
         state.checkForUpdate()   // auto-check on every launch; only asks GitHub, never sends data
         setContent { MaterialTheme(colorScheme = lightColorScheme(background = BG, surface = CARD, onBackground = NAVY, onSurface = NAVY, primary = BLUE), typography = AppTypography) { TeacherApp(state) } }
