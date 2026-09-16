@@ -12,8 +12,8 @@ android {
         applicationId = "com.derycode.srs.teacher"
         minSdk = 26
         targetSdk = 34
-        versionCode = 21
-        versionName = "1.13.8"
+        versionCode = 22
+        versionName = "1.13.9"
     }
 
     // v1.13.8 — ONE permanent signing key, checked into the repo.
@@ -43,7 +43,13 @@ android {
         }
         release {
             signingConfig = signingConfigs.getByName("upload")
-            isMinifyEnabled = false
+            // v1.13.9 — real RELEASE build (every APK up to 1.13.8 was a debug
+            // build: 78MB of dex, debuggable, and Android killed it at startup on
+            // low-memory phones). R8 shrinking also drops material-icons-extended
+            // to only the icons actually used.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 }
