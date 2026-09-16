@@ -1,8 +1,8 @@
 {
   "console": "2.2.24",
-  "teacher": "1.13.9",
+  "teacher": "1.13.10",
   "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.24.msi",
-  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.13.9.apk",
-  "releaseNotes": "Teacher app 1.13.9: fixes the app installing but NOT OPENING on teachers' phones. Every APK up to 1.13.8 was accidentally built as a debug build - 78MB of debug code that Android kills at startup on low-memory phones. 1.13.9 is a true release build (2.8MB, fast on any phone), signed with the same key as 1.13.8 so it installs as a normal update over 1.13.8. Phones still on an older version (1.13.7 or below): uninstall the old app ONCE (open it first and use Cloud Sync if it still opens, so nothing is lost), then install this APK. Console 2.2.24 unchanged.",
+  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.13.10.apk",
+  "releaseNotes": "Teacher app 1.13.10: fixes 'app keeps stopping' right after open. Cause: if the saved data file (school-data.json) got corrupted - by a crash mid-save or a full disk on an older version - the app crashed during startup on EVERY launch, before anything appeared on screen. 1.13.10 never lets a corrupt file crash the app: the bad file is kept safely as school-data-corrupt-*.json, the newest backup is restored if one exists, and the app always opens. It also now saves a rotating backup after every change, and the Support screen shows what happened if a recovery ever runs. Updates cleanly over 1.13.9 (same signature, no uninstall). Phones still on 1.13.7 or older: uninstall once, then install this APK. Console 2.2.24 unchanged.",
   "released": "2026-09-16"
 }
