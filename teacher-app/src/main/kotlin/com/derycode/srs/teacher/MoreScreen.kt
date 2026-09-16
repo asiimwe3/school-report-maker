@@ -62,6 +62,8 @@ fun MoreScreen(state: TeacherState, onOpen: (Route) -> Unit) {
                 MoreRow(Icons.Filled.Cloud, "Cloud Sync", "Online account \u00B7 join school \u00B7 send marks") { onOpen(Route.Cloud) }
                 Divider(color = STROKE, modifier = Modifier.padding(vertical = 4.dp))
                 MoreRow(Icons.Filled.SupportAgent, "Support & Licence", "Updates \u00B7 crash reports \u00B7 plans") { onOpen(Route.Support) }
+                Divider(color = STROKE, modifier = Modifier.padding(vertical = 4.dp))
+                MoreRow(Icons.Filled.School, "How-to Guide", "Step-by-step app training \u2014 8 slides") { onOpen(Route.Tutorial) }
             }
         }
         item {

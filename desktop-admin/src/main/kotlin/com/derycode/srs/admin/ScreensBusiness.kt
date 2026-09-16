@@ -370,12 +370,13 @@ fun HelpDocsScreen(state: AppState) {
     ScreenTitle("Help & Documentation", "The full manual, privacy policy and terms — readable right here, offline.")
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf("guide" to "User Guide", "privacy" to "Privacy Policy", "terms" to "Terms & Conditions").forEach { (k, label) ->
+            listOf("training" to "Training Slides", "guide" to "User Guide", "privacy" to "Privacy Policy", "terms" to "Terms & Conditions").forEach { (k, label) ->
                 FilterChip(selected = tab == k, onClick = { tab = k }, label = { Text(label, fontSize = 13.sp) })
             }
         }
         CardBox {
             when (tab) {
+                "training" -> DocTraining()
                 "guide" -> DocGuide()
                 "privacy" -> DocText(DocsText.PRIVACY)
                 "terms" -> DocText(DocsText.TERMS)
@@ -400,6 +401,91 @@ private fun DocGuide() {
         items(sections) { (title, body) ->
             Text(title, color = Theme.ACCENT, fontSize = 15.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 10.dp, bottom = 3.dp))
             Text(body, color = Theme.TEXT, fontSize = 14.sp)
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Training slides — the staff-training deck, inside the app (offline)
+// ─────────────────────────────────────────────────────────────────────────────
+private data class TrainSlide(val title: String, val sub: String, val points: List<String>, val tip: String = "")
+
+private val TRAINING = listOf(
+    TrainSlide("First launch — the Setup Wizard", "Opens automatically the first time. Four short steps:",
+        listOf("School profile — name, district, head teacher (printed on every report)",
+            "Online account — email + password; your school code for teachers is created here",
+            "Security PIN — locks the console; you type it every time you open the app",
+            "Licence — enter your plan key, or start a free 30-day trial"),
+        "If you skip the online account you can set it up later in Cloud & Online."),
+    TrainSlide("Set up your school", "Before any marks: academic year, classes, students.",
+        listOf("School Setup → save your profile",
+            "Create the academic year and its 3 terms (Term 1 is set current)",
+            "Classes & Streams → create classes per level (S1–S6 / P1–P7)",
+            "Students → add one by one, or paste an entire list from Excel/CSV",
+            "Each student is enrolled into a class for the year"),
+        "The bulk import accepts admission no, name, sex, phone — and tells you about duplicates."),
+    TrainSlide("Enter marks — the Marks Grid", "Keyboard-first: type, Enter, repeat.",
+        listOf("Pick a class on the left, then a subject",
+            "Type each student's mark and press Enter to move down",
+            "Special entries: ABS (absent) and EXEMPT",
+            "Save all entered marks writes them instantly",
+            "Submit sheet for review locks it for results"),
+        "Marks validate against the subject's maximum — you cannot type impossible values."),
+    TrainSlide("Timetable", "Build the weekly timetable; teachers see it on their phones.",
+        listOf("Academics → Timetable",
+            "Pick the day (Mon–Sat), type start and end times (24h, e.g. 08:00–09:00)",
+            "Choose class, subject and teacher, then Add period",
+            "Remove any period with one click",
+            "Teachers receive it on Pull school setup in the phone app"),
+        ""),
+    TrainSlide("Teachers — staff, roles, duty", "Everything about your staff lives here.",
+        listOf("Add teachers with their role (Teacher, Head Teacher, Admin, Data Entry)",
+            "Assign teacher → subject → class (subject optional)",
+            "Duty roster: put a teacher on duty for a date — appears on their phone",
+            "Personal codes: generate a one-time code per teacher (Cloud & Online)"),
+        "A personal code dies after first use — safe to send on WhatsApp."),
+    TrainSlide("Reports — the end product", "Real Word (.docx) report cards, offline.",
+        listOf("Reports → pick class + term + template",
+            "Report Preview one student first to check the layout",
+            "Generate the whole class in one click — each student gets an A4 card",
+            "Marks, grades, aggregate/division, comments and signature lines",
+            "Everything you generate is kept in Report Archive"),
+        "Reports freeze the grading scheme — re-printing later never changes a printed result."),
+    TrainSlide("Cloud & Online", "Off-site backup + the teacher phone link.",
+        listOf("Back Up Now — your whole school data to the cloud",
+            "Teacher school code — share on WhatsApp so teachers join",
+            "Personal codes — one-time code per teacher",
+            "Pull Teacher Submissions — imports marks, attendance, duty logs and gate passes from teacher phones",
+            "Restore From Cloud — recover everything on a new computer"),
+        "Open Cloud & Online at least once a day and pull teacher submissions."),
+    TrainSlide("Never lose data", "Three layers of protection.",
+        listOf("Every change saves instantly — no save button needed",
+            "Rotating backups: restore any of the last versions in Backup History",
+            "Cloud backup copies everything off-site daily (if connected)",
+            "Copy the data file to a USB stick for extra safety"),
+        "If the console ever crashes, crash-log.txt appears in your SchoolReportMaker folder with a one-tap WhatsApp send.")
+)
+
+@Composable
+private fun DocTraining() {
+    var i by remember { mutableStateOf(0) }
+    val s = TRAINING[i]
+    Column(Modifier.verticalScroll(rememberScrollState()).height(430.dp)) {
+        Text(s.title, color = Theme.ACCENT, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        Text(s.sub, color = Theme.MUTED, fontSize = 13.sp, modifier = Modifier.padding(top = 2.dp, bottom = 8.dp))
+        s.points.forEach { p ->
+            Text("•  $p", color = Theme.TEXT, fontSize = 14.sp, modifier = Modifier.padding(vertical = 4.dp))
+        }
+        if (s.tip.isNotBlank()) {
+            Spacer(Modifier.height(10.dp))
+            Text("TIP — ${s.tip}", color = Theme.GOOD, fontSize = 13.sp,
+                modifier = Modifier.background(Theme.ACCENT_SOFT, RoundedCornerShape(8.dp)).padding(10.dp).fillMaxWidth())
+        }
+        Spacer(Modifier.height(16.dp))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Btn("‹ Prev", primary = false) { if (i > 0) i-- }
+            Text("Slide ${i + 1} of ${TRAINING.size}", color = Theme.MUTED, fontSize = 13.sp)
+            Btn("Next ›") { if (i < TRAINING.size - 1) i++ }
         }
     }
 }

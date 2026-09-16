@@ -1,8 +1,8 @@
 {
- "console": "2.2.20",
- "teacher": "1.13.6",
- "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.20.msi",
- "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.13.6.apk",
- "releaseNotes": "Console 2.2.20: launch-day hardening - timetable and assignment pickers now show ALL classes, subjects and teachers (scrollable), not just the first 12/20. Teacher app unchanged (1.13.6).",
+ "console": "2.2.21",
+ "teacher": "1.13.7",
+ "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.21.msi",
+ "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.13.7.apk",
+ "releaseNotes": "Console 2.2.21 + Teacher 1.13.7: in-app training. Help & Documentation gets a Training Slides tab (8-step walkthrough); the teacher app gets a How-to Guide under More, with progress dots. Also: staff training decks (PPTX) attached to this release.",
  "released": "2026-09-16"
 }

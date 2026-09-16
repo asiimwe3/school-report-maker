@@ -386,6 +386,7 @@ sealed class Route {
     object Attendance : Route()
     object Support : Route()
     object Cloud : Route()
+    object Tutorial : Route()
 }
 
 private enum class Tab(val route: Route, val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
@@ -409,7 +410,7 @@ fun TeacherApp(state: TeacherState) {
         is Route.Classes, is Route.ClassDetail, is Route.EnterMarks -> Tab.CLASSES
         is Route.Assessments -> Tab.ASSESSMENTS
         is Route.Students, is Route.StudentDetail -> Tab.STUDENTS
-        is Route.More, is Route.Comments, is Route.Sync, is Route.Duty, is Route.Register, is Route.Attendance, is Route.Support, is Route.Cloud, is Route.Timetable -> Tab.MORE
+        is Route.More, is Route.Comments, is Route.Sync, is Route.Duty, is Route.Register, is Route.Attendance, is Route.Support, is Route.Cloud, is Route.Timetable, is Route.Tutorial -> Tab.MORE
     }
 
     // ── Side menu (drawer): every section reachable in one tap ──
@@ -440,6 +441,7 @@ fun TeacherApp(state: TeacherState) {
                 DrawerItem(Icons.Filled.Cloud, "Cloud Sync", current is Route.Cloud) { switchTab(Route.Cloud); scope.launch { drawerState.close() } }
                 DrawerItem(Icons.Filled.Sync, "Sync & Export", current is Route.Sync) { switchTab(Route.Sync); scope.launch { drawerState.close() } }
                 DrawerItem(Icons.Filled.SupportAgent, "Support & Licence", current is Route.Support) { switchTab(Route.Support); scope.launch { drawerState.close() } }
+                DrawerItem(Icons.Filled.School, "How-to Guide", current is Route.Tutorial) { switchTab(Route.Tutorial); scope.launch { drawerState.close() } }
                 Spacer(Modifier.height(12.dp))
             }
         }
@@ -472,6 +474,7 @@ fun TeacherApp(state: TeacherState) {
                     is Route.Attendance -> AttendanceScreen(state)
                     is Route.Register -> RegisterScreen(state)
                     is Route.Support -> SupportScreen(state)
+                    is Route.Tutorial -> TutorialScreen(state)
                     is Route.Cloud -> CloudScreen(state)
                 }
             }
@@ -553,6 +556,7 @@ private fun titleFor(state: TeacherState, route: Route): Pair<String, Boolean> =
     is Route.Register -> "Register Student" to true
     is Route.Attendance -> "Attendance" to true
     is Route.Support -> "Support & Licence" to true
+    is Route.Tutorial -> "How-to Guide" to true
     is Route.Cloud -> "Cloud Sync" to true
 }
 
