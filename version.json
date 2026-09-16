@@ -1,8 +1,8 @@
 {
- "console": "2.2.24",
- "teacher": "1.13.8",
- "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.24.msi",
- "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.13.8.apk",
- "releaseNotes": "Teacher app 1.13.8: fixes the update that would not install or open on phones that already had an older version. The 1.13.7 build carried a LOWER internal version number than the versions before it, so Android refused the update, and each build was signed with a different throwaway key, which Android also rejects. 1.13.8 uses one permanent signing key and a correct, higher version number. IMPORTANT: because the signing key changed, phones with an old version must uninstall the old app once, then install the new APK. If the old app still opens, use Cloud Sync first so nothing is lost. Console 2.2.24 matches this release (no console changes since 2.2.23).",
- "released": "2026-09-16"
+  "console": "2.2.24",
+  "teacher": "1.13.9",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.24.msi",
+  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.13.9.apk",
+  "releaseNotes": "Teacher app 1.13.9: fixes the app installing but NOT OPENING on teachers' phones. Every APK up to 1.13.8 was accidentally built as a debug build - 78MB of debug code that Android kills at startup on low-memory phones. 1.13.9 is a true release build (2.8MB, fast on any phone), signed with the same key as 1.13.8 so it installs as a normal update over 1.13.8. Phones still on an older version (1.13.7 or below): uninstall the old app ONCE (open it first and use Cloud Sync if it still opens, so nothing is lost), then install this APK. Console 2.2.24 unchanged.",
+  "released": "2026-09-16"
 }
