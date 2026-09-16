@@ -106,6 +106,22 @@ class TeacherState(context: Context) {
     data class ScheduleItem(val time: String, val subject: String, val classLabel: String)
     val todaysSchedule: List<ScheduleItem>
         get() {
+            // Real timetable (set by the admin) wins when it exists
+            val cal = java.util.Calendar.getInstance()
+            val dayIdx = when (cal.get(java.util.Calendar.DAY_OF_WEEK)) {
+                java.util.Calendar.MONDAY -> 1; java.util.Calendar.TUESDAY -> 2; java.util.Calendar.WEDNESDAY -> 3
+                java.util.Calendar.THURSDAY -> 4; java.util.Calendar.FRIDAY -> 5; java.util.Calendar.SATURDAY -> 6
+                else -> 0
+            }
+            val myId = me?.id ?: ""
+            val today = data.timetable.filter { it.day == dayIdx && (it.teacherId.isBlank() || it.teacherId == myId) }.sortedBy { it.start }
+            if (today.isNotEmpty()) return today.mapNotNull { p ->
+                val c = data.classes.firstOrNull { it.id == p.classId } ?: return@mapNotNull null
+                val subj = p.subjectId?.let { sid -> data.subjects.firstOrNull { it.id == sid }?.name }
+                    ?: p.notes.ifBlank { "Lesson" }
+                ScheduleItem("${p.start} – ${p.end}", subj, classLabel(c))
+            }
+            // Fallback: light preview built from assignments
             val slots = listOf("08:00 – 09:00", "10:00 – 11:00", "11:15 – 12:15", "13:00 – 14:00")
             return myClasses.take(slots.size).mapIndexedNotNull { i, c ->
                 val subj = mySubjectsFor(c.id).firstOrNull() ?: return@mapIndexedNotNull null
@@ -365,6 +381,7 @@ sealed class Route {
     object Comments : Route()
     object Sync : Route()
     object Duty : Route()
+    object Timetable : Route()
     object Register : Route()
     object Attendance : Route()
     object Support : Route()
@@ -392,7 +409,7 @@ fun TeacherApp(state: TeacherState) {
         is Route.Classes, is Route.ClassDetail, is Route.EnterMarks -> Tab.CLASSES
         is Route.Assessments -> Tab.ASSESSMENTS
         is Route.Students, is Route.StudentDetail -> Tab.STUDENTS
-        is Route.More, is Route.Comments, is Route.Sync, is Route.Duty, is Route.Register, is Route.Attendance, is Route.Support, is Route.Cloud -> Tab.MORE
+        is Route.More, is Route.Comments, is Route.Sync, is Route.Duty, is Route.Register, is Route.Attendance, is Route.Support, is Route.Cloud, is Route.Timetable -> Tab.MORE
     }
 
     // ── Side menu (drawer): every section reachable in one tap ──
@@ -440,6 +457,7 @@ fun TeacherApp(state: TeacherState) {
                 when (val r = current) {
                     is Route.Home -> HomeScreen(state, onOpenClass = { push(Route.ClassDetail(it)) }, onQuickAction = { push(it) })
                     is Route.Classes -> ClassesListScreen(state, onOpenClass = { push(Route.ClassDetail(it)) })
+                    is Route.Timetable -> TimetableScreen(state)
                     is Route.ClassDetail -> ClassDetailScreen(state, r.classId,
                         onEnterMarks = { subj -> push(Route.EnterMarks(r.classId, subj)) },
                         onViewStudents = { push(Route.Students(r.classId)) })
@@ -531,6 +549,7 @@ private fun titleFor(state: TeacherState, route: Route): Pair<String, Boolean> =
     is Route.Comments -> "Class Comments" to true
     is Route.Sync -> "Sync & Support Data" to true
     is Route.Duty -> "Teacher on Duty" to true
+    is Route.Timetable -> "My Timetable" to true
     is Route.Register -> "Register Student" to true
     is Route.Attendance -> "Attendance" to true
     is Route.Support -> "Support & Licence" to true

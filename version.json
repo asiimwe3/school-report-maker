@@ -1,8 +1,8 @@
 {
- "console": "2.2.18",
- "teacher": "1.13.5",
- "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.18.msi",
- "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.13.5.apk",
- "releaseNotes": "Console 2.2.18: Personal Teacher Codes card on Cloud & Online \u2014 generate a one-time code per teacher, see used/unused status, copy or WhatsApp-share each code.",
- "released": "2026-09-15"
+ "console": "2.2.19",
+ "teacher": "1.13.6",
+ "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.19.msi",
+ "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.13.6.apk",
+ "releaseNotes": "Console 2.2.19 + Teacher 1.13.6: school timetable - admin builds the weekly timetable, teachers see their periods (My Timetable + Today's Schedule). Plus calendar events card, duty roster in Teachers screen, cloud submissions renamed.",
+ "released": "2026-09-16"
 }

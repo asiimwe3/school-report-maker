@@ -19,6 +19,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.derycode.srs.core.model.CalendarEventType
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Home dashboard — big, bold, bright cards (light theme)
@@ -73,7 +76,7 @@ fun HomeScreen(state: TeacherState, onOpenClass: (String) -> Unit, onQuickAction
                         Spacer(Modifier.width(8.dp))
                         Cell("Today's Schedule", bold = true)
                     }
-                    Text("View all", color = BLUE, fontSize = 15.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { onQuickAction(Route.Classes) })
+                    Text("View all", color = BLUE, fontSize = 15.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { onQuickAction(Route.Timetable) })
                 }
                 Spacer(Modifier.height(10.dp))
                 if (state.todaysSchedule.isEmpty()) {
@@ -87,6 +90,37 @@ fun HomeScreen(state: TeacherState, onOpenClass: (String) -> Unit, onQuickAction
                                 Cell("${item.subject}  (${item.classLabel})", bold = true)
                             }
                             Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = MUTED, modifier = Modifier.size(18.dp))
+                        }
+                    }
+                }
+            }
+        }
+        item {
+            CardBox {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(30.dp).clip(RoundedCornerShape(9.dp)).background(PURPLE.copy(alpha = 0.15f)), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Filled.CalendarMonth, contentDescription = null, tint = PURPLE, modifier = Modifier.size(17.dp))
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Cell("School Calendar", bold = true)
+                }
+                Spacer(Modifier.height(10.dp))
+                val today = state.todayKey
+                val upcoming = d.calendarEvents.filter { it.date >= today }.sortedWith(compareBy({ it.date }, { it.id })).take(6)
+                if (upcoming.isEmpty()) {
+                    Cell("No upcoming events — ask your admin to set the school calendar.", MUTED)
+                } else {
+                    upcoming.forEachIndexed { i, ev ->
+                        if (i > 0) Divider(color = STROKE, modifier = Modifier.padding(vertical = 8.dp))
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Cell(prettyDate(ev.date), MUTED, false)
+                                Cell(ev.title, bold = true)
+                                if (ev.notes.isNotBlank()) Cell(ev.notes, MUTED, false)
+                            }
+                            Box(Modifier.background(eventColor(ev.type).copy(alpha = 0.15f), RoundedCornerShape(6.dp)).padding(horizontal = 8.dp, vertical = 3.dp)) {
+                                Text(eventLabel(ev.type), color = eventColor(ev.type), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
                 }
@@ -232,4 +266,32 @@ private fun SchoolFooterBar(state: TeacherState) {
             Text(if (online) "Online" else "Offline", color = if (online) Color.White else MUTED, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         }
     }
+}
+
+private fun prettyDate(iso: String): String {
+    return try {
+        val inFmt = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        val outFmt = SimpleDateFormat("EEE, d MMM yyyy", Locale.US)
+        val parsed = inFmt.parse(iso)
+        if (parsed != null) outFmt.format(parsed) else iso
+    } catch (_: Exception) { iso }
+}
+
+private fun eventLabel(t: CalendarEventType): String = when (t) {
+    CalendarEventType.EXAM -> "EXAM"
+    CalendarEventType.HOLIDAY -> "HOLIDAY"
+    CalendarEventType.MEETING -> "MEETING"
+    CalendarEventType.DEADLINE -> "DEADLINE"
+    CalendarEventType.TERM_START -> "TERM START"
+    CalendarEventType.TERM_END -> "TERM END"
+    CalendarEventType.OTHER -> "EVENT"
+}
+
+private fun eventColor(t: CalendarEventType): Color = when (t) {
+    CalendarEventType.EXAM -> ORANGE
+    CalendarEventType.HOLIDAY -> GREEN
+    CalendarEventType.MEETING -> BLUE
+    CalendarEventType.DEADLINE -> RED
+    CalendarEventType.TERM_START, CalendarEventType.TERM_END -> TEAL
+    CalendarEventType.OTHER -> PURPLE
 }

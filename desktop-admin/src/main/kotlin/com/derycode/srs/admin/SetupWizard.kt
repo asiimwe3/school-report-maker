@@ -412,15 +412,15 @@ fun CloudScreen(state: AppState) {
         Spacer(Modifier.height(14.dp))
 
         // Teacher marks from cloud
-        Text("Teacher Marks", color = Theme.TEXT, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-        Text("Marks your teachers submit from the phone app appear here.", color = Theme.MUTED, fontSize = 11.sp)
+        Text("Teacher Submissions", color = Theme.TEXT, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+        Text("Marks, attendance, duty logs, gate passes & new students your teachers submit from the phone app appear here.", color = Theme.MUTED, fontSize = 11.sp)
         Spacer(Modifier.height(8.dp))
         Button({
-            busy = true; say(false, "Checking for teacher marks…")
+            busy = true; say(false, "Checking for teacher submissions…")
             Thread {
                 val st = state.data.settings
                 val (bundles, m) = CloudApi.pullTeacherBundles(CloudSync.url(st), CloudSync.key(st), st.cloudAccessToken, st.cloudSchoolId)
-                if (bundles.isEmpty()) { busy = false; say(m != "ok", if (m == "ok") "No new teacher marks." else m); return@Thread }
+                if (bundles.isEmpty()) { busy = false; say(m != "ok", if (m == "ok") "No new teacher submissions." else m); return@Thread }
                 var imported = 0
                 var summary = ""
                 val tmp = File.createTempFile("srs-tmarks", ".json")
@@ -443,7 +443,7 @@ fun CloudScreen(state: AppState) {
                 say(imported == 0, if (imported > 0) "✓ Imported $imported teacher submission(s). $summary" else "Nothing imported.")
                 state.refresh()
             }.start()
-        }, enabled = s.cloudSchoolId.isNotBlank() && !busy, shape = RoundedCornerShape(10.dp), colors = ButtonDefaults.buttonColors(containerColor = Theme.GOOD, contentColor = Color(0xFF06281A)), modifier = Modifier.height(42.dp)) { Text("Pull Teacher Marks", fontSize = 13.sp) }
+        }, enabled = s.cloudSchoolId.isNotBlank() && !busy, shape = RoundedCornerShape(10.dp), colors = ButtonDefaults.buttonColors(containerColor = Theme.GOOD, contentColor = Color(0xFF06281A)), modifier = Modifier.height(42.dp)) { Text("Pull Teacher Submissions", fontSize = 13.sp) }
         Spacer(Modifier.height(18.dp))
 
         // ── Personal teacher codes (v2.2.18) ─────────────────────────────────

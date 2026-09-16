@@ -292,6 +292,19 @@ data class DutyRecord(
     val incidents: List<DutyIncident> = emptyList()
 )
 
+/** One period in the school timetable. day: 1=Mon … 6=Sat. */
+@Serializable
+data class TimetablePeriod(
+    val id: String = "",
+    val day: Int = 1,
+    val start: String = "",          // HH:mm
+    val end: String = "",            // HH:mm
+    val classId: String = "",
+    val subjectId: String? = null,
+    val teacherId: String = "",
+    val notes: String = ""
+)
+
 @Serializable
 data class GatePass(
     val id: String,
@@ -511,6 +524,7 @@ data class SchoolData(
     val enrollments: List<Enrollment> = emptyList(),
     val teachers: List<Teacher> = emptyList(),
     val assignments: List<TeacherAssignment> = emptyList(),
+    val timetable: List<TimetablePeriod> = emptyList(),
     val subjects: List<Subject> = emptyList(),
     val components: List<AssessmentComponent> = emptyList(),
     val marks: List<Mark> = emptyList(),

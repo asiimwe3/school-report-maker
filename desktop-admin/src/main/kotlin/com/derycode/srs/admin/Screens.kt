@@ -650,6 +650,9 @@ fun TeachersScreen(state: AppState) {
     var assignTeacher by remember { mutableStateOf("") }
     var assignSubject by remember { mutableStateOf("") }
     var assignClass by remember { mutableStateOf("") }
+    var dutyTeacher by remember { mutableStateOf("") }
+    var dutyDate by remember { mutableStateOf(java.time.LocalDate.now().toString()) }
+    var dutyLabel by remember { mutableStateOf("Teacher on duty") }
 
     ScreenTitle("Teachers", "Teachers, roles and subject/class assignments")
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -760,6 +763,62 @@ fun TeachersScreen(state: AppState) {
                     val c = d.classes.firstOrNull { it.id == a.classId }
                     val line = "${t?.name ?: "?"} → ${s?.name ?: "class teacher"} → ${c?.let { if (it.stream.isBlank()) it.name else "${it.name} ${it.stream}" } ?: "?"}"
                     Text("• $line", color = Theme.TEXT, fontSize = 14.sp, modifier = Modifier.padding(vertical = 2.dp))
+                }
+            }
+        }
+
+        CardBox {
+            Text("Duty roster", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(4.dp))
+            Text("Put a teacher on duty for a date — it appears on their phone after they pull school setup.", color = Theme.MUTED, fontSize = 13.sp)
+            Spacer(Modifier.height(10.dp))
+            if (d.teachers.isEmpty()) {
+                Text("Add teachers first.", color = Theme.MUTED, fontSize = 14.sp)
+            } else {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.width(180.dp)) {
+                        FieldLabel("Teacher")
+                        d.teachers.forEach { t -> Row(Modifier.fillMaxWidth().clickable { dutyTeacher = t.id }.padding(vertical = 3.dp)) {
+                            Text((if (dutyTeacher == t.id) "● " else "○ ") + t.name, color = if (dutyTeacher == t.id) Theme.ACCENT else Theme.TEXT, fontSize = 14.sp)
+                        }}
+                    }
+                    Column(Modifier.width(150.dp)) {
+                        FieldLabel("Date (yyyy-mm-dd)")
+                        TextField(dutyDate, { dutyDate = it }, Modifier.fillMaxWidth(), "Date")
+                    }
+                    Column {
+                        FieldLabel("Duty")
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            listOf("Teacher on duty", "Games", "Compound", "Library").forEach { r ->
+                                FilterChip(selected = dutyLabel == r, onClick = { dutyLabel = r }, label = { Text(r, fontSize = 12.sp) })
+                            }
+                        }
+                        Spacer(Modifier.height(10.dp))
+                        Btn("Set on duty") {
+                            if (dutyTeacher.isBlank() || dutyDate.isBlank()) return@Btn
+                            val id = "dr-$dutyTeacher-$dutyDate"
+                            state.repo.mutate("DUTY_ASSIGNED", "DutyRecord", id, new = "$dutyLabel — $dutyDate") { dd ->
+                                dd.copy(dutyRecords = dd.dutyRecords.filterNot { it.teacherId == dutyTeacher && it.date == dutyDate } + DutyRecord(id = id, teacherId = dutyTeacher, date = dutyDate, role = dutyLabel))
+                            }
+                            state.refresh()
+                        }
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+                Text("Roster", color = Theme.MUTED, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                val roster = d.dutyRecords.sortedByDescending { it.date }.take(10)
+                if (roster.isEmpty()) Text("No duty records yet.", color = Theme.MUTED, fontSize = 14.sp)
+                roster.forEach { r ->
+                    val t = d.teachers.firstOrNull { it.id == r.teacherId }
+                    Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Text("• ${r.date} — ${t?.name ?: "?"} — ${r.role}", color = Theme.TEXT, fontSize = 14.sp)
+                        Text("clear", color = Theme.ACCENT, fontSize = 12.sp, modifier = Modifier.clickable {
+                            state.repo.mutate("DUTY_CLEARED", "DutyRecord", r.id) { dd ->
+                                dd.copy(dutyRecords = dd.dutyRecords.filterNot { it.id == r.id })
+                            }
+                            state.refresh()
+                        })
+                    }
                 }
             }
         }
