@@ -222,8 +222,27 @@ class SchoolRepository(
     private val file: Path,
     private val deviceId: String = "desktop"
 ) {
-    var data: SchoolData = store.load(file)
+    // v2.2.26 — a corrupt/truncated data file must never crash the app at
+    // startup. Quarantine the bad file, fall back to the newest readable
+    // backup, then seed fresh (seedIfNeeded fills defaults afterwards).
+    var data: SchoolData = try {
+            store.load(file)
+        } catch (e: Exception) {
+            try {
+                Files.move(file, file.resolveSibling("school-data-corrupt-${System.currentTimeMillis()}.json"), StandardCopyOption.REPLACE_EXISTING)
+            } catch (_: Exception) { }
+            newestUsableBackup() ?: SchoolData()
+        }
         private set
+
+    private fun newestUsableBackup(): SchoolData? {
+        val dir = file.toAbsolutePath().parent.resolve("backups").toFile()
+        val backups = dir.listFiles { f -> f.name.startsWith("backup-") }?.sortedByDescending { it.name } ?: return null
+        for (b in backups) {
+            try { return store.load(b.toPath()) } catch (_: Exception) { }
+        }
+        return null
+    }
 
     private val auditFile = file.toAbsolutePath().parent.resolve("audit.jsonl")
 

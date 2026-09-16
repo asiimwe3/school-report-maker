@@ -33,6 +33,7 @@ import kotlinx.coroutines.launch
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -194,12 +195,42 @@ class TeacherState(context: Context) {
     }
 
     init {
-        data = if (Files.exists(file)) store.load(file)
-        else SchoolData(
-            components = Seeds.COMPONENTS,
-            subjects = Seeds.ALL_SUBJECTS,
-            gradingSchemes = com.derycode.srs.core.grading.GradingSchemes.ALL
-        ).also { store.save(file, it) }   // clean start: config only, no demo students/marks
+        data = if (Files.exists(file)) {
+            // v1.13.10 — startup must NEVER crash: a phone whose school-data.json
+            // was truncated (crash mid-save / disk-full on an older version) used to
+            // throw here on every launch ("app keeps stopping"). Now we quarantine the
+            // bad file, fall back to the newest readable backup, and only then start clean.
+            try {
+                store.load(file)
+            } catch (e: Exception) {
+                CrashTracker.note(context, "school-data.json was unreadable (${e.javaClass.simpleName}: ${e.message?.take(200)}). Quarantined and recovered.")
+                quarantineCorrupt()
+                loadNewestUsableBackup() ?: freshStart()
+            }
+        } else freshStart()
+    }
+
+    /** Default configuration for a brand-new install (no demo data). */
+    private fun freshStart(): SchoolData = SchoolData(
+        components = Seeds.COMPONENTS,
+        subjects = Seeds.ALL_SUBJECTS,
+        gradingSchemes = com.derycode.srs.core.grading.GradingSchemes.ALL
+    ).also { store.save(file, it) }
+
+    /** Keep the unreadable file for recovery instead of deleting it. */
+    private fun quarantineCorrupt() = try {
+        val stamp = System.currentTimeMillis()
+        Files.move(file, file.resolveSibling("school-data-corrupt-$stamp.json"), StandardCopyOption.REPLACE_EXISTING)
+    } catch (_: Exception) { }
+
+    /** Try the rotating backups, newest first; null if none is readable. */
+    private fun loadNewestUsableBackup(): SchoolData? {
+        val dir = file.resolveSibling("backups").toFile()
+        val backups = dir.listFiles { f -> f.name.startsWith("backup-") }?.sortedByDescending { it.name } ?: return null
+        for (b in backups) {
+            try { return store.load(b.toPath()) } catch (_: Exception) { }
+        }
+        return null
     }
 
     var updateAvailable by mutableStateOf<UpdateInfo?>(null)
@@ -214,7 +245,10 @@ class TeacherState(context: Context) {
 
     fun refresh() { data = data }
 
-    fun save() = store.save(file, data)
+    fun save() {
+        store.save(file, data)
+        store.backup(file)   // v1.13.10: rotating local backup so a corrupt main file can be recovered
+    }
 
     fun upsertMark(m: Mark) {
         val key = "${m.studentId}|${m.subjectId}|${m.termId}|${m.componentId}"

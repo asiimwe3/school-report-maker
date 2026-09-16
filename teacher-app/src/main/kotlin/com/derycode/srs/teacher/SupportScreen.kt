@@ -49,6 +49,13 @@ object CrashTracker {
         }
     }
 
+    /** Append a non-crash event (e.g. corrupt data recovery) so it shows on the Support screen. */
+    fun note(context: Context, text: String) = try {
+        val f = File(context.filesDir, FILE)
+        if (!f.exists()) f.writeText("No crashes recorded on this phone. If the app ever crashes, the error is saved here automatically.\n")
+        f.appendText("\n=== NOTE ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(java.util.Date())} ===\n$text\n")
+    } catch (_: Exception) { }
+
     fun logFile(context: Context): File = File(context.filesDir, FILE)
     fun hasCrash(context: Context): Boolean = logFile(context).length() > 0
     fun clear(context: Context) { logFile(context).delete() }
