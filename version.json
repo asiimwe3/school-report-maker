@@ -1,8 +1,8 @@
 {
   "console": "2.2.24",
-  "teacher": "1.13.10",
+  "teacher": "1.13.11",
   "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.24.msi",
-  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.13.10.apk",
-  "releaseNotes": "Teacher app 1.13.10: fixes 'app keeps stopping' right after open. Cause: if the saved data file (school-data.json) got corrupted - by a crash mid-save or a full disk on an older version - the app crashed during startup on EVERY launch, before anything appeared on screen. 1.13.10 never lets a corrupt file crash the app: the bad file is kept safely as school-data-corrupt-*.json, the newest backup is restored if one exists, and the app always opens. It also now saves a rotating backup after every change, and the Support screen shows what happened if a recovery ever runs. Updates cleanly over 1.13.9 (same signature, no uninstall). Phones still on 1.13.7 or older: uninstall once, then install this APK. Console 2.2.24 unchanged.",
+  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.13.11.apk",
+  "releaseNotes": "Teacher app 1.13.11: built-in crash reporting. If the app ever stops on a phone, it now sends the exact error to the developer automatically on the next open - so problems get fixed precisely instead of by guesswork. Also includes 1.13.10's fix for phones where a corrupted data file made the app stop right after opening. Updates cleanly over previous versions (same signature, no uninstall needed).",
   "released": "2026-09-16"
 }
