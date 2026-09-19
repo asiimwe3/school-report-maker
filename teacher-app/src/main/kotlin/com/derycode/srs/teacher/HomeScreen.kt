@@ -34,9 +34,19 @@ fun HomeScreen(state: TeacherState, onOpenClass: (String) -> Unit, onQuickAction
 
     LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item {
-            GreetingCard(greeting, state.me?.let { "Mr./Mrs. ${it.name}" } ?: "Teacher")
+            GreetingCard(
+                greeting = greeting,
+                name = state.me?.let { "Mr./Mrs. ${it.name}" } ?: "Teacher",
+                schoolName = d.school.name.ifBlank { "School Report Maker" },
+                termLabel = d.academicYears.firstOrNull()?.let { year ->
+                    val term = year.terms.firstOrNull { it.id == year.currentTermId } ?: year.terms.firstOrNull()
+                    listOfNotNull(year.year, term?.let { "Term ${it.number}" }).joinToString("  ·  ")
+                } ?: "",
+                onOpenMarks = { onQuickAction(Route.Assessments) }
+            )
         }
         item {
+            SectionLabel("Today at a glance", "Your live teaching workspace")
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 StatCard(Modifier.weight(1f), Icons.Filled.MenuBook, BLUE, state.myClasses.size.toString(), "My Classes")
                 StatCard(Modifier.weight(1f), Icons.Filled.People, GREEN, d.students.size.toString(), "Total Students")
@@ -164,7 +174,13 @@ private fun greetingWord(): String {
 }
 
 @Composable
-private fun GreetingCard(greeting: String, name: String) {
+private fun GreetingCard(
+    greeting: String,
+    name: String,
+    schoolName: String,
+    termLabel: String,
+    onOpenMarks: () -> Unit
+) {
     Row(
         Modifier.fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
@@ -174,16 +190,40 @@ private fun GreetingCard(greeting: String, name: String) {
     ) {
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("\uD83D\uDC4B", fontSize = 20.sp)
-                Spacer(Modifier.width(6.dp))
+                Box(
+                    Modifier.size(28.dp).clip(RoundedCornerShape(9.dp)).background(BLUE),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Filled.WavingHand, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                }
+                Spacer(Modifier.width(8.dp))
                 Text("$greeting, $name", color = NAVY, fontSize = 19.sp, fontWeight = FontWeight.Bold)
             }
             Spacer(Modifier.height(4.dp))
-            Text("Let's make teaching and reporting easier.", color = MUTED, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+            Text(schoolName, color = NAVY, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+            if (termLabel.isNotBlank()) Text(termLabel, color = MUTED, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(10.dp))
+            Button(
+                onClick = onOpenMarks,
+                colors = ButtonDefaults.buttonColors(containerColor = BLUE),
+                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
+            ) {
+                Icon(Icons.Filled.EditNote, contentDescription = null, modifier = Modifier.size(17.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("Enter marks", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            }
         }
         Box(Modifier.size(52.dp).clip(CircleShape).background(BLUE.copy(alpha = 0.20f)), contentAlignment = Alignment.Center) {
             Icon(Icons.Filled.School, contentDescription = null, tint = BLUE, modifier = Modifier.size(28.dp))
         }
+    }
+}
+
+@Composable
+private fun SectionLabel(title: String, subtitle: String) {
+    Column {
+        Text(title, color = NAVY, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+        Text(subtitle, color = MUTED, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
     }
 }
 

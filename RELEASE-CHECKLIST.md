@@ -1,7 +1,8 @@
-# Release Checklist — v2.2.6
+# Release Checklist — v2.2.25
 
 ## Included in this release
 
+- Admin console and teacher app UI refresh with clearer navigation, context, and quick actions.
 - Admin student editing, archive, and confirmed delete controls.
 - Scroll-safe desktop page layout for long screens.
 - Separate School fees, Boarding fees, and Bursary ledgers.
@@ -24,4 +25,4 @@ The release workflow currently attaches an unsigned debug APK so field testers c
 
 ## Publishing
 
-After validation, commit all changes, push `main`, and create/push tag `v2.2.6`. The release workflow will build and attach the MSI and APK to that GitHub release.
+After validation, commit all changes, push `main`, and create/push tag `v2.2.25`. The release workflow will build and attach the MSI and APK to that GitHub release.

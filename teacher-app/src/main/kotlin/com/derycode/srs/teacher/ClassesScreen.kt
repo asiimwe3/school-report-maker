@@ -37,6 +37,16 @@ fun ClassesListScreen(state: TeacherState, onOpenClass: (String) -> Unit) {
     }
 
     Column {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("Your teaching load", color = NAVY, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text("${classes.size} active class${if (classes.size == 1) "" else "es"} · ${classes.sumOf { state.studentsIn(it.id).size }} students", color = MUTED, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            }
+            Box(Modifier.clip(RoundedCornerShape(20.dp)).background(BLUE.copy(alpha = 0.12f)).padding(horizontal = 11.dp, vertical = 6.dp)) {
+                Text("Offline ready", color = BLUE, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+        Spacer(Modifier.height(12.dp))
         SearchField(query, { query = it }, "Search class...")
         Spacer(Modifier.height(10.dp))
         LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {

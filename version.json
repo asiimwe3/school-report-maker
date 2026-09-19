@@ -1,8 +1,8 @@
 {
-  "console": "2.2.24",
-  "teacher": "1.13.11",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.24.msi",
-  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.13.11.apk",
-  "releaseNotes": "Teacher app 1.13.11: built-in crash reporting. If the app ever stops on a phone, it now sends the exact error to the developer automatically on the next open - so problems get fixed precisely instead of by guesswork. Also includes 1.13.10's fix for phones where a corrupted data file made the app stop right after opening. Updates cleanly over previous versions (same signature, no uninstall needed).",
-  "released": "2026-09-16"
+  "console": "2.2.25",
+  "teacher": "1.13.12",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.25.msi",
+  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.13.12.apk",
+  "releaseNotes": "UI refresh across the admin console and teacher app: clearer navigation, stronger workspace context, faster mark-entry access, grouped teacher tools, and a more focused dashboard. Offline storage and existing data flows are unchanged.",
+  "released": "2026-09-19"
 }

@@ -152,43 +152,55 @@ fun App(state: AppState) {
     Row(Modifier.fillMaxSize().background(Theme.NAVY)) {
         // ── Navigation rail ──
         Column(
-            Modifier.width(210.dp).fillMaxHeight().background(Color(0xFF0A0F1C))
+            Modifier.width(232.dp).fillMaxHeight().background(Color(0xFF09101D))
                 .verticalScroll(rememberScrollState())
-                .padding(vertical = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp)
+                .padding(vertical = 18.dp, horizontal = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(3.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
-                Text("SRM", color = Theme.ACCENT, fontWeight = FontWeight.Black, fontSize = 24.sp)
-                Spacer(Modifier.width(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
+                Box(
+                    Modifier.size(38.dp).background(Theme.ACCENT, RoundedCornerShape(12.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("S", color = Color.White, fontWeight = FontWeight.Black, fontSize = 22.sp)
+                }
+                Spacer(Modifier.width(10.dp))
                 Column {
                     Text("School Report", color = Theme.TEXT, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                    Text("Maker", color = Theme.MUTED, fontSize = 13.sp)
+                    Text("Admin console", color = Theme.MUTED, fontSize = 12.sp)
                 }
             }
-            HorizontalDivider(color = Color(0xFF1B2540), modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
+            HorizontalDivider(color = Color(0xFF1B2540), modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp))
             navGroups.forEach { (group, entries) ->
                 Text(group, color = Color(0xFF5A6B8C), fontSize = 12.sp, fontWeight = FontWeight.Black,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp))
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp))
                 entries.forEach { (key, label) ->
                     val selected = state.screen == key
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxWidth()
-                            .background(if (selected) Theme.ACCENT_SOFT else Color.Transparent, RoundedCornerShape(8.dp))
+                            .background(if (selected) Theme.ACCENT_SOFT else Color.Transparent, RoundedCornerShape(10.dp))
                             .clickable { state.screen = key }
-                            .padding(horizontal = 16.dp, vertical = 7.dp)
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
                     ) {
-                        Box(Modifier.width(3.dp).height(16.dp).background(if (selected) Theme.ACCENT else Color.Transparent, RoundedCornerShape(2.dp)))
-                        Spacer(Modifier.width(10.dp))
-                        Text(label, color = if (selected) Theme.TEXT else Theme.MUTED, fontSize = 14.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal)
+                        Box(Modifier.width(4.dp).height(18.dp).background(if (selected) Theme.ACCENT else Color.Transparent, RoundedCornerShape(2.dp)))
+                        Spacer(Modifier.width(9.dp))
+                        Text(label, color = if (selected) Theme.TEXT else Theme.MUTED, fontSize = 13.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal)
                     }
                 }
             }
             Spacer(Modifier.weight(1f))
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 16.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().background(Color(0xFF111B2B), RoundedCornerShape(10.dp))
+                    .padding(horizontal = 12.dp, vertical = 10.dp)
+            ) {
                 Box(Modifier.width(8.dp).height(8.dp).background(Theme.GOOD, RoundedCornerShape(4.dp)))
                 Spacer(Modifier.width(8.dp))
-                Text("Offline · saved locally", color = Theme.MUTED, fontSize = 12.sp)
+                Column {
+                    Text("Offline first", color = Theme.TEXT, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    Text("Saved locally", color = Theme.MUTED, fontSize = 11.sp)
+                }
             }
         }
 
@@ -202,43 +214,46 @@ fun App(state: AppState) {
         // are longer than a laptop-sized window, so their bottom controls were
         // clipped (and could appear to overlap the content above).  Keep the
         // navigation fixed and give the complete page one reliable scroll area.
-        Column(
-            Modifier.weight(1f).fillMaxHeight()
-                .verticalScroll(rememberScrollState())
-                .padding(24.dp)
-        ) {
-            when (state.screen) {
-                "dashboard" -> DashboardScreen(state)
-                "setup" -> SetupScreen(state)
-                "students" -> StudentsScreen(state)
-                "classes" -> ClassesScreen(state)
-                "subjects" -> SubjectsScreen(state)
-                "teachers" -> TeachersScreen(state)
-                "marks" -> MarksScreen(state)
-                "fees" -> FeesScreen(state)
-                "grading" -> GradingScreen(state)
-                "results" -> ResultsScreen(state)
-                "analytics" -> AnalyticsScreen(state)
-                "attendance" -> AttendanceScreen(state)
-                "promotion" -> PromotionScreen(state)
-                "commentbank" -> CommentBankScreen(state)
-                "reports" -> ReportsScreen(state)
-                "sync" -> SyncScreen(state)
-                "cloud" -> CloudScreen(state)
-                "templates" -> TemplatesScreen(state)
-                "preview" -> PreviewScreen(state)
-                "audit" -> AuditScreen(state)
-                "archive" -> ReportsArchiveScreen(state)
-                "backups" -> BackupHistoryScreen(state)
-                "users" -> UsersScreen(state)
-                "notifications" -> NotificationsScreen(state)
-                "calendar" -> CalendarScreen(state)
-                "timetable" -> TimetableScreen(state)
-                "importexport" -> ImportExportScreen(state)
-                "settings" -> SettingsScreen(state)
-                "plans" -> PlansScreen(state)
-                "docs" -> HelpDocsScreen(state)
-                "support" -> SupportScreenDesktop(state)
+        Column(Modifier.weight(1f).fillMaxHeight()) {
+            AdminContextBar(state)
+            Column(
+                Modifier.weight(1f).fillMaxHeight()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 28.dp, vertical = 24.dp)
+            ) {
+                when (state.screen) {
+                    "dashboard" -> DashboardScreen(state)
+                    "setup" -> SetupScreen(state)
+                    "students" -> StudentsScreen(state)
+                    "classes" -> ClassesScreen(state)
+                    "subjects" -> SubjectsScreen(state)
+                    "teachers" -> TeachersScreen(state)
+                    "marks" -> MarksScreen(state)
+                    "fees" -> FeesScreen(state)
+                    "grading" -> GradingScreen(state)
+                    "results" -> ResultsScreen(state)
+                    "analytics" -> AnalyticsScreen(state)
+                    "attendance" -> AttendanceScreen(state)
+                    "promotion" -> PromotionScreen(state)
+                    "commentbank" -> CommentBankScreen(state)
+                    "reports" -> ReportsScreen(state)
+                    "sync" -> SyncScreen(state)
+                    "cloud" -> CloudScreen(state)
+                    "templates" -> TemplatesScreen(state)
+                    "preview" -> PreviewScreen(state)
+                    "audit" -> AuditScreen(state)
+                    "archive" -> ReportsArchiveScreen(state)
+                    "backups" -> BackupHistoryScreen(state)
+                    "users" -> UsersScreen(state)
+                    "notifications" -> NotificationsScreen(state)
+                    "calendar" -> CalendarScreen(state)
+                    "timetable" -> TimetableScreen(state)
+                    "importexport" -> ImportExportScreen(state)
+                    "settings" -> SettingsScreen(state)
+                    "plans" -> PlansScreen(state)
+                    "docs" -> HelpDocsScreen(state)
+                    "support" -> SupportScreenDesktop(state)
+                }
             }
         }
     }
@@ -249,13 +264,43 @@ fun App(state: AppState) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
+private fun AdminContextBar(state: AppState) {
+    val schoolName = state.data.school.name.ifBlank { "Set up your school profile" }
+    val year = state.data.academicYears.firstOrNull { it.currentTermId != null } ?: state.data.academicYears.firstOrNull()
+    val term = year?.terms?.firstOrNull { it.id == year.currentTermId } ?: year?.terms?.firstOrNull()
+    Row(
+        Modifier.fillMaxWidth().background(Theme.CARD.copy(alpha = 0.72f))
+            .border(1.dp, Theme.ACCENT.copy(alpha = 0.12f))
+            .padding(horizontal = 28.dp, vertical = 13.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(schoolName, color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+            Text(
+                listOfNotNull(year?.year, term?.let { "Term ${it.number}" }).joinToString("  ·  ").ifBlank { "No academic year selected" },
+                color = Theme.MUTED, fontSize = 12.sp
+            )
+        }
+        Row(
+            Modifier.background(Theme.GOOD.copy(alpha = 0.12f), RoundedCornerShape(20.dp))
+                .padding(horizontal = 11.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(Modifier.size(7.dp).background(Theme.GOOD, RoundedCornerShape(4.dp)))
+            Spacer(Modifier.width(7.dp))
+            Text("Offline · data is safe on this computer", color = Theme.GOOD, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+        }
+    }
+}
+
+@Composable
 fun ScreenTitle(title: String, subtitle: String = "") {
-    Row(Modifier.padding(bottom = 20.dp), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.width(5.dp).height(44.dp).background(Theme.ACCENT, RoundedCornerShape(3.dp)))
-        Spacer(Modifier.width(14.dp))
+    Row(Modifier.padding(bottom = 24.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.width(6.dp).height(50.dp).background(Theme.ACCENT, RoundedCornerShape(4.dp)))
+        Spacer(Modifier.width(15.dp))
         Column {
-            Text(title, color = Theme.TEXT, fontSize = 28.sp, fontWeight = FontWeight.Bold)
-            if (subtitle.isNotBlank()) Text(subtitle, color = Theme.MUTED, fontSize = 14.sp)
+            Text(title, color = Theme.TEXT, fontSize = 30.sp, fontWeight = FontWeight.Bold)
+            if (subtitle.isNotBlank()) Text(subtitle, color = Theme.MUTED, fontSize = 14.sp, lineHeight = 20.sp)
         }
     }
 }
@@ -263,7 +308,8 @@ fun ScreenTitle(title: String, subtitle: String = "") {
 @Composable
 fun CardBox(content: @Composable ColumnScope.() -> Unit) {
     Column(
-        Modifier.fillMaxWidth().background(Theme.CARD, RoundedCornerShape(18.dp)).border(1.dp, Theme.ACCENT.copy(alpha = 0.14f), RoundedCornerShape(18.dp)).padding(22.dp),
+        Modifier.fillMaxWidth().background(Theme.CARD, RoundedCornerShape(18.dp))
+            .border(1.dp, Theme.ACCENT.copy(alpha = 0.16f), RoundedCornerShape(18.dp)).padding(24.dp),
         content = content
     )
 }
@@ -271,7 +317,9 @@ fun CardBox(content: @Composable ColumnScope.() -> Unit) {
 @Composable
 fun StatCard(label: String, value: String, tint: Color = Theme.ACCENT) {
     Column(
-        Modifier.background(Theme.CARD, RoundedCornerShape(16.dp)).border(1.dp, Theme.ACCENT.copy(alpha = 0.14f), RoundedCornerShape(16.dp)).padding(18.dp).width(180.dp)
+        Modifier.background(Theme.CARD, RoundedCornerShape(16.dp))
+            .border(1.dp, Theme.ACCENT.copy(alpha = 0.16f), RoundedCornerShape(16.dp))
+            .padding(18.dp).width(178.dp)
     ) {
         Text(label, color = Theme.MUTED, fontSize = 13.sp, fontWeight = FontWeight.Medium)
         Spacer(Modifier.height(6.dp))

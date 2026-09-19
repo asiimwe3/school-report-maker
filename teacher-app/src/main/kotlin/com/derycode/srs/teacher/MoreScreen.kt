@@ -52,18 +52,20 @@ fun MoreScreen(state: TeacherState, onOpen: (Route) -> Unit) {
         }
         item {
             CardBox {
-                MoreRow(Icons.Filled.Comment, "Class Teacher Comments", "Write end-of-term remarks") { onOpen(Route.Comments) }
-                Divider(color = STROKE, modifier = Modifier.padding(vertical = 4.dp))
-                MoreRow(Icons.Filled.Shield, "Duty Desk", "Teacher on duty \u00B7 gate passes \u00B7 duty log") { onOpen(Route.Duty) }
-                MoreRow(Icons.Filled.PersonAdd, "Register student", "Enroll a new student from the field") { onOpen(Route.Register) }
-                MoreRow(Icons.Filled.EventAvailable, "Attendance", "Daily register \u00B7 present / absent / late") { onOpen(Route.Attendance) }
-                MoreRow(Icons.Filled.Schedule, "My Timetable", "Your periods for the week") { onOpen(Route.Timetable) }
-                MoreRow(Icons.Filled.Sync, "Sync & Export", "Import school data \u00B7 export your marks") { onOpen(Route.Sync) }
-                MoreRow(Icons.Filled.Cloud, "Cloud Sync", "Online account \u00B7 join school \u00B7 send marks") { onOpen(Route.Cloud) }
-                Divider(color = STROKE, modifier = Modifier.padding(vertical = 4.dp))
-                MoreRow(Icons.Filled.SupportAgent, "Support & Licence", "Updates \u00B7 crash reports \u00B7 plans") { onOpen(Route.Support) }
-                Divider(color = STROKE, modifier = Modifier.padding(vertical = 4.dp))
-                MoreRow(Icons.Filled.School, "How-to Guide", "Step-by-step app training \u2014 8 slides") { onOpen(Route.Tutorial) }
+                MoreSectionLabel("Teaching")
+                MoreRow(Icons.Filled.Comment, "Class Teacher Comments", "Write end-of-term remarks", PURPLE) { onOpen(Route.Comments) }
+                MoreRow(Icons.Filled.EventAvailable, "Attendance", "Daily register \u00B7 present / absent / late", TEAL) { onOpen(Route.Attendance) }
+                MoreRow(Icons.Filled.Schedule, "My Timetable", "Your periods for the week", BLUE) { onOpen(Route.Timetable) }
+                Divider(color = STROKE, modifier = Modifier.padding(vertical = 8.dp))
+                MoreSectionLabel("School operations")
+                MoreRow(Icons.Filled.Shield, "Duty Desk", "Teacher on duty \u00B7 gate passes \u00B7 duty log", ORANGE) { onOpen(Route.Duty) }
+                MoreRow(Icons.Filled.PersonAdd, "Register student", "Enroll a new student from the field", GREEN) { onOpen(Route.Register) }
+                Divider(color = STROKE, modifier = Modifier.padding(vertical = 8.dp))
+                MoreSectionLabel("Data & account")
+                MoreRow(Icons.Filled.Sync, "Sync & Export", "Import school data \u00B7 export your marks", BLUE) { onOpen(Route.Sync) }
+                MoreRow(Icons.Filled.Cloud, "Cloud Sync", "Online account \u00B7 join school \u00B7 send marks", TEAL) { onOpen(Route.Cloud) }
+                MoreRow(Icons.Filled.SupportAgent, "Support & Licence", "Updates \u00B7 crash reports \u00B7 plans", PURPLE) { onOpen(Route.Support) }
+                MoreRow(Icons.Filled.School, "How-to Guide", "Step-by-step app training \u2014 8 slides", BLUE) { onOpen(Route.Tutorial) }
             }
         }
         item {
@@ -78,15 +80,28 @@ fun MoreScreen(state: TeacherState, onOpen: (Route) -> Unit) {
 }
 
 @Composable
-private fun MoreRow(icon: ImageVector, title: String, subtitle: String, onClick: () -> Unit) {
+@Composable
+private fun MoreSectionLabel(text: String) {
+    Text(
+        text.uppercase(),
+        color = MUTED,
+        fontSize = 11.sp,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = 0.8.sp,
+        modifier = Modifier.padding(top = 2.dp, bottom = 4.dp)
+    )
+}
+
+@Composable
+private fun MoreRow(icon: ImageVector, title: String, subtitle: String, tint: Color, onClick: () -> Unit) {
     Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(34.dp).clip(RoundedCornerShape(9.dp)).background(BLUE.copy(alpha = 0.18f)), contentAlignment = Alignment.Center) {
-            Icon(icon, contentDescription = null, tint = BLUE, modifier = Modifier.size(17.dp))
+        Box(Modifier.size(38.dp).clip(RoundedCornerShape(11.dp)).background(tint.copy(alpha = 0.15f)), contentAlignment = Alignment.Center) {
+            Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(19.dp))
         }
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
-            Text(title, color = NAVY, fontSize = 17.sp, fontWeight = FontWeight.Bold)
-            Text(subtitle, color = MUTED, fontSize = 14.sp)
+            Text(title, color = NAVY, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Text(subtitle, color = MUTED, fontSize = 13.sp)
         }
         Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = MUTED, modifier = Modifier.size(16.dp))
     }
