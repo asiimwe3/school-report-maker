@@ -80,7 +80,6 @@ fun MoreScreen(state: TeacherState, onOpen: (Route) -> Unit) {
 }
 
 @Composable
-@Composable
 private fun MoreSectionLabel(text: String) {
     Text(
         text.uppercase(),
