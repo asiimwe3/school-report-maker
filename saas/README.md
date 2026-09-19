@@ -23,14 +23,20 @@ Delivered and verified in this phase:
   on the unique mark key with ADD/UPDATE/CONFLICT/REJECT/DUPLICATE previews;
   SchoolData JSON v2 migration parser with dry-run report (duplicate students,
   duplicate marks, invalid references, invalid payments).
-* Test suite: 28 tests, all passing (`npx vitest run`), typecheck clean
+* Auth & authorization core: scrypt password hashing (timing-safe verify),
+  session/refresh tokens with family-wide reuse detection, HTTP-only Secure
+  SameSite cookie attribute sets, full RBAC matrix (owner / head teacher /
+  admin / teacher / bursar / data-entry) with teacher assignment context
+  checks, tenant scoping guard (requireScope — no query may run without it),
+  single-use expiring revocable invite state machine, sliding-window rate
+  limiter. Test suite: 54 tests, all passing (`npx vitest run`), typecheck clean
   (`npx tsc --noEmit`).
 * DB CHECK constraints (prisma/sql/checks.sql): non-negative payments,
   mark score bounds + special-mark invariants, term numbers, attendance.
 
 Explicitly NOT done yet (next phases — do not deploy as-is):
 
-1. API layer (Next.js app router + server-side auth + RBAC + rate limiting).
+1. API routes (Next.js app router wiring the auth core to Prisma + HTTP).
 2. Web UI (onboarding, dashboards, mark-entry workspace, approval queue…).
 3. Stripe billing + webhooks.
 4. Report PDF/DOCX rendering from engine snapshots.
