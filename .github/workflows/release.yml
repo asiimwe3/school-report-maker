@@ -41,11 +41,11 @@ jobs:
         with:
           gradle-version: 8.9
       - name: Build teacher APK
-        run: gradle :teacher-app:assembleDebug
+        run: gradle :teacher-app:assembleRelease
       - name: Rename APK with version
         run: |
           VERSION=$(grep -o 'versionName = "[^"]*"' teacher-app/build.gradle.kts | head -1 | sed 's/versionName = "//;s/"//')
-          cp teacher-app/build/outputs/apk/debug/teacher-app-debug.apk "srs-teacher-${VERSION}.apk"
+          cp teacher-app/build/outputs/apk/release/teacher-app-release.apk "srs-teacher-${VERSION}.apk"
           echo "APK=srs-teacher-${VERSION}.apk" >> "$GITHUB_ENV"
       - name: Attach APK to the GitHub release
         env:

@@ -44,6 +44,9 @@ object CrashTracker {
                     "Android: ${android.os.Build.VERSION.RELEASE} (${android.os.Build.VERSION.SDK_INT}), ${android.os.Build.MODEL}\n" +
                     "Thread: ${thread.name}\n${throwable.stackTraceToString().take(3500)}\n"
                 f.appendText(entry)
+                // v1.13.13 — also deliver RIGHT NOW, synchronously, so a phone that
+                // crash-loops and never reaches onCreate again still gets the error out.
+                try { CrashReporter.postNow(context, entry) } catch (_: Exception) { }
             } catch (_: Exception) { }
             previous?.uncaughtException(thread, throwable)
         }
@@ -70,6 +73,31 @@ object CrashTracker {
 object CrashReporter {
     private const val ENDPOINT = "https://superagent-d41c313d.base44.app/functions/saveSrsCrash"
 
+    /** Build the JSON body for a crash report. */
+    private fun payload(context: Context, reportText: String): String =
+        org.json.JSONObject()
+            .put("source", "srs-teacher")
+            .put("appVersion", BuildConfig.VERSION_NAME)
+            .put("appVersionCode", BuildConfig.VERSION_CODE.toString())
+            .put("phoneModel", android.os.Build.MANUFACTURER + " " + android.os.Build.MODEL)
+            .put("androidVersion", "Android " + android.os.Build.VERSION.RELEASE + " (API " + android.os.Build.VERSION.SDK_INT + ")")
+            .put("report", reportText.take(60000))
+            .toString()
+
+    /** Synchronous one-shot POST of a single crash entry (used from the crash handler). */
+    fun postNow(context: Context, entry: String) {
+        try {
+            val conn = java.net.URL(ENDPOINT).openConnection() as java.net.HttpURLConnection
+            conn.requestMethod = "POST"
+            conn.connectTimeout = 2500
+            conn.readTimeout = 2500
+            conn.doOutput = true
+            conn.setRequestProperty("Content-Type", "application/json")
+            conn.outputStream.use { it.write(payload(context, entry).toByteArray()) }
+            conn.disconnect()
+        } catch (_: Exception) { }
+    }
+
     /** Post the crash log if there is an unsent one. No-op (0ms) on healthy phones. */
     fun sendPending(context: Context) {
         try {
@@ -78,13 +106,7 @@ object CrashReporter {
             val marker = File(context.filesDir, "crash-log-posted.txt")
             if (marker.exists() && marker.readText().trim() == log.length().toString()) return
 
-            val payload = org.json.JSONObject()
-                .put("source", "srs-teacher")
-                .put("appVersion", BuildConfig.VERSION_NAME)
-                .put("appVersionCode", BuildConfig.VERSION_CODE.toString())
-                .put("phoneModel", android.os.Build.MANUFACTURER + " " + android.os.Build.MODEL)
-                .put("androidVersion", "Android " + android.os.Build.VERSION.RELEASE + " (API " + android.os.Build.VERSION.SDK_INT + ")")
-                .put("report", log.readText().take(60000))
+            val body = payload(context, log.readText())
 
             val t = Thread {
                 try {
@@ -94,7 +116,7 @@ object CrashReporter {
                     conn.readTimeout = 2500
                     conn.doOutput = true
                     conn.setRequestProperty("Content-Type", "application/json")
-                    conn.outputStream.use { it.write(payload.toString().toByteArray()) }
+                    conn.outputStream.use { it.write(body.toByteArray()) }
                     if (conn.responseCode == 200) marker.writeText(log.length().toString())
                     conn.disconnect()
                 } catch (_: Exception) { }
