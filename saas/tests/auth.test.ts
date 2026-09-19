@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { hashPassword, verifyPassword, isAcceptablePassword } from "../src/auth/passwords.js";
+import { hashPassword, verifyPassword, isAcceptablePassword } from "../src/auth/passwords";
 import {
   digestMatches,
   rotateRefresh,
   sha256,
   sessionCookieAttrs,
-} from "../src/auth/tokens.js";
-import { can, canTeacher, INVITABLE_ROLES, type AssignmentRef } from "../src/auth/rbac.js";
-import { requireScope, scoped, TenantAccessError, type MembershipRef } from "../src/auth/tenant.js";
-import { redeemInvite, DEFAULT_INVITE_TTL_MS, type InviteState } from "../src/auth/invites.js";
-import { createRateLimiter } from "../src/http/rateLimit.js";
+} from "../src/auth/tokens";
+import { can, canTeacher, INVITABLE_ROLES, type AssignmentRef } from "../src/auth/rbac";
+import { requireScope, scoped, TenantAccessError, type MembershipRef } from "../src/auth/tenant";
+import { redeemInvite, DEFAULT_INVITE_TTL_MS, type InviteState } from "../src/auth/invites";
+import { createRateLimiter } from "../src/http/rateLimit";
 
 describe("passwords", () => {
   it("hashes and verifies", () => {

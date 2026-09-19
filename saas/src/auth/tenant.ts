@@ -7,7 +7,7 @@
  * A user without an ACTIVE membership in the school can never read or mutate
  * its records, regardless of what the request body says.
  */
-import type { Role } from "./rbac.js";
+import type { Role } from "./rbac";
 
 export interface MembershipRef {
   schoolId: string;

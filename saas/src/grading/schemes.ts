@@ -1,4 +1,4 @@
-import { GradingScheme, Level } from "./engine.js";
+import { GradingScheme, Level } from "./engine";
 
 /**
  * Starter scheme configurations, ported 1:1 from the Kotlin GradingSchemes

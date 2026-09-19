@@ -5,7 +5,7 @@
  * the invitation row, created by someone who already has school:manage_staff.
  */
 import { randomBytes } from "node:crypto";
-import { can, INVITABLE_ROLES, type Role } from "./rbac.js";
+import { can, INVITABLE_ROLES, type Role } from "./rbac";
 
 export interface InviteState {
   code: string; // stored as sha? — no: code itself is random+single-use; DB stores its digest

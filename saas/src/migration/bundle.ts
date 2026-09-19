@@ -12,7 +12,7 @@
  *     transaction and record an ImportJob + ImportRows for audit.
  */
 
-import { MarkType } from "../grading/engine.js";
+import { MarkType } from "../grading/engine";
 
 export interface BundleMark {
   studentId: string;

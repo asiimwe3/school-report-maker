@@ -11,17 +11,17 @@
  * transaction (all-or-nothing); the service is transaction-ready because it
  * performs no partial visibility of state itself.
  */
-import { requireScope } from "../auth/tenant.js";
-import { can } from "../auth/rbac.js";
-import { markKey, type MergePreview, type PreviewRow } from "../migration/bundle.js";
-import { SheetState } from "../grading/engine.js";
+import { requireScope } from "../auth/tenant";
+import { can } from "../auth/rbac";
+import { markKey, type MergePreview, type PreviewRow } from "../migration/bundle";
+import { SheetState } from "../grading/engine";
 import {
   ServiceError,
   type AuditRepo,
   type Ctx,
   type MarksRepo,
   type MarkRecord,
-} from "../db/types.js";
+} from "../db/types";
 
 export interface ImportJobRepo {
   createJob(schoolId: string, data: { kind: string; initiatedBy: string; summary: unknown }): Promise<string>;

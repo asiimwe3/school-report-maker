@@ -5,14 +5,14 @@
  * Every consumer (reports, dashboards, merit lists) reads these snapshots —
  * nobody recalculates.
  */
-import { requireScope } from "../auth/tenant.js";
-import { can } from "../auth/rbac.js";
+import { requireScope } from "../auth/tenant";
+import { can } from "../auth/rbac";
 import {
   computeSubject,
   rosterFor,
   type GradingScheme,
   type SubjectInput,
-} from "../grading/engine.js";
+} from "../grading/engine";
 import {
   ServiceError,
   type AuditRepo,
@@ -20,7 +20,7 @@ import {
   type MarksRepo,
   type ResultsRepo,
   type RosterRepo,
-} from "../db/types.js";
+} from "../db/types";
 
 export interface RecomputeInput {
   schoolId: string;

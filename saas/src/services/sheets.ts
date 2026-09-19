@@ -4,10 +4,10 @@
  * Only the head teacher (or owner) advances past SUBMITTED; unlocking goes
  * back to DRAFT and always requires a reason (see marks.ts unlockSheet).
  */
-import { requireScope } from "../auth/tenant.js";
-import { can } from "../auth/rbac.js";
-import { SheetState } from "../grading/engine.js";
-import { ServiceError, type AuditRepo, type Ctx, type SheetsRepo } from "../db/types.js";
+import { requireScope } from "../auth/tenant";
+import { can } from "../auth/rbac";
+import { SheetState } from "../grading/engine";
+import { ServiceError, type AuditRepo, type Ctx, type SheetsRepo } from "../db/types";
 
 const TRANSITIONS: Partial<Record<SheetState, { to: SheetState; action: string; permission: "marks:enter" | "marks:approve" | "marks:lock" }[]>> = {
   [SheetState.DRAFT]: [

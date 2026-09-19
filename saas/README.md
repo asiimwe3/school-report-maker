@@ -43,11 +43,18 @@ Delivered and verified in this phase:
   rows and can never delete unrelated marks. Verified against in-memory
   tenant-scoped repo doubles (71 tests total).
 
+* Next.js API layer (app/api/**): login (scrypt verify, HttpOnly Secure
+  cookies, CSRF secret issuance), logout, mark entry, sheet transitions +
+  unlock, results recompute, import preview + commit. Roles/assignments are
+  loaded from the DB on every request; classId/enrollmentId are resolved
+  server-side from the term's academic year. zod request validation,
+  per-user rate limits, uniform error mapping. `next build` passes with all
+  9 routes compiled; Prisma repos implement the tenant-scoped contracts
+  with in-query optimistic concurrency.
+
 Explicitly NOT done yet (next phases — do not deploy as-is):
 
-1. Next.js route adapters (thin HTTP wiring over src/services) + Prisma repo
-   implementations.
-2. Web UI (onboarding, dashboards, mark-entry workspace, approval queue…).
+1. Web UI (onboarding, dashboards, mark-entry workspace, approval queue…).
 3. Stripe billing + webhooks.
 4. Report PDF/DOCX rendering from engine snapshots.
 5. Background jobs (imports, report generation, backups) + object storage.

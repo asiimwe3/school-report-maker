@@ -1,12 +1,12 @@
 import { describe, expect, it, beforeEach } from "vitest";
-import { MarkType, SheetState } from "../src/grading/engine.js";
-import { UCE_SCHEME } from "../src/grading/schemes.js";
-import { previewBundleMerge, type BundleMark, type ExistingMark } from "../src/migration/bundle.js";
-import { enterMark, unlockSheet } from "../src/services/marks.js";
-import { transitionSheet } from "../src/services/sheets.js";
-import { recomputeSubjectResults } from "../src/services/results.js";
-import { applyBundleImport, type ImportJobRepo } from "../src/services/importCommit.js";
-import { ServiceError, type Ctx, type MarkRecord, type EnrollmentRecord, type SubjectRecord, type ComponentRecord, type TermResultRecord } from "../src/db/types.js";
+import { MarkType, SheetState } from "../src/grading/engine";
+import { UCE_SCHEME } from "../src/grading/schemes";
+import { previewBundleMerge, type BundleMark, type ExistingMark } from "../src/migration/bundle";
+import { enterMark, unlockSheet } from "../src/services/marks";
+import { transitionSheet } from "../src/services/sheets";
+import { recomputeSubjectResults } from "../src/services/results";
+import { applyBundleImport, type ImportJobRepo } from "../src/services/importCommit";
+import { ServiceError, type Ctx, type MarkRecord, type EnrollmentRecord, type SubjectRecord, type ComponentRecord, type TermResultRecord } from "../src/db/types";
 
 // ── In-memory test doubles (tenant-scoped like the Prisma impls) ────────────
 

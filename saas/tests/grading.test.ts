@@ -8,8 +8,8 @@ import {
   rosterFor,
   uceResultIndicator,
   type SubjectInput,
-} from "../src/grading/engine.js";
-import { PLE_SCHEME, UCE_SCHEME, UACE_SCHEME } from "../src/grading/schemes.js";
+} from "../src/grading/engine";
+import { PLE_SCHEME, UCE_SCHEME, UACE_SCHEME } from "../src/grading/schemes";
 
 const subj = (over: Partial<SubjectInput> = {}): SubjectInput => ({
   subjectId: "s1",

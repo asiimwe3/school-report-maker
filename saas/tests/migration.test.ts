@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { previewBundleMerge, parseMarkPayload, type BundleMark, type ExistingMark } from "../src/migration/bundle.js";
-import { parseSchoolData } from "../src/migration/schoolData.js";
+import { previewBundleMerge, parseMarkPayload, type BundleMark, type ExistingMark } from "../src/migration/bundle";
+import { parseSchoolData } from "../src/migration/schoolData";
 
 const bm = (over: Partial<BundleMark> = {}): BundleMark => ({
   studentId: "st1",

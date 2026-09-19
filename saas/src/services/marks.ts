@@ -3,9 +3,9 @@
  * through: tenant scope → RBAC → teacher assignment check → sheet-state
  * gate → optimistic concurrency, and always leaves a history row.
  */
-import { requireScope, TenantAccessError } from "../auth/tenant.js";
-import { can, canTeacher } from "../auth/rbac.js";
-import { MarkType, SheetState } from "../grading/engine.js";
+import { requireScope, TenantAccessError } from "../auth/tenant";
+import { can, canTeacher } from "../auth/rbac";
+import { MarkType, SheetState } from "../grading/engine";
 import {
   ServiceError,
   type Ctx,
@@ -13,7 +13,7 @@ import {
   type MarkRecord,
   type SheetsRepo,
   type AuditRepo,
-} from "../db/types.js";
+} from "../db/types";
 
 export interface EnterMarkInput {
   schoolId: string;

@@ -4,8 +4,8 @@
  * in-memory doubles. Every repo method takes schoolId FIRST — tenant scope
  * is not optional at the persistence boundary.
  */
-import type { MarkType, SheetState } from "../grading/engine.js";
-import type { Role } from "../auth/rbac.js";
+import type { MarkType, SheetState } from "../grading/engine";
+import type { Role } from "../auth/rbac";
 
 export class ServiceError extends Error {
   constructor(
