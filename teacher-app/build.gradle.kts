@@ -22,12 +22,26 @@ android {
     // and the 1.13.7 build accidentally shipped versionCode 14 (LOWER than the
     // existing 20), which Android also refuses as a downgrade. Both together
     // made the app look like "it won't install / won't open" on teachers' phones.
+    // SECURITY 2026-09-19: the previous upload keystore was committed to
+    // source control with hard-coded passwords. Treat that key as COMPROMISED.
+    // Signing is now environment-driven: CI injects the NEW (rotated) key via
+    // SRS_UPLOAD_STORE_BASE64, SRS_UPLOAD_STORE_PASSWORD, SRS_UPLOAD_KEY_ALIAS,
+    // SRS_UPLOAD_KEY_PASSWORD. When absent, release builds fail fast instead of
+    // silently falling back to a debug key. See docs/KEY-ROTATION.md.
     signingConfigs {
         create("upload") {
-            storeFile = rootProject.file("keys/teacher-upload.keystore")
-            storePassword = "derycode-teacher"
-            keyAlias = "teacher-upload"
-            keyPassword = "derycode-teacher"
+            val storeB64 = providers.environmentVariable("SRS_UPLOAD_STORE_BASE64").orNull
+            if (storeB64 != null) {
+                val ks = File(rootProject.buildDir, "upload.keystore")
+                if (!ks.exists() || System.getenv("SRS_UPLOAD_STORE_REFRESH") != null) {
+                    ks.parentFile.mkdirs()
+                    ks.writeBytes(java.util.Base64.getDecoder().decode(storeB64))
+                }
+                storeFile = ks
+                storePassword = providers.environmentVariable("SRS_UPLOAD_STORE_PASSWORD").get()
+                keyAlias = providers.environmentVariable("SRS_UPLOAD_KEY_ALIAS").get()
+                keyPassword = providers.environmentVariable("SRS_UPLOAD_KEY_PASSWORD").get()
+            }
         }
     }
 
