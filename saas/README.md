@@ -34,9 +34,19 @@ Delivered and verified in this phase:
 * DB CHECK constraints (prisma/sql/checks.sql): non-negative payments,
   mark score bounds + special-mark invariants, term numbers, attendance.
 
+* API service layer (src/services/, src/db/types.ts): mark entry with
+  scope→RBAC→teacher-assignment→sheet-state→optimistic-concurrency gates and
+  full history+audit trails; sheet workflow state machine
+  (DRAFT→SUBMITTED→REVIEWED→APPROVED→LOCKED, head-teacher-gated, unlock
+  requires a reason); results snapshots computed from the shared engine for
+  the active-year roster only; import commit that applies only ADD/UPDATE
+  rows and can never delete unrelated marks. Verified against in-memory
+  tenant-scoped repo doubles (71 tests total).
+
 Explicitly NOT done yet (next phases — do not deploy as-is):
 
-1. API routes (Next.js app router wiring the auth core to Prisma + HTTP).
+1. Next.js route adapters (thin HTTP wiring over src/services) + Prisma repo
+   implementations.
 2. Web UI (onboarding, dashboards, mark-entry workspace, approval queue…).
 3. Stripe billing + webhooks.
 4. Report PDF/DOCX rendering from engine snapshots.
