@@ -856,10 +856,10 @@ fun DashboardScreen(state: AppState) {
                     Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
                         MiniProgress(r.pct, Modifier.width(70.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("$r.pct%", color = Theme.INK, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        Text("${r.pct}%", color = Theme.INK, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                     Text(
-                        if (r.students == 0) "—" else "$r.reports / $r.students",
+                        if (r.students == 0) "—" else "${r.reports} / ${r.students}",
                         color = Theme.MUTED, fontSize = 11.sp, modifier = Modifier.width(70.dp)
                     )
                     Box(Modifier.width(100.dp)) { Pill(stateLabel, tone) }
