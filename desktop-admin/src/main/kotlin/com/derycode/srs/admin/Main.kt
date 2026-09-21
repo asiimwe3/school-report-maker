@@ -16,7 +16,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.painter.BitmapPainter
@@ -34,41 +36,42 @@ import java.nio.file.Path
 // Theme
 // ─────────────────────────────────────────────────────────────────────────────
 
-internal object Theme {
-    var NAVY by mutableStateOf(Color(0xFF0B1220))
-    var CARD by mutableStateOf(Color(0xFF111A2E))
-    var ACCENT by mutableStateOf(Color(0xFF4F8CFF))
-    var ACCENT_SOFT by mutableStateOf(Color(0xFF1B2A4A))
-    var TEXT by mutableStateOf(Color(0xFFE8EDF7))
-    var MUTED by mutableStateOf(Color(0xFF8B98B4))
-    var GOOD by mutableStateOf(Color(0xFF3FCF8E))
-    var WARN by mutableStateOf(Color(0xFFF5A623))
+// ─────────────────────────────────────────────────────────────────────────────
+// Editorial design system (v2.2.26 console redesign)
+// Cream paper, deep-green sidebar, gold crest, teal progress — mirrors
+// design/redesign/_group.css. Legacy theme names in saved settings map onto
+// this palette so every existing install gets the new look, zero migration.
+// ─────────────────────────────────────────────────────────────────────────────
 
-    val THEMES = listOf("Dark", "Light", "Emerald", "Sunset")
+internal object Theme {
+    // Core tokens (old names kept — every existing screen restyles automatically)
+    var NAVY by mutableStateOf(Color(0xFFF4F0E7))        // page background (cream)
+    var CARD by mutableStateOf(Color(0xFFFBFAF7))        // card surface (paper)
+    var ACCENT by mutableStateOf(Color(0xFF237B71))     // primary action (teal)
+    var ACCENT_SOFT by mutableStateOf(Color(0xFFDFF0ED))
+    var TEXT by mutableStateOf(Color(0xFF18352E))       // ink
+    var MUTED by mutableStateOf(Color(0xFF6D7D75))
+    var GOOD by mutableStateOf(Color(0xFF237B71))
+    var WARN by mutableStateOf(Color(0xFFA85E48))
+    // New tokens
+    var INK by mutableStateOf(Color(0xFF18352E))
+    var DEEP by mutableStateOf(Color(0xFF112C26))       // sidebar
+    var GOLD by mutableStateOf(Color(0xFFC59A4A))
+    var GOLD_SOFT by mutableStateOf(Color(0xFFEFE2C3))
+    var TEAL by mutableStateOf(Color(0xFF237B71))
+    var TEAL_SOFT by mutableStateOf(Color(0xFFDFF0ED))
+    var RUST by mutableStateOf(Color(0xFFA85E48))
+    var RUST_SOFT by mutableStateOf(Color(0xFFF4DFD8))
+    var LINE by mutableStateOf(Color(0xFFD7DDD5))
+
+    val THEMES = listOf("Editorial", "Editorial Gold", "Editorial Teal", "Editorial Rust")
 
     fun apply(name: String) {
-        when (name.lowercase()) {
-            "light" -> {
-                NAVY = Color(0xFFF2F5FA); CARD = Color(0xFFFFFFFF); ACCENT = Color(0xFF1F6FEB)
-                ACCENT_SOFT = Color(0xFFDCE7FA); TEXT = Color(0xFF16233A); MUTED = Color(0xFF5A6B84)
-                GOOD = Color(0xFF1B8A5A); WARN = Color(0xFFB87700)
-            }
-            "emerald" -> {
-                NAVY = Color(0xFF0A1712); CARD = Color(0xFF10251C); ACCENT = Color(0xFF2ED573)
-                ACCENT_SOFT = Color(0xFF153526); TEXT = Color(0xFFE6F5EC); MUTED = Color(0xFF84A895)
-                GOOD = Color(0xFF3FCF8E); WARN = Color(0xFFF5A623)
-            }
-            "sunset" -> {
-                NAVY = Color(0xFF1B1220); CARD = Color(0xFF291B33); ACCENT = Color(0xFFFF7A59)
-                ACCENT_SOFT = Color(0xFF3E2438); TEXT = Color(0xFFF7EDF3); MUTED = Color(0xFFB392AE)
-                GOOD = Color(0xFF3FCF8E); WARN = Color(0xFFF5A623)
-            }
-            else -> {  // Dark
-                NAVY = Color(0xFF0B1220); CARD = Color(0xFF111A2E); ACCENT = Color(0xFF4F8CFF)
-                ACCENT_SOFT = Color(0xFF1B2A4A); TEXT = Color(0xFFE8EDF7); MUTED = Color(0xFF8B98B4)
-                GOOD = Color(0xFF3FCF8E); WARN = Color(0xFFF5A623)
-            }
-        }
+        val variant = name.lowercase().removePrefix("editorial").trim()
+        ACCENT = when (variant) { "gold" -> GOLD; "rust" -> RUST; else -> TEAL }
+        GOOD = TEAL
+        WARN = RUST
+        ACCENT_SOFT = when (variant) { "gold" -> GOLD_SOFT; "rust" -> RUST_SOFT; else -> TEAL_SOFT }
     }
 }
 
@@ -150,56 +153,62 @@ fun App(state: AppState) {
         "HELP" to listOf("docs" to "Help & Documentation", "support" to "Support & Licence")
     )
     Row(Modifier.fillMaxSize().background(Theme.NAVY)) {
-        // ── Navigation rail ──
+        // ── Sidebar (Editorial: deep green, gold crest) ──
         Column(
-            Modifier.width(232.dp).fillMaxHeight().background(Color(0xFF09101D))
+            Modifier.width(240.dp).fillMaxHeight().background(Theme.DEEP)
                 .verticalScroll(rememberScrollState())
-                .padding(vertical = 18.dp, horizontal = 10.dp),
+                .padding(vertical = 22.dp, horizontal = 12.dp),
             verticalArrangement = Arrangement.spacedBy(3.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
+            val initials = state.data.school.name.split(" ").filter { it.isNotBlank() }
+                .take(2).mapNotNull { it.firstOrNull()?.uppercase() }.joinToString("")
+                .ifBlank { "SR" }
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)) {
                 Box(
-                    Modifier.size(38.dp).background(Theme.ACCENT, RoundedCornerShape(12.dp)),
+                    Modifier.size(38.dp).background(Theme.GOLD, RoundedCornerShape(12.dp)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("S", color = Color.White, fontWeight = FontWeight.Black, fontSize = 22.sp)
+                    Text(initials, color = Theme.DEEP, fontWeight = FontWeight.Black, fontSize = 15.sp, fontFamily = FontFamily.Serif)
                 }
-                Spacer(Modifier.width(10.dp))
+                Spacer(Modifier.width(11.dp))
                 Column {
-                    Text("School Report", color = Theme.TEXT, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                    Text("Admin console", color = Theme.MUTED, fontSize = 12.sp)
+                    Text("School Report", color = Color(0xFFE8EFE8), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    Text("Maker · Admin console", color = Color(0xFF9DB6AB), fontSize = 10.sp)
                 }
             }
-            HorizontalDivider(color = Color(0xFF1B2540), modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp))
+            Spacer(Modifier.height(16.dp))
             navGroups.forEach { (group, entries) ->
-                Text(group, color = Color(0xFF5A6B8C), fontSize = 12.sp, fontWeight = FontWeight.Black,
+                Text(group, color = Color(0xFF6F9386), fontSize = 9.sp, fontWeight = FontWeight.Black,
+                    style = TextStyle(letterSpacing = 1.3.sp),
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp))
                 entries.forEach { (key, label) ->
                     val selected = state.screen == key
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxWidth()
-                            .background(if (selected) Theme.ACCENT_SOFT else Color.Transparent, RoundedCornerShape(10.dp))
+                            .background(if (selected) Theme.GOLD else Color.Transparent, RoundedCornerShape(9.dp))
                             .clickable { state.screen = key }
-                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                            .padding(horizontal = 12.dp, vertical = 9.dp)
                     ) {
-                        Box(Modifier.width(4.dp).height(18.dp).background(if (selected) Theme.ACCENT else Color.Transparent, RoundedCornerShape(2.dp)))
-                        Spacer(Modifier.width(9.dp))
-                        Text(label, color = if (selected) Theme.TEXT else Theme.MUTED, fontSize = 13.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal)
+                        Text(label, color = if (selected) Theme.DEEP else Color(0xFFACC1B8), fontSize = 12.sp,
+                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal)
                     }
                 }
+                Spacer(Modifier.height(10.dp))
             }
             Spacer(Modifier.weight(1f))
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth().background(Color(0xFF111B2B), RoundedCornerShape(10.dp))
-                    .padding(horizontal = 12.dp, vertical = 10.dp)
-            ) {
-                Box(Modifier.width(8.dp).height(8.dp).background(Theme.GOOD, RoundedCornerShape(4.dp)))
-                Spacer(Modifier.width(8.dp))
+            HorizontalDivider(color = Color(0x1EFFFFFF), modifier = Modifier.padding(vertical = 12.dp))
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp)) {
+                val adminName = state.data.school.headTeacher.ifBlank { "Administrator" }
+                val adminInitials = adminName.split(" ").filter { it.isNotBlank() }
+                    .take(2).mapNotNull { it.firstOrNull()?.uppercase() }.joinToString("").ifBlank { "A" }
+                Box(Modifier.size(30.dp).background(Color(0xFFD6A15A), RoundedCornerShape(15.dp)), contentAlignment = Alignment.Center) {
+                    Text(adminInitials, color = Theme.DEEP, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                }
+                Spacer(Modifier.width(9.dp))
                 Column {
-                    Text("Offline first", color = Theme.TEXT, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                    Text("Saved locally", color = Theme.MUTED, fontSize = 11.sp)
+                    Text(adminName.take(22), color = Color(0xFFE6EEE9), fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                    Text("Administrator · Offline account", color = Color(0xFF83A297), fontSize = 9.sp)
                 }
             }
         }
@@ -215,7 +224,7 @@ fun App(state: AppState) {
         // clipped (and could appear to overlap the content above).  Keep the
         // navigation fixed and give the complete page one reliable scroll area.
         Column(Modifier.weight(1f).fillMaxHeight()) {
-            AdminContextBar(state)
+            TopBar(state)
             Column(
                 Modifier.weight(1f).fillMaxHeight()
                     .verticalScroll(rememberScrollState())
@@ -263,67 +272,101 @@ fun App(state: AppState) {
 // Shared UI helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Top bar (Editorial): school kicker, page title, sync pill
+// ─────────────────────────────────────────────────────────────────────────────
+
+private val SCREEN_LABELS: Map<String, String> = mapOf(
+    "dashboard" to "Overview", "setup" to "School Setup", "students" to "Students",
+    "classes" to "Classes & Streams", "subjects" to "Subjects", "teachers" to "Teachers",
+    "marks" to "Marks Grid", "grading" to "Grading Schemes", "results" to "Results Review",
+    "analytics" to "Analytics", "attendance" to "Attendance", "promotion" to "Promotion & Rollover",
+    "fees" to "School Fees", "calendar" to "Calendar", "timetable" to "Timetable",
+    "reports" to "Reports", "templates" to "Templates", "commentbank" to "Comment Bank",
+    "preview" to "Report Preview", "archive" to "Report Archive", "plans" to "Plans & Pricing",
+    "sync" to "Sync & Backup", "cloud" to "Cloud & Online", "users" to "Users",
+    "notifications" to "Notifications", "backups" to "Backup History",
+    "importexport" to "Import / Export", "audit" to "Audit Log", "settings" to "Settings",
+    "docs" to "Help & Documentation", "support" to "Support & Licence"
+)
+
+private fun screenLabel(key: String): String = SCREEN_LABELS[key] ?: "Admin console"
+
 @Composable
-private fun AdminContextBar(state: AppState) {
+private fun TopBar(state: AppState) {
     val schoolName = state.data.school.name.ifBlank { "Set up your school profile" }
     val year = state.data.academicYears.firstOrNull { it.currentTermId != null } ?: state.data.academicYears.firstOrNull()
     val term = year?.terms?.firstOrNull { it.id == year.currentTermId } ?: year?.terms?.firstOrNull()
+    val kicker = listOfNotNull(schoolName, year?.year?.let { y -> term?.let { "Term ${it.number} · $y" } })
+        .joinToString("  ·  ").uppercase().ifBlank { schoolName.uppercase() }
     Row(
-        Modifier.fillMaxWidth().background(Theme.CARD.copy(alpha = 0.72f))
-            .border(1.dp, Theme.ACCENT.copy(alpha = 0.12f))
-            .padding(horizontal = 28.dp, vertical = 13.dp),
+        Modifier.fillMaxWidth().background(Theme.CARD.copy(alpha = 0.94f))
+            .border(1.dp, Theme.LINE)
+            .padding(horizontal = 36.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(Modifier.weight(1f)) {
-            Text(schoolName, color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
-            Text(
-                listOfNotNull(year?.year, term?.let { "Term ${it.number}" }).joinToString("  ·  ").ifBlank { "No academic year selected" },
-                color = Theme.MUTED, fontSize = 12.sp
-            )
+            Text(kicker, color = Theme.MUTED, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                style = TextStyle(letterSpacing = 1.4.sp), maxLines = 1)
+            Spacer(Modifier.height(3.dp))
+            Text(screenLabel(state.screen), color = Theme.INK, fontSize = 15.sp, fontWeight = FontWeight.Bold)
         }
         Row(
-            Modifier.background(Theme.GOOD.copy(alpha = 0.12f), RoundedCornerShape(20.dp))
+            Modifier.background(Theme.TEAL_SOFT, RoundedCornerShape(20.dp))
                 .padding(horizontal = 11.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(Modifier.size(7.dp).background(Theme.GOOD, RoundedCornerShape(4.dp)))
+            Box(Modifier.size(7.dp).background(Theme.TEAL, RoundedCornerShape(4.dp)))
             Spacer(Modifier.width(7.dp))
-            Text("Offline · data is safe on this computer", color = Theme.GOOD, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+            Text("Saved locally · offline first", color = Theme.TEAL, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
         }
+        Spacer(Modifier.width(12.dp))
+        Row(
+            Modifier.size(33.dp).border(1.dp, Theme.LINE, RoundedCornerShape(9.dp))
+                .clickable { state.screen = "notifications" },
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) { Text("🔔", fontSize = 13.sp) }
     }
 }
 
 @Composable
 fun ScreenTitle(title: String, subtitle: String = "") {
-    Row(Modifier.padding(bottom = 24.dp), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.width(6.dp).height(50.dp).background(Theme.ACCENT, RoundedCornerShape(4.dp)))
-        Spacer(Modifier.width(15.dp))
-        Column {
-            Text(title, color = Theme.TEXT, fontSize = 30.sp, fontWeight = FontWeight.Bold)
-            if (subtitle.isNotBlank()) Text(subtitle, color = Theme.MUTED, fontSize = 14.sp, lineHeight = 20.sp)
-        }
+    Column(Modifier.padding(bottom = 22.dp)) {
+        if (subtitle.isNotBlank()) Text(
+            subtitle.uppercase(), color = Theme.MUTED, fontSize = 10.sp, fontWeight = FontWeight.Bold,
+            style = TextStyle(letterSpacing = 1.4.sp)
+        )
+        Text(
+            title, color = Theme.INK, fontSize = 26.sp, fontWeight = FontWeight.Bold,
+            fontFamily = FontFamily.Serif, modifier = Modifier.padding(top = 4.dp)
+        )
     }
 }
 
 @Composable
-fun CardBox(content: @Composable ColumnScope.() -> Unit) {
+fun CardBox(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     Column(
-        Modifier.fillMaxWidth().background(Theme.CARD, RoundedCornerShape(18.dp))
-            .border(1.dp, Theme.ACCENT.copy(alpha = 0.16f), RoundedCornerShape(18.dp)).padding(24.dp),
+        modifier.fillMaxWidth().background(Theme.CARD, RoundedCornerShape(16.dp))
+            .border(1.dp, Theme.LINE, RoundedCornerShape(16.dp)).padding(22.dp),
         content = content
     )
 }
 
 @Composable
-fun StatCard(label: String, value: String, tint: Color = Theme.ACCENT) {
+fun StatCard(label: String, value: String, tint: Color = Theme.ACCENT, detail: String = "") {
     Column(
-        Modifier.background(Theme.CARD, RoundedCornerShape(16.dp))
-            .border(1.dp, Theme.ACCENT.copy(alpha = 0.16f), RoundedCornerShape(16.dp))
-            .padding(18.dp).width(178.dp)
+        Modifier.background(Theme.CARD, RoundedCornerShape(14.dp))
+            .border(1.dp, Theme.LINE, RoundedCornerShape(14.dp))
+            .padding(18.dp)
     ) {
-        Text(label, color = Theme.MUTED, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-        Spacer(Modifier.height(6.dp))
-        Text(value, color = tint, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+        Text(label, color = Theme.MUTED, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+        Spacer(Modifier.height(7.dp))
+        Text(value, color = tint, fontSize = 27.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Serif)
+        if (detail.isNotBlank()) {
+            Spacer(Modifier.height(4.dp))
+            Text(detail, color = Theme.MUTED, fontSize = 11.sp)
+        }
     }
 }
 
@@ -552,68 +595,276 @@ fun DashboardScreen(state: AppState) {
     val d = state.data
     val year = d.academicYears.firstOrNull { y -> y.currentTermId != null }
     val term = year?.terms?.firstOrNull { it.id == year.currentTermId } ?: year?.terms?.firstOrNull()
-    val cur = d.settings.currencySymbol
-    val activeStudents = d.students.count { it.status == StudentStatus.ACTIVE }
-    val classes = d.classes.count { it.active }
-    val locked = d.markSheets.count { it.state == MarkSheetState.LOCKED }
-    val pendingSync = d.syncQueue.count { it.status == "PENDING" }
 
-    ScreenTitle("Dashboard", "Everything below works 100% offline")
-    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        Row3 {
-            StatCard("Academic year", year?.year ?: "—")
-            StatCard("Students", activeStudents.toString(), Theme.GOOD)
-            StatCard("Classes", classes.toString())
+    // ── Real markbook coverage for the current term ──
+    val activeClasses = d.classes.filter { it.active }
+    val activeSubjects = d.subjects.filter { it.active }
+    val activeStudents = d.students.filter { it.status == StudentStatus.ACTIVE }
+    val termMarks = if (term != null) d.marks.filter { it.termId == term.id && it.type == MarkType.VALUE } else emptyList()
+    val capturedPairs = termMarks.map { it.studentId to it.subjectId }.toSet()
+    val subjectLevel = activeSubjects.associate { it.id to it.level }
+    val classStudents: Map<String, List<Student>> =
+        if (year == null) emptyMap()
+        else d.enrollments.filter { it.academicYearId == year.id }
+            .groupBy { it.classId }
+            .mapValues { (_, en) -> en.mapNotNull { e -> d.students.firstOrNull { st -> st.id == e.studentId && st.status == StudentStatus.ACTIVE } } }
+
+    val classTeacher = { c: SchoolClass ->
+        c.classTeacherId?.let { id -> d.teachers.firstOrNull { it.id == id }?.name }
+            ?: d.assignments.firstOrNull { it.classId == c.id && it.subjectId == null }
+                ?.let { a -> d.teachers.firstOrNull { it.id == a.teacherId }?.name }
+            ?: "Unassigned"
+    }
+
+    // Per-class readiness: captured student-subject pairs vs offered subjects for that level
+    data class Ready(val cls: SchoolClass, val students: Int, val captured: Int, val expected: Int, val pct: Int, val reports: Int, val teacher: String)
+    val perClass = activeClasses.map { c ->
+        val students = classStudents[c.id].orEmpty().distinctBy { it.id }
+        val studentIds = students.map { it.id }.toSet()
+        val levelSubjectIds = activeSubjects.filter { it.level == c.level }.map { it.id }.toSet()
+        val expected = students.size * levelSubjectIds.size
+        val captured = capturedPairs.count { (sid, subj) -> sid in studentIds && subj in levelSubjectIds }
+        val reports = if (term == null) 0
+            else d.reports.count { r -> r.termId == term.id && r.studentId in studentIds }
+        val pct = if (expected > 0) captured * 100 / expected else 0
+        Ready(c, students.size, captured, expected, pct, reports, classTeacher(c))
+    }
+    val totalExpected = perClass.sumOf { it.expected }
+    val totalCaptured = perClass.sumOf { it.captured }
+    val overallPct = if (totalExpected > 0) (totalCaptured * 100.0 / totalExpected).toInt().coerceAtMost(100) else 0
+
+    // Level breakdown (Primary / O-Level / A-Level)
+    val levels = listOf(
+        "Primary" to Level.PRIMARY, "O-Level" to Level.O_LEVEL, "A-Level" to Level.A_LEVEL
+    ).map { (label, lv) ->
+        val expected = activeClasses.filter { it.level == lv }.sumOf { c ->
+            classStudents[c.id].orEmpty().distinctBy { it.id }.size * activeSubjects.count { it.level == lv }
         }
-        Spacer(Modifier.height(0.dp))
-        Row3 {
-            StatCard("Teachers", d.teachers.size.toString())
-            StatCard("Subjects", d.subjects.count { it.active }.toString())
-            StatCard("Locked sheets", locked.toString(), Theme.WARN)
-            StatCard("Pending sync", pendingSync.toString(), Theme.WARN)
-        }
-        Spacer(Modifier.height(0.dp))
-        Row3 {
-            StatCard("Fees collected", cur + " " + d.feePayments.filter { term != null && it.termId == term.id }.sumOf { it.amount }.toLong().toString(), Theme.GOOD)
-            StatCard("Reports generated", d.reports.size.toString())
-            StatCard("Licence", d.settings.licencePlan, if (d.settings.licencePlan == "Trial") Theme.WARN else Theme.GOOD)
-        }
-        // ── Setup checklist ──
-        CardBox {
-            Text("Getting started", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(6.dp))
-            val steps = listOf(
-                ("School profile saved" to (d.school.name.isNotBlank() && d.school.name != "My School")) to "setup",
-                ("Academic year with terms" to (term != null)) to "setup",
-                ("Classes created" to (d.classes.count { it.active } > 0)) to "classes",
-                ("Students enrolled" to (d.students.count { it.status == StudentStatus.ACTIVE } > 0)) to "students",
-                ("Marks entered this term" to (d.marks.count { term != null && it.termId == term.id } > 0)) to "marks",
-                ("Fee structure set" to (d.feeStructures.isNotEmpty())) to "fees",
-                ("Report generated" to (d.reports.isNotEmpty())) to "reports"
+        val captured = capturedPairs.count { (_, subj) -> subjectLevel[subj] == lv }
+        Triple(label, if (expected > 0) captured * 100 / expected else 0, expected)
+    }
+
+    // Term averages across all years (real marks, VALUE entries only)
+    val termStats = d.academicYears.sortedBy { it.year }.flatMap { y -> y.terms.sortedBy { it.number }.map { t -> y to t } }
+        .mapNotNull { (y, t) ->
+            val ms = d.marks.filter { it.termId == t.id && it.type == MarkType.VALUE && it.maxScore > 0 }
+            if (ms.isEmpty()) null
+            else Triple("T${t.number} '${y.year.takeLast(2)}", (ms.sumOf { it.score / it.maxScore * 100.0 } / ms.size).toFloat(), t.id == term?.id)
+        }.takeLast(8)
+    val currentAvg = termStats.lastOrNull()?.second
+
+    var dismissed by remember { mutableStateOf(false) }
+    val incomplete = perClass.count { it.pct < 100 && it.students > 0 }
+
+    // ── Page head ──
+    Row(Modifier.fillMaxWidth().padding(bottom = 20.dp), verticalAlignment = Alignment.Bottom) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                java.text.SimpleDateFormat("EEEE, d MMMM yyyy").format(java.util.Date()).uppercase(),
+                color = Theme.MUTED, fontSize = 10.sp, fontWeight = FontWeight.Bold,
+                style = TextStyle(letterSpacing = 1.4.sp)
             )
-            steps.forEach { (step, target) ->
-                val (label, done) = step
-                Row(verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth().clickable { state.screen = target }.padding(vertical = 4.dp)) {
-                    Text(if (done) "✓" else "○", color = if (done) Theme.GOOD else Theme.MUTED, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.width(10.dp))
-                    Text(label, color = if (done) Theme.TEXT else Theme.MUTED, fontSize = 14.sp,
-                        fontWeight = if (done) FontWeight.Normal else FontWeight.Medium,
-                        textDecoration = if (done) androidx.compose.ui.text.style.TextDecoration.LineThrough else null)
+            Spacer(Modifier.height(5.dp))
+            Text(
+                "A clear view of the term.", color = Theme.INK, fontSize = 27.sp,
+                fontWeight = FontWeight.Bold, fontFamily = FontFamily.Serif
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "Keep marks moving, spot gaps early, and prepare reports without leaving the school office.",
+                color = Theme.MUTED, fontSize = 12.sp
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+            OutlinedButton(
+                onClick = { state.screen = "students" },
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Theme.INK)
+            ) { Text("Add student", fontSize = 12.sp) }
+            Button(
+                onClick = { state.screen = "reports" },
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Theme.GOLD, contentColor = Theme.DEEP)
+            ) { Text("Generate reports", fontSize = 12.sp, fontWeight = FontWeight.Bold) }
+        }
+    }
+
+    // ── Reporting-window note ──
+    if (!dismissed && incomplete > 0 && perClass.isNotEmpty()) {
+        Row(
+            Modifier.fillMaxWidth().background(Theme.GOLD_SOFT, RoundedCornerShape(10.dp))
+                .padding(horizontal = 14.dp, vertical = 11.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                "Term ${term?.number ?: 1} reporting window is open. $incomplete class markbook" +
+                    (if (incomplete == 1) "" else "s") + " still need marks before report cards can be generated.",
+                color = Color(0xFF7A5B1E), fontSize = 12.sp, fontWeight = FontWeight.Medium,
+                modifier = Modifier.weight(1f)
+            )
+            Text(
+                "Dismiss", color = Color(0xFF7A5B1E), fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.clickable { dismissed = true }.padding(horizontal = 4.dp)
+            )
+        }
+        Spacer(Modifier.height(18.dp))
+    }
+
+    // ── Stat cards ──
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+        listOf(
+            Triple("Students on roll", activeStudents.size.toString(),
+                "${activeStudents.count { it.sex == "M" }} boys · ${activeStudents.count { it.sex == "F" }} girls"),
+            Triple("Classes & streams", activeClasses.size.toString(),
+                "${activeClasses.count { it.stream.isNotBlank() }} streams · " +
+                    (if (term != null) d.markSheets.count { it.termId == term.id } else 0) + " markbooks"),
+            Triple("Marks captured", capturedPairs.size.toString(), "$overallPct% of expected entries"),
+            Triple("Reports ready", (if (term != null) d.reports.count { it.termId == term.id } else 0).toString(),
+                "${if (term != null) d.reports.count { it.termId == term.id && it.approved } else 0} approved")
+        ).forEach { (label, value, detail) ->
+            Column(Modifier.weight(1f)) { StatCard(label, value, Theme.INK, detail) }
+        }
+    }
+    Spacer(Modifier.height(16.dp))
+
+    // ── Reporting progress + term average ──
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+        CardBox(Modifier.weight(1.15f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Reporting progress", color = Theme.INK, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.weight(1f))
+                Text(
+                    if (term != null) "Term ${term.number}, ${year?.year ?: ""}" else "",
+                    color = Theme.MUTED, fontSize = 10.sp
+                )
+            }
+            Spacer(Modifier.height(12.dp))
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                Donut(overallPct, "captured")
+                Column(Modifier.weight(1f)) {
+                    val least = perClass.filter { it.students > 0 }.minByOrNull { it.pct }
+                    val leastName = least?.let { it.cls.name + (if (it.cls.stream.isBlank()) "" else " ${it.cls.stream}") } ?: ""
+                    Text(
+                        if (least != null && least.pct < 100)
+                            "$leastName is the least complete markbook — it needs marks before its reports can be prepared."
+                        else "Every class markbook is complete. You are ready to generate reports.",
+                        color = Theme.MUTED, fontSize = 11.sp, lineHeight = 15.sp
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    levels.forEach { (label, pct, _) ->
+                        Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text(label, color = Theme.MUTED, fontSize = 10.sp, modifier = Modifier.width(60.dp))
+                            MiniProgress(pct, Modifier.weight(1f))
+                            Spacer(Modifier.width(8.dp))
+                            Text("$pct%", color = Theme.INK, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(14.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("✓", color = Theme.TEAL, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.width(6.dp))
+                Text("Offline first — every change is saved on this computer", color = Theme.MUTED, fontSize = 10.sp)
+            }
+        }
+        CardBox(Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("School average by term", color = Theme.INK, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.weight(1f))
+                Pill("across all published marks")
+            }
+            Spacer(Modifier.height(10.dp))
+            if (termStats.size >= 2) {
+                Sparkline(termStats.map { it.second })
+                Spacer(Modifier.height(8.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    termStats.forEachIndexed { i, t ->
+                        Text(
+                            t.first, color = if (t.third) Theme.INK else Theme.MUTED,
+                            fontSize = if (t.third) 10.sp else 9.sp,
+                            fontWeight = if (t.third) FontWeight.Bold else FontWeight.Normal
+                        )
+                    }
+                }
+            } else {
+                Text(
+                    "Averages appear here once marks are entered in two or more terms.",
+                    color = Theme.MUTED, fontSize = 11.sp
+                )
+            }
+            Spacer(Modifier.height(10.dp))
+            Text(
+                if (currentAvg != null) "Current term average: " + "%.1f".format(currentAvg) + "%"
+                else "No marks yet this term.",
+                color = Theme.MUTED, fontSize = 10.sp
+            )
+        }
+    }
+    Spacer(Modifier.height(16.dp))
+
+    // ── Class readiness table ──
+    CardBox {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("Class readiness", color = Theme.INK, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                Text("The next actions for your reporting desk", color = Theme.MUTED, fontSize = 10.sp)
+            }
+            Text(
+                "View all classes", color = Theme.TEAL, fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.clickable { state.screen = "classes" }
+            )
+        }
+        Spacer(Modifier.height(12.dp))
+        if (perClass.isEmpty()) {
+            Text("No classes yet — create classes and enroll students to see reporting readiness here.", color = Theme.MUTED, fontSize = 12.sp)
+        } else {
+            Row(Modifier.fillMaxWidth().background(Color(0xFFEFEDE3), RoundedCornerShape(8.dp)).padding(horizontal = 12.dp, vertical = 8.dp)) {
+                Text("Class & stream", color = Theme.MUTED, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1.2f))
+                Text("Teacher", color = Theme.MUTED, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(0.8f))
+                Text("Marks entered", color = Theme.MUTED, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                Text("Reports", color = Theme.MUTED, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(70.dp))
+                Text("State", color = Theme.MUTED, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(100.dp))
+            }
+            perClass.sortedBy { it.pct }.take(8).forEachIndexed { i, r ->
+                val (stateLabel, tone) = when {
+                    r.students == 0 -> "No students" to "muted"
+                    r.pct >= 99 -> "Ready" to "teal"
+                    r.pct >= 60 -> "In progress" to "gold"
+                    r.pct > 0 -> "Needs marks" to "rust"
+                    else -> "Not started" to "muted"
+                }
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 9.dp)
+                        .background(if (i % 2 == 1) Color(0xFFFAF8F1) else Color.Transparent, RoundedCornerShape(6.dp)),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(Modifier.weight(1.2f)) {
+                        Text(
+                            r.cls.name + (if (r.cls.stream.isBlank()) "" else " · ${r.cls.stream}"),
+                            color = Theme.INK, fontSize = 12.sp, fontWeight = FontWeight.SemiBold
+                        )
+                        Text("${r.students} learner" + (if (r.students == 1) "" else "s"), color = Theme.MUTED, fontSize = 9.sp)
+                    }
+                    Text(r.teacher.take(18), color = Theme.MUTED, fontSize = 11.sp, modifier = Modifier.weight(0.8f))
+                    Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                        MiniProgress(r.pct, Modifier.width(70.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("$r.pct%", color = Theme.INK, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Text(
+                        if (r.students == 0) "—" else "$r.reports / $r.students",
+                        color = Theme.MUTED, fontSize = 11.sp, modifier = Modifier.width(70.dp)
+                    )
+                    Box(Modifier.width(100.dp)) { Pill(stateLabel, tone) }
                 }
             }
         }
-        // ── Recent activity ──
-        CardBox {
-            Text("Recent activity", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(6.dp))
-            val recent = d.auditLog.takeLast(6).reversed()
-            if (recent.isEmpty()) Text("Nothing yet — every change you make appears here.", color = Theme.MUTED, fontSize = 14.sp)
-            recent.forEach { a ->
-                val t = java.text.SimpleDateFormat("d MMM HH:mm").format(java.util.Date(a.timestamp))
-                Text("$t  ·  ${a.action}  ${a.newValue.take(40)}", color = Theme.MUTED, fontSize = 13.sp, modifier = Modifier.padding(vertical = 2.dp))
-            }
-        }
+    }
+    Spacer(Modifier.height(14.dp))
+    Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+        Text("✓ Offline first — data never leaves this computer unless you back it up", color = Theme.MUTED, fontSize = 10.sp)
+        Text("✓ " + (if (d.settings.autoBackupEnabled) "Automatic local backup is on" else "Automatic backup is off — turn it on in Sync & Backup"), color = Theme.MUTED, fontSize = 10.sp)
     }
 }
 

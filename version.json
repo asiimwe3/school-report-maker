@@ -1,8 +1,8 @@
 {
-  "console": "2.2.25",
+  "console": "2.2.26",
   "teacher": "1.13.13",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.25.msi",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.26.msi",
   "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.13.13.apk",
-  "releaseNotes": "Teacher app 1.13.13: critical fix \u2014 the previous APK (1.13.12) was accidentally shipped as a debug build, which Android kills at startup on some phones (Samsung A05, Tecno). 1.13.13 is a true release build (small and fast) and also sends crash reports instantly at the moment a crash happens. Updates cleanly over any previous version, no uninstall needed.",
-  "released": "2026-09-19"
+  "releaseNotes": "Admin console 2.2.26: the full Editorial redesign is live \u2014 deep-green sidebar with gold crest, school-name top bar, and a rebuilt Overview dashboard (reporting-progress donut, term-average chart, class readiness table) computed from your real marks. Teacher app 1.13.13 (true release build).",
+  "released": "2026-09-21"
 }
