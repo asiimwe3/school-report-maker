@@ -1,8 +1,8 @@
 {
-  "console": "2.2.26",
+  "console": "2.2.27",
   "teacher": "1.13.13",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.26.msi",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.27.msi",
   "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.13.13.apk",
-  "releaseNotes": "Admin console 2.2.26: the full Editorial redesign is live \u2014 deep-green sidebar with gold crest, school-name top bar, and a rebuilt Overview dashboard (reporting-progress donut, term-average chart, class readiness table) computed from your real marks. Teacher app 1.13.13 (true release build).",
+  "releaseNotes": "Admin console 2.2.27: the console now opens maximized instead of a small window; the setup-wizard stepper no longer wraps on narrow screens; and every emoji icon was replaced with vector icons that always render (lock screen, notification bell, wizard, alerts list). Teacher app 1.13.13 (rebuilt, unchanged).",
   "released": "2026-09-21"
 }

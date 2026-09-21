@@ -24,6 +24,11 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.WindowPlacement
+import androidx.compose.ui.window.rememberWindowState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Notifications
 import org.jetbrains.skia.Image
 import androidx.compose.ui.window.application
 import com.derycode.srs.core.model.*
@@ -120,6 +125,7 @@ fun main() = application {
     Window(
         title = "DeryCode School Report Maker — Admin Console",
         icon = windowIcon,
+        state = rememberWindowState(placement = WindowPlacement.Maximized),
         onCloseRequest = ::exitApplication
     ) {
         App(state)
@@ -326,7 +332,7 @@ private fun TopBar(state: AppState) {
                 .clickable { state.screen = "notifications" },
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
-        ) { Text("🔔", fontSize = 13.sp) }
+        ) { Icon(Icons.Filled.Notifications, "Notifications", Modifier.size(15.dp), tint = Theme.MUTED) }
     }
 }
 
@@ -883,7 +889,7 @@ fun PinLockScreen(state: AppState) {
             Modifier.width(360.dp).background(Theme.CARD, RoundedCornerShape(16.dp)).padding(28.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("🔒", fontSize = 34.sp)
+            Icon(Icons.Filled.Lock, "Locked", Modifier.size(36.dp), tint = Theme.ACCENT)
             Spacer(Modifier.height(8.dp))
             Text(school, color = Theme.TEXT, fontSize = 17.sp, fontWeight = FontWeight.Bold)
             Text("This console is locked with a PIN.", color = Theme.MUTED, fontSize = 12.sp)

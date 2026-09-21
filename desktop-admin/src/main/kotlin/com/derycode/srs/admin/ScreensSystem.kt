@@ -9,6 +9,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -683,10 +689,13 @@ fun NotificationsScreen(state: AppState) {
             LazyColumn(Modifier.height(400.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(alerts) { (kind, text) ->
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text(when (kind) {
-                            "missing" -> "⚠"; "backup" -> "💾"; "sync" -> "⇅"
-                            "reports" -> "📄"; else -> "ℹ"
-                        }, color = when (kind) { "missing" -> Color(0xFFFFB84D); else -> Theme.ACCENT }, fontSize = 16.sp)
+                        Icon(when (kind) {
+                            "missing" -> Icons.Filled.Warning
+                            "backup" -> Icons.Filled.DateRange
+                            "sync" -> Icons.Filled.Refresh
+                            "reports" -> Icons.Filled.List
+                            else -> Icons.Filled.Info
+                        }, kind, Modifier.size(17.dp), tint = when (kind) { "missing" -> Color(0xFFFFB84D); else -> Theme.ACCENT })
                         Text(text, color = Theme.TEXT, fontSize = 14.sp)
                     }
                 }

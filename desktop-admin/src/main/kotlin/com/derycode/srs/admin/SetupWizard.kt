@@ -1,5 +1,7 @@
 package com.derycode.srs.admin
 
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -7,11 +9,15 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -36,8 +42,8 @@ fun SetupWizard(state: AppState) {
                 Column { Text("School Report Maker", color = Theme.TEXT, fontWeight = FontWeight.Bold, fontSize = 16.sp); Text("First-time setup", color = Theme.MUTED, fontSize = 12.sp) }
             }
             Spacer(Modifier.height(16.dp))
-            // Stepper
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            // Stepper (labels never wrap; row scrolls on narrow windows)
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.horizontalScroll(rememberScrollState())) {
                 STEPS.forEachIndexed { i, label ->
                     val active = i == step
                     val done = i < step
@@ -49,7 +55,7 @@ fun SetupWizard(state: AppState) {
                             Text(if (done) "✓" else "${i + 1}", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         }
                         Spacer(Modifier.width(6.dp))
-                        Text(label, color = if (active) Theme.TEXT else Theme.MUTED, fontSize = 12.sp, fontWeight = if (active) FontWeight.Bold else FontWeight.Normal)
+                        Text(label, color = if (active) Theme.TEXT else Theme.MUTED, fontSize = 12.sp, softWrap = false, fontWeight = if (active) FontWeight.Bold else FontWeight.Normal)
                     }
                     if (i < STEPS.lastIndex) { Spacer(Modifier.width(6.dp)); Box(Modifier.width(28.dp).height(2.dp).background(Color(0xFF232F4A))) ; Spacer(Modifier.width(6.dp)) }
                 }
@@ -73,7 +79,11 @@ fun SetupWizard(state: AppState) {
 @Composable
 private fun StepWelcome(state: AppState, next: () -> Unit) {
     Column(Modifier.fillMaxWidth().padding(top = 10.dp)) {
-        Text("Welcome to School Report Maker 🎓", color = Theme.TEXT, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            GradCapIcon(Modifier.size(30.dp), Theme.ACCENT)
+            Spacer(Modifier.width(10.dp))
+            Text("Welcome to School Report Maker", color = Theme.TEXT, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        }
         Spacer(Modifier.height(10.dp))
         Text("This short setup creates your school's admin console. It takes about 3 minutes and is required before the dashboard opens.", color = Theme.MUTED, fontSize = 13.sp)
         Spacer(Modifier.height(18.dp))
@@ -291,7 +301,11 @@ private fun StepLicence(state: AppState, next: () -> Unit) {
 private fun StepDone(state: AppState) {
     val s = state.data.settings
     Column(Modifier.fillMaxWidth().padding(top = 10.dp)) {
-        Text("Setup complete 🎉", color = Theme.TEXT, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Filled.CheckCircle, "Complete", Modifier.size(28.dp), tint = Theme.GOOD)
+            Spacer(Modifier.width(10.dp))
+            Text("Setup complete", color = Theme.TEXT, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        }
         Spacer(Modifier.height(10.dp))
         Box(Modifier.fillMaxWidth().background(Theme.ACCENT_SOFT, RoundedCornerShape(10.dp)).padding(16.dp)) {
             Column {
@@ -598,4 +612,41 @@ private fun PassField(value: String, onChange: (String) -> Unit) {
         placeholder = { Text("min 6 chars", color = Theme.MUTED, fontSize = 13.sp) },
         textStyle = androidx.compose.ui.text.TextStyle(color = Theme.TEXT, fontSize = 14.sp)
     )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+/** Vector graduation-cap icon drawn with Canvas — replaces emoji that break on
+ *  systems without an emoji font. Scales with Modifier.size(). */
+@Composable
+fun GradCapIcon(modifier: Modifier = Modifier, tint: Color) {
+    Canvas(modifier) {
+        val w = size.width; val h = size.height
+        val cx = w / 2f; val top = h * 0.16f
+        val cap = Path().apply {
+            // mortarboard (diamond)
+            moveTo(cx, top)
+            lineTo(w * 0.92f, top + h * 0.24f)
+            lineTo(cx, top + h * 0.48f)
+            lineTo(w * 0.08f, top + h * 0.24f)
+            close()
+        }
+        val base = Path().apply {
+            // head band (trapezoid)
+            moveTo(w * 0.26f, top + h * 0.34f)
+            lineTo(cx, top + h * 0.56f)
+            lineTo(cx, top + h * 0.78f)
+            lineTo(w * 0.26f, top + h * 0.56f)
+            close()
+            moveTo(w * 0.74f, top + h * 0.34f)
+            lineTo(w * 0.74f, top + h * 0.56f)
+            lineTo(cx, top + h * 0.78f)
+            lineTo(cx, top + h * 0.56f)
+            close()
+        }
+        drawPath(cap, tint)
+        drawPath(base, tint)
+        // tassel
+        drawLine(tint, Offset(w * 0.92f, top + h * 0.26f), Offset(w * 0.92f, top + h * 0.72f), strokeWidth = h * 0.045f)
+        drawCircle(tint, radius = h * 0.035f, center = Offset(w * 0.92f, top + h * 0.76f))
+    }
 }
