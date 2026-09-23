@@ -256,11 +256,15 @@ object CloudApi {
 
     /** Disconnect a linked teacher (head teacher action). The teacher stays linked until this is called. */
     fun unlinkTeacher(url: String, key: String, token: String, schoolId: String, teacherUid: String): Pair<Boolean, String> {
+        // The http helper sends Prefer: return=representation, so PostgREST echoes the
+        // deleted row back. Without a delete policy, PostgREST silently no-ops
+        // (HTTP 200, zero rows removed) and the console would claim success while
+        // the teacher stays connected — so require the row back to confirm removal.
         val r = http("DELETE", "$url/rest/v1/srs_teacher_schools?school_id=eq.$schoolId&teacher_uid=eq.$teacherUid", key, token, null)
-        if (r.first in 200..299 || r.second.trim() == "[]" || r.second.trim().isEmpty()) return Pair(true, "ok")
-        val hint = if (r.first == 403 || r.first == 404)
-            " The server needs the disconnect rule from the latest supabase-setup-v2.sql — ask your tech support to run it once."
-            else ""
+        val removed = r.first in 200..299 && r.second.trim().startsWith("[") &&
+            r.second.trim().removePrefix("[").removeSuffix("]").trim().startsWith("{")
+        if (removed) return Pair(true, "ok")
+        val hint = " The server is missing the disconnect rule (srs_ts_delete_owner in docs/supabase-setup-v2.sql) — run it once in the Supabase SQL editor."
         return Pair(false, "Could not disconnect the teacher (${r.first}).$hint")
     }
 
