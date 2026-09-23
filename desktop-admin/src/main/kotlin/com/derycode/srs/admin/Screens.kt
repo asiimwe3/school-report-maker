@@ -653,14 +653,34 @@ fun TeachersScreen(state: AppState) {
     var dutyTeacher by remember { mutableStateOf("") }
     var dutyDate by remember { mutableStateOf(java.time.LocalDate.now().toString()) }
     var dutyLabel by remember { mutableStateOf("Teacher on duty") }
+    var cloudBusy by remember { mutableStateOf("") }
+    var cloudMsg by remember { mutableStateOf("") }
+    var cloudErr by remember { mutableStateOf(false) }
 
     ScreenTitle("Teachers", "Teachers, roles and subject/class assignments")
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         CardBox {
             Text("Staff roster", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(4.dp))
-            Text("Every teacher, at a glance: role, classes taught, subjects taught.", color = Theme.MUTED, fontSize = 13.sp)
+            Text("Every teacher, at a glance: role, classes taught, subjects taught. Teachers who join with an invite code are added here automatically and stay connected until you disconnect them.", color = Theme.MUTED, fontSize = 13.sp)
             Spacer(Modifier.height(10.dp))
+            if (d.settings.cloudSchoolId.isNotBlank()) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedButton({
+                        cloudBusy = "sync"
+                        CloudSync.syncLinkedTeachers(state.repo) { ok, m ->
+                            cloudBusy = ""
+                            cloudMsg = m
+                            cloudErr = !ok
+                            state.refresh()
+                        }
+                    }, enabled = cloudBusy.isBlank(), shape = RoundedCornerShape(8.dp), modifier = Modifier.height(32.dp)) {
+                        Text(if (cloudBusy == "sync") "Syncing…" else "Sync connected teachers", fontSize = 11.sp)
+                    }
+                    if (cloudMsg.isNotEmpty()) Text(cloudMsg, color = if (cloudErr) Color(0xFFA85E48) else Theme.GOOD, fontSize = 11.sp)
+                }
+                Spacer(Modifier.height(6.dp))
+            }
             if (d.teachers.isEmpty()) Text("No teachers yet — add one below.", color = Theme.MUTED, fontSize = 14.sp)
             d.teachers.forEach { t ->
                 val classesTaught = (d.classes.filter { it.classTeacherId == t.id } +
@@ -669,9 +689,37 @@ fun TeachersScreen(state: AppState) {
                     .mapNotNull { a -> a.subjectId?.let { sid -> d.subjects.firstOrNull { it.id == sid } } }.distinctBy { it.id }
                 Column(Modifier.fillMaxWidth().background(Theme.ACCENT_SOFT.copy(alpha = 0.4f), RoundedCornerShape(12.dp)).padding(14.dp).padding(bottom = 4.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text(t.name, color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                        Text(t.name, color = if (t.active) Theme.TEXT else Theme.MUTED, fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                        if (t.cloudUid.isNotBlank()) {
+                            Box(Modifier.background(if (t.active) Theme.GOOD else Theme.MUTED, RoundedCornerShape(6.dp)).padding(horizontal = 8.dp, vertical = 3.dp)) {
+                                Text(if (t.active) "● Connected" else "○ Disconnected", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
                         Box(Modifier.background(Theme.ACCENT, RoundedCornerShape(6.dp)).padding(horizontal = 8.dp, vertical = 3.dp)) {
                             Text(roleLabel(t.role), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                        if (t.cloudUid.isNotBlank()) {
+                            OutlinedButton({
+                                cloudBusy = t.id
+                                Thread {
+                                    val st = state.data.settings
+                                    val res = CloudSync.withFreshToken(state.repo, errorOf = { it.second }) { tok ->
+                                        CloudApi.unlinkTeacher(CloudSync.url(st), CloudSync.key(st), tok, st.cloudSchoolId, t.cloudUid)
+                                    }
+                                    if (res.first) {
+                                        state.repo.mutate("TEACHER_DISCONNECTED", "Teacher", t.id) { d ->
+                                            d.copy(teachers = d.teachers.map { if (it.id == t.id) it.copy(active = false) else it })
+                                        }
+                                        state.refresh()
+                                    }
+                                    cloudBusy = ""
+                                    cloudMsg = if (res.first) "✓ ${t.name} is disconnected — they can no longer submit from the phone app."
+                                        else "Disconnect failed: ${res.second}"
+                                    cloudErr = !res.first
+                                }.start()
+                            }, enabled = cloudBusy.isBlank() && t.active, shape = RoundedCornerShape(8.dp), modifier = Modifier.height(30.dp)) {
+                                Text(if (cloudBusy == t.id) "Disconnecting…" else "Disconnect", fontSize = 11.sp, color = Color(0xFFA85E48))
+                            }
                         }
                     }
                     Spacer(Modifier.height(6.dp))

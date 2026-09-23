@@ -60,9 +60,14 @@ internal object Theme {
     var WARN by mutableStateOf(Color(0xFFA85E48))
     // New tokens
     var INK by mutableStateOf(Color(0xFF18352E))
+    // Base (immutable) highlight colors — Theme.GOLD aliases the themed HIGHLIGHT
+    val GOLD_BASE = Color(0xFFC59A4A)
+    val RUST_BASE = Color(0xFFA85E48)
+    val TEAL_BASE = Color(0xFF237B71)
+    var HIGHLIGHT by mutableStateOf(GOLD_BASE)
     var DEEP by mutableStateOf(Color(0xFF112C26))       // sidebar
-    var GOLD by mutableStateOf(Color(0xFFC59A4A))
-    var GOLD_SOFT by mutableStateOf(Color(0xFFEFE2C3))
+    val GOLD get() = HIGHLIGHT
+    var GOLD_SOFT by mutableStateOf(Color(0xFFEFE2C3))   // follows HIGHLIGHT via apply()
     var TEAL by mutableStateOf(Color(0xFF237B71))
     var TEAL_SOFT by mutableStateOf(Color(0xFFDFF0ED))
     var RUST by mutableStateOf(Color(0xFFA85E48))
@@ -77,6 +82,10 @@ internal object Theme {
         GOOD = TEAL
         WARN = RUST
         ACCENT_SOFT = when (variant) { "gold" -> GOLD_SOFT; "rust" -> RUST_SOFT; else -> TEAL_SOFT }
+        // Bold theming: the crest, the selected sidebar item and highlight buttons follow the
+        // chosen theme too, so switching Editorial Gold / Teal / Rust visibly restyles the whole
+        // admin console instead of only accent buttons.
+        HIGHLIGHT = when (variant) { "teal" -> TEAL_BASE; "rust" -> RUST_BASE; else -> GOLD_BASE }
     }
 }
 
@@ -115,6 +124,11 @@ fun main() = application {
     Theme.apply(repo.data.settings.theme.ifBlank { "Dark" })
     val state = remember { AppState(repo) }
     Thread { state.updateAvailable = DesktopUpdateChecker.check() }.start()   // auto-check on launch
+    // Auto-connect: on launch, pull every teacher who has joined via an invite
+    // code into the local teachers list (they stay connected until disconnected).
+    if (repo.data.settings.cloudSchoolId.isNotBlank() && repo.data.settings.setupComplete) {
+        CloudSync.syncLinkedTeachers(repo) { ok, _ -> if (ok) state.refresh() }
+    }
     val windowIcon = remember {
         try {
             val bytes = Thread.currentThread().contextClassLoader?.getResourceAsStream("icon.png")?.readBytes()
@@ -587,7 +601,11 @@ fun AcademicYearsSection(state: AppState) {
                 if (newYear.isBlank()) return@Btn
                 val id = state.repo.nextId()
                 state.repo.mutate("YEAR_CREATED", "AcademicYear", id, new = newYear) { dd ->
-                    dd.copy(academicYears = dd.academicYears + AcademicYear(id = id, year = newYear))
+                    // claim enrollments made before any year existed so students stay visible in the new year
+                    dd.copy(
+                        academicYears = dd.academicYears + AcademicYear(id = id, year = newYear),
+                        enrollments = dd.enrollments.map { if (it.academicYearId == "no-year") it.copy(academicYearId = id) else it }
+                    )
                 }
                 newYear = ""
                 state.refresh()

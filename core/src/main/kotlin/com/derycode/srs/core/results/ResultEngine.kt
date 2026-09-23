@@ -93,7 +93,11 @@ object ResultEngine {
             return TermResult(studentId = studentId, termId = termId, schemeId = scheme.id, schemeVersion = scheme.version)
         }
 
-        val avg = subjectResults.map { it.percentage }.average()
+        // A subject nobody has marked yet must never masquerade as an automatic
+        // Fail: it is excluded from averages, aggregate and division until marks
+        // actually exist for it.
+        val attempted = subjectResults.filter { !it.incomplete }
+        val avg = if (attempted.isNotEmpty()) attempted.map { it.percentage }.average() else 0.0
         var aggregate: Int? = null
         var division: String? = null
         var uce: String? = null
@@ -102,9 +106,13 @@ object ResultEngine {
         when (scheme.aggregateRule) {
             AggregateRule.PLE_AGGREGATE -> {
                 // Aggregate = best N subjects (default 4), lower is better.
-                val best = subjectResults.sortedBy { it.points }.take(scheme.aggregateBestSubjects)
-                aggregate = best.sumOf { it.points }
-                division = GradingEngine.divisionForAggregate(scheme, aggregate)
+                // Only computed once at least that many subjects have real marks —
+                // otherwise it's left null (report shows "—") instead of a false Division U.
+                if (attempted.size >= scheme.aggregateBestSubjects) {
+                    val best = attempted.sortedBy { it.points }.take(scheme.aggregateBestSubjects)
+                    aggregate = best.sumOf { it.points }
+                    division = GradingEngine.divisionForAggregate(scheme, aggregate)
+                }
             }
             AggregateRule.UCE_INDICATOR -> {
                 val compulsoryGrades = subjectResults.filter { it.subjectId in compulsorySubjectIds }.map { it.grade }

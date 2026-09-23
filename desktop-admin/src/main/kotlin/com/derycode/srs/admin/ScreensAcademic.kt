@@ -67,17 +67,28 @@ fun MarksScreen(state: AppState) {
                 }
                 Column(Modifier.width(200.dp)) {
                     FieldLabel("Subject")
-                    cls?.let { c ->
-                        val subjects = if (c.combinationId != null) {
+                    // Subjects offered to the selected class: combination subjects if the class has one,
+                    // otherwise every active subject for the class's level. Fallbacks guarantee the list is
+                    // never empty (the "no subjects for this class" screen bug).
+                    val subjects = cls?.let { c ->
+                        val fromComb = if (c.combinationId != null) {
                             val comb = d.combinations.firstOrNull { it.id == c.combinationId }
-                            d.subjects.filter { s -> (comb?.principalSubjectIds ?: emptyList()).contains(s.id) || (comb?.subsidiarySubjectIds ?: emptyList()).contains(s.id) }
-                        } else d.subjects.filter { it.level == c.level && it.active }
-                        subjects.forEach { s ->
-                            Text((if (subjectId == s.id) "● " else "○ ") + s.name,
-                                color = if (subjectId == s.id) Theme.ACCENT else Theme.TEXT, fontSize = 14.sp,
-                                modifier = Modifier.fillMaxWidth().clickable { subjectId = s.id }.padding(vertical = 3.dp))
-                        }
+                            d.subjects.filter { s -> s.active && ((comb?.principalSubjectIds ?: emptyList()).contains(s.id) || (comb?.subsidiarySubjectIds ?: emptyList()).contains(s.id)) }
+                        } else emptyList()
+                        if (fromComb.isNotEmpty()) fromComb
+                        else d.subjects.filter { it.level == c.level && it.active }.ifEmpty { d.subjects.filter { it.active } }
+                    } ?: emptyList()
+                    // Keep the selected subject valid for this class — auto-switch when it isn't offered,
+                    // so marks are never silently saved against a subject the class doesn't take.
+                    LaunchedEffect(classId, subjects.firstOrNull()?.id) {
+                        if (subjects.isNotEmpty() && subjects.none { it.id == subjectId }) subjectId = subjects.first().id
                     }
+                    subjects.forEach { s ->
+                        Text((if (subjectId == s.id) "● " else "○ ") + s.name,
+                            color = if (subjectId == s.id) Theme.ACCENT else Theme.TEXT, fontSize = 14.sp, fontWeight = if (subjectId == s.id) FontWeight.Bold else FontWeight.Normal,
+                            modifier = Modifier.fillMaxWidth().clickable { subjectId = s.id }.padding(vertical = 3.dp))
+                    }
+                    if (subjects.isEmpty()) Text("No subjects yet — add subjects first.", color = Theme.WARN, fontSize = 12.sp)
                 }
                 Column {
                     Spacer(Modifier.height(20.dp))

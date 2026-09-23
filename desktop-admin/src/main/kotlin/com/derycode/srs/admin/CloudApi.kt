@@ -253,6 +253,17 @@ object CloudApi {
         } catch (e: Exception) { Pair(emptyList(), "Unexpected server response") }
     }
 
+
+    /** Disconnect a linked teacher (head teacher action). The teacher stays linked until this is called. */
+    fun unlinkTeacher(url: String, key: String, token: String, schoolId: String, teacherUid: String): Pair<Boolean, String> {
+        val r = http("DELETE", "$url/rest/v1/srs_teacher_schools?school_id=eq.$schoolId&teacher_uid=eq.$teacherUid", key, token, null)
+        if (r.first in 200..299 || r.second.trim() == "[]" || r.second.trim().isEmpty()) return Pair(true, "ok")
+        val hint = if (r.first == 403 || r.first == 404)
+            " The server needs the disconnect rule from the latest supabase-setup-v2.sql — ask your tech support to run it once."
+            else ""
+        return Pair(false, "Could not disconnect the teacher (${r.first}).$hint")
+    }
+
     private fun esc(s: String) = s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", " ").replace("\r", " ")
 }
 
@@ -315,7 +326,7 @@ object CloudSync {
                 }
                 onResult?.invoke(false, msg); return@Thread
             }
-            if (okNow) markPushed(repo, payload.length)
+            if (okNow) { markPushed(repo, payload.length); syncLinkedTeachers(repo) }
             onResult?.invoke(okNow, if (okNow) "ok" else msg)
         }.start()
     }
@@ -327,7 +338,45 @@ object CloudSync {
         } catch (_: Exception) {}
     }
 
-    fun pullNow(repo: SchoolRepository, onResult: (Boolean, String) -> Unit) {
+    /**
+     * Auto-connect: whenever the school syncs, every teacher who has joined
+     * via an invite code (rows in srs_teacher_schools) is added to the local
+     * teachers list — and stays there, connected, until the head teacher
+     * explicitly disconnects them. Teachers already linked keep their local
+     * record; a linked teacher's name/role is refreshed from the cloud.
+     */
+    fun syncLinkedTeachers(repo: SchoolRepository, onResult: ((Boolean, String) -> Unit)? = null) {
+        val s = repo.data.settings
+        if (s.cloudSchoolId.isBlank()) { onResult?.invoke(false, "Cloud not set up yet"); return }
+        Thread {
+            val res = withFreshToken(repo, errorOf = { it.second }) { tok ->
+                CloudApi.listLinkedTeachers(url(s), key(s), tok, s.cloudSchoolId)
+            }
+            val linked = res.first
+            if (res.second != "ok" || linked.isEmpty()) { onResult?.invoke(false, res.second); return@Thread }
+            var added = 0
+            repo.mutate("TEACHERS_AUTO_CONNECTED", "Teacher", new = "${linked.size} linked") { d ->
+                var teachers = d.teachers
+                for (lt in linked) {
+                    val role = runCatching { com.derycode.srs.core.model.Role.valueOf(lt.role) }.getOrDefault(com.derycode.srs.core.model.Role.TEACHER)
+                    val existing = teachers.firstOrNull { it.cloudUid == lt.uid || (it.username == lt.uid && it.username.isNotBlank()) }
+                    if (existing == null && lt.name.isNotBlank()) {
+                        added++
+                        teachers = teachers + com.derycode.srs.core.model.Teacher(
+                            id = repo.nextId(), name = lt.name, role = role,
+                            username = lt.uid, cloudUid = lt.uid, active = true)
+                    } else if (existing != null) {
+                        // keep the record in sync and re-activate (reconnected via a new invite)
+                        teachers = teachers.map { if (it.id == existing.id) it.copy(name = lt.name, role = role, cloudUid = lt.uid, active = true) else it }
+                    }
+                }
+                d.copy(teachers = teachers)
+            }
+            onResult?.invoke(true, "✓ $added new teacher(s) connected")
+        }.start()
+    }
+
+        fun pullNow(repo: SchoolRepository, onResult: (Boolean, String) -> Unit) {
         val s = repo.data.settings
         if (s.cloudSchoolId.isBlank()) { onResult(false, "Cloud not set up yet"); return }
         Thread {
@@ -337,6 +386,7 @@ object CloudSync {
             try {
                 val data = Json.decodeFromString(com.derycode.srs.core.model.SchoolData.serializer(), payload)
                 repo.mutate("cloud-restore", "settings") { data }
+                syncLinkedTeachers(repo)
                 onResult(true, "Cloud backup restored to this computer")
             } catch (e: Exception) { onResult(false, "Cloud backup could not be read: ${e.message}") }
         }.start()

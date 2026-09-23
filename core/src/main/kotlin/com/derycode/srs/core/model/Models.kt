@@ -127,7 +127,9 @@ data class Teacher(
     val role: Role = Role.TEACHER,
     val username: String = "",
     val pinHash: String = "",
-    val active: Boolean = true
+    val active: Boolean = true,
+    /** Supabase auth uid when this teacher joined via an invite code (cloud-connected). Empty for local-only staff. */
+    val cloudUid: String = ""
 )
 
 @Serializable

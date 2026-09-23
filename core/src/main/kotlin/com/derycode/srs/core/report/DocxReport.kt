@@ -289,11 +289,13 @@ object DocxReport {
         val compCode = { id: String -> data.components.firstOrNull { it.id == id }?.code?.ifBlank { null } ?: data.components.firstOrNull { it.id == id }?.name?.take(6) ?: "?" }
         val num = { d: Double -> if (d == Math.floor(d)) d.toLong().toString() else fmt(d) }
 
-        val subjectRows = data.subjects.filter { s -> result.subjectResults.any { it.subjectId == s.id } }
-            .map { s ->
-                val r = result.subjectResults.first { it.subjectId == s.id }
+        // Walk result.subjectResults directly — it is already exactly-once per subject the
+        // student sits. Looking rows up back through data.subjects instead (as before) could
+        // duplicate a row whenever two subjects at different levels shared a code/id.
+        val subjectRows = result.subjectResults.map { r ->
+                val s = data.subjects.firstOrNull { it.id == r.subjectId }
                 val perComp = compList.map { c ->
-                    val m = data.marks.firstOrNull { mm -> mm.studentId == student.id && mm.subjectId == s.id && mm.termId == result.termId && mm.componentId == c.id }
+                    val m = data.marks.firstOrNull { mm -> mm.studentId == student.id && mm.subjectId == r.subjectId && mm.termId == result.termId && mm.componentId == c.id }
                     when {
                         m == null -> "—"
                         m.type == com.derycode.srs.core.model.MarkType.ABS -> "ABS"
@@ -303,7 +305,7 @@ object DocxReport {
                 }
                 val desc = gradeScheme?.boundaries?.firstOrNull { it.grade == r.grade }
                     ?.let { it.label.ifBlank { it.remark } }.orEmpty()
-                listOf(s.name) + perComp + listOf(r.total.toInt().toString(), fmt(r.percentage) + "%", r.grade, desc,
+                listOf(s?.name ?: r.subjectId) + perComp + listOf(r.total.toInt().toString(), fmt(r.percentage) + "%", r.grade, desc,
                     if (r.positionInSubject > 0) r.positionInSubject.toString() else "",
                     if (r.remark.isBlank()) "" else r.remark)
             }

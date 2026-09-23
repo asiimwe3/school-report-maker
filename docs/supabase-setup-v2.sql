@@ -43,6 +43,13 @@ create policy srs_ts_read_owner on srs_teacher_schools
   for select to authenticated
   using (school_id in (select id from srs_schools where owner_uid = auth.uid()));
 
+-- head teacher can disconnect a connected teacher. The link row IS the
+-- connection: it has no expiry, so a teacher stays connected until the
+-- school explicitly deletes it (Disconnect button in the console).
+create policy srs_ts_delete_owner on srs_teacher_schools
+  for delete to authenticated
+  using (school_id in (select id from srs_schools where owner_uid = auth.uid()));
+
 -- ── 2. Teacher self-onboarding v2 ──────────────────────────────────────────
 -- p_code accepts BOTH:
 --   * a personal per-teacher invite code (srs_teacher_invites) — preferred
