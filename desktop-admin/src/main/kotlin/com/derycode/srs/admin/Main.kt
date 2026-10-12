@@ -91,6 +91,26 @@ internal object Theme {
 
 internal val LocalSchoolLevel = androidx.compose.runtime.compositionLocalOf { Level.PRIMARY }
 
+/** Opens a file dialog, copies the chosen image into the data folder as logo/stamp, returns the new path. */
+private fun pickAsset(kind: String, onPicked: (String) -> Unit) {
+    val dialog = java.awt.FileDialog(null as java.awt.Frame?, "Select $kind image", java.awt.FileDialog.LOAD)
+    dialog.setFilenameFilter { _, name -> name.lowercase().let { it.endsWith(".png") || it.endsWith(".jpg") || it.endsWith(".jpeg") } }
+    dialog.isVisible = true
+    val chosen = dialog.file
+    val dir = dialog.directory
+    if (chosen != null && dir != null) {
+        try {
+            val src = java.nio.file.Path.of(dir, chosen)
+            val assetsDir = dataDir.resolve("assets")
+            java.nio.file.Files.createDirectories(assetsDir)
+            val ext = chosen.substringAfterLast('.', "png")
+            val dest = assetsDir.resolve("$kind.$ext")
+            java.nio.file.Files.copy(src, dest, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+            onPicked(dest.toAbsolutePath().toString())
+        } catch (_: Exception) { }
+    }
+}
+
 internal val dataDir: Path = Path.of(System.getProperty("user.home"), "SchoolReportMaker")
 internal val dataFile: Path = dataDir.resolve("school-data.json")
 
@@ -513,70 +533,135 @@ fun SetupScreen(state: AppState) {
 
     ScreenTitle("School Setup", "Offline school account — everything stays on this computer")
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {  // v2.2.15 fix: unbounded LazyColumn inside verticalScroll crashed on open
-        run {
-            CardBox {
-                FieldLabel("School name"); TextField(school.name, { school = school.copy(name = it) }, Modifier.fillMaxWidth().padding(bottom = 10.dp), "e.g. St. Mary's College")
-                Row3 {
-                    Column(Modifier.weight(1f)) { FieldLabel("Address"); TextField(school.address, { school = school.copy(address = it) }, Modifier.fillMaxWidth()) }
-                    Column(Modifier.weight(1f)) { FieldLabel("Telephone"); TextField(school.phone, { school = school.copy(phone = it) }, Modifier.fillMaxWidth()) }
-                    Column(Modifier.weight(1f)) { FieldLabel("Email"); TextField(school.email, { school = school.copy(email = it) }, Modifier.fillMaxWidth()) }
-                }
-                Spacer(Modifier.height(10.dp))
-                Row3 {
-                    Column(Modifier.weight(1f)) { FieldLabel("Motto"); TextField(school.motto, { school = school.copy(motto = it) }, Modifier.fillMaxWidth()) }
-                    Column(Modifier.weight(1f)) { FieldLabel("Head teacher"); TextField(school.headTeacher, { school = school.copy(headTeacher = it) }, Modifier.fillMaxWidth()) }
-                    Column(Modifier.weight(1f)) { FieldLabel("Registration no."); TextField(school.regNo, { school = school.copy(regNo = it) }, Modifier.fillMaxWidth()) }
-                }
-                Spacer(Modifier.height(10.dp))
-                Row3 {
-                    Column(Modifier.weight(1f)) { FieldLabel("Primary color"); TextField(school.colorPrimary, { school = school.copy(colorPrimary = it) }, Modifier.fillMaxWidth(), "#1F6FEB") }
-                    Column(Modifier.weight(1f)) {
-                        FieldLabel("School logo")
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 6.dp)) {
-                            val logoBytes = remember(school.logoPath) {
-                                school.logoPath?.let { p -> try { java.nio.file.Files.readAllBytes(java.nio.file.Path.of(p)) } catch (_: Exception) { null } }
-                            }
-                            Box(Modifier.size(52.dp).background(Color(0xFF1B2A4A), RoundedCornerShape(8.dp)).border(1.dp, Color(0xFF2C3B5E), RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
-                                if (logoBytes != null) {
-                                    Image(BitmapPainter(Image.makeFromEncoded(logoBytes).toComposeImageBitmap()), contentDescription = "School logo", modifier = Modifier.size(48.dp))
-                                } else Text("No\nlogo", color = Theme.MUTED, fontSize = 10.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-                            }
-                            Column {
-                                Btn("Upload logo file", primary = false) {
-                                    val dialog = java.awt.FileDialog(null as java.awt.Frame?, "Select school logo", java.awt.FileDialog.LOAD)
-                                    dialog.setFilenameFilter { _, name -> name.lowercase().let { it.endsWith(".png") || it.endsWith(".jpg") || it.endsWith(".jpeg") } }
-                                    dialog.isVisible = true
-                                    val chosen = dialog.file
-                                    val dir = dialog.directory
-                                    if (chosen != null && dir != null) {
-                                        try {
-                                            val src = java.nio.file.Path.of(dir, chosen)
-                                            val assetsDir = dataDir.resolve("assets")
-                                            java.nio.file.Files.createDirectories(assetsDir)
-                                            val ext = chosen.substringAfterLast('.', "png")
-                                            val dest = assetsDir.resolve("logo.$ext")
-                                            java.nio.file.Files.copy(src, dest, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
-                                            school = school.copy(logoPath = dest.toAbsolutePath().toString())
-                                        } catch (_: Exception) { }
-                                    }
-                                }
-                                if (school.logoPath != null) Text("Logo saved \u2713 — save profile to apply", color = Theme.GOOD, fontSize = 11.sp, modifier = Modifier.padding(top = 4.dp))
-                            }
+        // ── School identity ──
+        CardBox {
+            Text("1. School identity", color = Theme.ACCENT, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(10.dp))
+            FieldLabel("School name (exactly as it should appear on documents)")
+            TextField(school.name, { school = school.copy(name = it) }, Modifier.fillMaxWidth().padding(bottom = 10.dp), "e.g. St. Mary's College, Fort Portal")
+            Row3 {
+                Column(Modifier.weight(2f)) { FieldLabel("Motto"); TextField(school.motto, { school = school.copy(motto = it) }, Modifier.fillMaxWidth(), "e.g. Knowledge is light") }
+                Column(Modifier.weight(1f)) { FieldLabel("Founded year"); TextField(school.foundedYear, { school = school.copy(foundedYear = it) }, Modifier.fillMaxWidth(), "1985") }
+                Column(Modifier.weight(1f)) { FieldLabel("School type"); TextField(school.schoolType, { school = school.copy(schoolType = it) }, Modifier.fillMaxWidth(), "Day & Boarding") }
+            }
+            Spacer(Modifier.height(10.dp))
+            Row3 {
+                Column(Modifier.weight(1f)) { FieldLabel("Vision"); TextField(school.vision, { school = school.copy(vision = it) }, Modifier.fillMaxWidth(), "Where the school is going") }
+                Column(Modifier.weight(1f)) { FieldLabel("Mission"); TextField(school.mission, { school = school.copy(mission = it) }, Modifier.fillMaxWidth(), "What the school does daily") }
+            }
+        }
+
+        // ── Location ──
+        CardBox {
+            Text("2. Location", color = Theme.ACCENT, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(10.dp))
+            Row3 {
+                Column(Modifier.weight(1f)) { FieldLabel("P.O. Box / street address"); TextField(school.address, { school = school.copy(address = it) }, Modifier.fillMaxWidth(), "P.O. Box 123") }
+                Column(Modifier.weight(1f)) { FieldLabel("District"); TextField(school.district, { school = school.copy(district = it) }, Modifier.fillMaxWidth(), "Kabarole") }
+                Column(Modifier.weight(1f)) { FieldLabel("County / Sub-county"); TextField(school.subCounty, { school = school.copy(subCounty = it) }, Modifier.fillMaxWidth()) }
+            }
+            Spacer(Modifier.height(10.dp))
+            Row3 {
+                Column(Modifier.weight(1f)) { FieldLabel("Village / Parish"); TextField(school.village, { school = school.copy(village = it) }, Modifier.fillMaxWidth()) }
+            }
+        }
+
+        // ── Contact ──
+        CardBox {
+            Text("3. Contact", color = Theme.ACCENT, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(10.dp))
+            Row3 {
+                Column(Modifier.weight(1f)) { FieldLabel("Telephone 1"); TextField(school.phone, { school = school.copy(phone = it) }, Modifier.fillMaxWidth(), "0772 000 000") }
+                Column(Modifier.weight(1f)) { FieldLabel("Telephone 2"); TextField(school.phone2, { school = school.copy(phone2 = it) }, Modifier.fillMaxWidth()) }
+                Column(Modifier.weight(1f)) { FieldLabel("Email"); TextField(school.email, { school = school.copy(email = it) }, Modifier.fillMaxWidth(), "info@school.ac.ug") }
+            }
+            Spacer(Modifier.height(10.dp))
+            Row3 {
+                Column(Modifier.weight(1f)) { FieldLabel("Website"); TextField(school.website, { school = school.copy(website = it) }, Modifier.fillMaxWidth(), "www.school.ac.ug") }
+            }
+        }
+
+        // ── Official records ──
+        CardBox {
+            Text("4. Official records (as printed on report cards)", color = Theme.ACCENT, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(10.dp))
+            Row3 {
+                Column(Modifier.weight(1f)) { FieldLabel("Registration no."); TextField(school.regNo, { school = school.copy(regNo = it) }, Modifier.fillMaxWidth(), "ME/XX/123") }
+                Column(Modifier.weight(1f)) { FieldLabel("EMIS no."); TextField(school.emisNo, { school = school.copy(emisNo = it) }, Modifier.fillMaxWidth()) }
+                Column(Modifier.weight(1f)) { FieldLabel("UNEB centre no."); TextField(school.unebCentreNo, { school = school.copy(unebCentreNo = it) }, Modifier.fillMaxWidth()) }
+            }
+        }
+
+        // ── Leadership ──
+        CardBox {
+            Text("5. Leadership", color = Theme.ACCENT, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(10.dp))
+            Row3 {
+                Column(Modifier.weight(1f)) { FieldLabel("Head teacher"); TextField(school.headTeacher, { school = school.copy(headTeacher = it) }, Modifier.fillMaxWidth()) }
+                Column(Modifier.weight(1f)) { FieldLabel("Deputy head teacher"); TextField(school.deputyHeadTeacher, { school = school.copy(deputyHeadTeacher = it) }, Modifier.fillMaxWidth()) }
+            }
+        }
+
+        // ── Branding ──
+        CardBox {
+            Text("6. Logo, stamp & colours", color = Theme.ACCENT, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                // logo
+                Column {
+                    FieldLabel("School logo (top of every document)")
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 6.dp)) {
+                        val logoBytes = remember(school.logoPath) {
+                            school.logoPath?.let { p -> try { java.nio.file.Files.readAllBytes(java.nio.file.Path.of(p)) } catch (_: Exception) { null } }
+                        }
+                        Box(Modifier.size(52.dp).background(Color(0xFF1B2A4A), RoundedCornerShape(8.dp)).border(1.dp, Color(0xFF2C3B5E), RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
+                            if (logoBytes != null) {
+                                Image(BitmapPainter(Image.makeFromEncoded(logoBytes).toComposeImageBitmap()), contentDescription = "School logo", modifier = Modifier.size(48.dp))
+                            } else Text("No\nlogo", color = Theme.MUTED, fontSize = 10.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                        }
+                        Column {
+                            Btn("Upload logo", primary = false) { pickAsset("logo") { np -> school = school.copy(logoPath = np) } }
+                            if (school.logoPath != null) Text("Logo saved \u2713", color = Theme.GOOD, fontSize = 11.sp, modifier = Modifier.padding(top = 4.dp))
                         }
                     }
                 }
-                Spacer(Modifier.height(14.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Btn("Save school profile") {
-                        state.repo.mutate("SCHOOL_UPDATED", "School") { it.copy(school = school) }
-                        state.refresh()
-                        savedMsg = "School profile saved \u2713"
+                // stamp
+                Column(Modifier.weight(1f)) {
+                    FieldLabel("School stamp / seal (signature area)")
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 6.dp)) {
+                        val stampBytes = remember(school.stampPath) {
+                            school.stampPath?.let { p -> try { java.nio.file.Files.readAllBytes(java.nio.file.Path.of(p)) } catch (_: Exception) { null } }
+                        }
+                        Box(Modifier.size(52.dp).background(Color(0xFF1B2A4A), RoundedCornerShape(8.dp)).border(1.dp, Color(0xFF2C3B5E), RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
+                            if (stampBytes != null) {
+                                Image(BitmapPainter(Image.makeFromEncoded(stampBytes).toComposeImageBitmap()), contentDescription = "School stamp", modifier = Modifier.size(48.dp))
+                            } else Text("No\nstamp", color = Theme.MUTED, fontSize = 10.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                        }
+                        Column {
+                            Btn("Upload stamp", primary = false) { pickAsset("stamp") { np -> school = school.copy(stampPath = np) } }
+                            if (school.stampPath != null) Text("Stamp saved \u2713", color = Theme.GOOD, fontSize = 11.sp, modifier = Modifier.padding(top = 4.dp))
+                        }
                     }
-                    if (savedMsg.isNotBlank()) Text(savedMsg, color = Theme.GOOD, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                    if (error.isNotBlank()) ErrorText(error)
                 }
             }
+            Spacer(Modifier.height(12.dp))
+            Row3 {
+                Column(Modifier.weight(1f)) { FieldLabel("Primary colour (headings)"); TextField(school.colorPrimary, { school = school.copy(colorPrimary = it) }, Modifier.fillMaxWidth(), "#1F6FEB") }
+                Column(Modifier.weight(1f)) { FieldLabel("Secondary colour (text)"); TextField(school.colorSecondary, { school = school.copy(colorSecondary = it) }, Modifier.fillMaxWidth(), "#111827") }
+            }
         }
+
+        // ── Save ──
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Btn("Save school profile") {
+                state.repo.mutate("SCHOOL_UPDATED", "School") { it.copy(school = school) }
+                state.refresh()
+                savedMsg = "School profile saved \u2713"
+            }
+            if (savedMsg.isNotBlank()) Text(savedMsg, color = Theme.GOOD, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            if (error.isNotBlank()) ErrorText(error)
+        }
+        Spacer(Modifier.height(4.dp))
         AcademicYearsSection(state)
         }
 }

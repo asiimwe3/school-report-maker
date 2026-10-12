@@ -261,12 +261,22 @@ object DocxReport {
         // ── header — compact: the whole card must print on ONE page ──
         readLogo(school)?.let { (bytes, ext) -> doc.logo(bytes, ext) }
         doc.p(school.name, bold = true, size = 28, align = "center", color = ink, spacingAfter = 10)
+        val place = listOfNotNull(school.village.ifBlank { null }, school.subCounty.ifBlank { null }, school.district.ifBlank { null }).distinct().joinToString(", ")
         val contact = listOfNotNull(
             school.address.ifBlank { null },
-            school.phone.ifBlank { null }?.let { "Tel: $it" }).joinToString(" · ")
+            place.ifBlank { null },
+            listOfNotNull(school.phone.ifBlank { null }, school.phone2.ifBlank { null }).joinToString(" / ").ifBlank { null }?.let { "Tel: $it" },
+            school.email.ifBlank { null },
+            school.website.ifBlank { null }).joinToString(" \u00B7 ")
         val mottoLine = school.motto.ifBlank { null }?.let { "\u201C$it\u201D" }
-        val line2 = listOfNotNull(mottoLine, contact.ifBlank { null }).joinToString(" · ")
-        if (line2.isNotBlank()) doc.p(line2, italic = true, size = 16, align = "center", color = "777777", spacingAfter = 20)
+        val line2 = listOfNotNull(mottoLine, contact.ifBlank { null }).joinToString(" \u00B7 ")
+        if (line2.isNotBlank()) doc.p(line2, italic = true, size = 16, align = "center", color = "777777", spacingAfter = 6)
+        val regLine = listOfNotNull(
+            school.regNo.ifBlank { null }?.let { "Reg. No: $it" },
+            school.emisNo.ifBlank { null }?.let { "EMIS: $it" },
+            school.unebCentreNo.ifBlank { null }?.let { "UNEB Centre: $it" },
+            school.foundedYear.ifBlank { null }?.let { "Est. $it" }).joinToString(" \u00B7 ")
+        if (regLine.isNotBlank()) doc.p(regLine, size = 14, align = "center", color = "999999", spacingAfter = 16)
         doc.p("TERMLY REPORT CARD", bold = true, size = 22, align = "center", color = accent, spacingAfter = 30)
 
         // ── student identity ──
