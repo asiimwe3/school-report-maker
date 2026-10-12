@@ -1,8 +1,8 @@
 {
-  "console": "2.2.30",
+  "console": "2.2.31",
   "teacher": "1.13.13",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.30.msi",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.31.msi",
   "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.13.13.apk",
-  "releaseNotes": "Admin console 2.2.30: Big and easy to use. A Primary / O-Level / A-Level switch now sits at the top of every screen, so primary classes never mix with secondary. Whole console is larger with bigger text and buttons. Teacher app 1.13.13 (unchanged).",
+  "releaseNotes": "Admin console 2.2.31: Timetable and Subjects screens rebuilt \u2014 large day buttons with period counts, card-style period rows, chip pickers for class/subject/teacher, subject cards showing code, compulsory status and assigned teachers. Teacher app 1.13.13 (unchanged).",
   "released": "2026-10-12"
 }
