@@ -32,7 +32,7 @@ fun MarksScreen(state: AppState) {
     val year = d.academicYears.firstOrNull { it.currentTermId != null } ?: d.academicYears.firstOrNull()
     val term = year?.terms?.firstOrNull { it.id == year.currentTermId } ?: year?.terms?.firstOrNull()
 
-    var classId by remember { mutableStateOf(d.classes.firstOrNull { it.active }?.id ?: "") }
+    var classId by remember(state.level) { mutableStateOf(d.classes.firstOrNull { it.active && it.level == state.level }?.id ?: "") }
     var subjectId by remember { mutableStateOf(d.subjects.firstOrNull { it.active }?.id ?: "") }
     val edits = remember { mutableStateMapOf<String, String>() }
     var error by remember { mutableStateOf("") }
@@ -53,7 +53,7 @@ fun MarksScreen(state: AppState) {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Column(Modifier.width(200.dp)) {
                     FieldLabel("Class")
-                    Level.entries.forEach { lvl ->
+                    Level.entries.filter { it == state.level }.forEach { lvl ->
                         val inLevel = d.classes.filter { it.active && it.level == lvl }
                         if (inLevel.isNotEmpty()) {
                             Text(levelLabel(lvl), color = Theme.ACCENT, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 5.dp))
@@ -275,7 +275,7 @@ fun previewGrade(s: GradingScheme, pct: Double): String =
 @Composable
 fun ResultsScreen(state: AppState) {
     val d = state.data
-    var classId by remember { mutableStateOf(d.classes.firstOrNull { it.active }?.id ?: "") }
+    var classId by remember(state.level) { mutableStateOf(d.classes.firstOrNull { it.active && it.level == state.level }?.id ?: "") }
     val year = d.academicYears.firstOrNull { it.currentTermId != null } ?: d.academicYears.firstOrNull()
     val term = year?.terms?.firstOrNull { it.id == year.currentTermId } ?: year?.terms?.firstOrNull()
     val cls = d.classes.firstOrNull { it.id == classId }
@@ -292,7 +292,7 @@ fun ResultsScreen(state: AppState) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Column {
             Text("Class:", color = Theme.MUTED, fontSize = 14.sp)
-            ClassPickerChips(d.classes.filter { it.active }, classId) { classId = it }
+            ClassPickerChips(d.classes.filter { it.active && it.level == state.level }, classId) { classId = it }
         }
         if (cls == null || term == null) {
             Text("Create an academic year with terms and add classes first.", color = Theme.MUTED, fontSize = 14.sp)
@@ -347,7 +347,7 @@ fun ResultsScreen(state: AppState) {
 @Composable
 fun ReportsScreen(state: AppState) {
     val d = state.data
-    var classId by remember { mutableStateOf(d.classes.firstOrNull { it.active }?.id ?: "") }
+    var classId by remember(state.level) { mutableStateOf(d.classes.firstOrNull { it.active && it.level == state.level }?.id ?: "") }
     var layout by remember { mutableStateOf(TemplateLayout.CLASSIC) }
     val year = d.academicYears.firstOrNull { it.currentTermId != null } ?: d.academicYears.firstOrNull()
     val term = year?.terms?.firstOrNull { it.id == year.currentTermId } ?: year?.terms?.firstOrNull()
@@ -358,7 +358,7 @@ fun ReportsScreen(state: AppState) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Column {
             Text("Class:", color = Theme.MUTED, fontSize = 14.sp)
-            ClassPickerChips(d.classes.filter { it.active }, classId) { classId = it }
+            ClassPickerChips(d.classes.filter { it.active && it.level == state.level }, classId) { classId = it }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("Design:", color = Theme.MUTED, fontSize = 14.sp)
@@ -561,7 +561,7 @@ internal fun listBackups(dir: Path): List<Path> =
 @Composable
 fun AnalyticsScreen(state: AppState) {
     val d = state.data
-    var classId by remember { mutableStateOf(d.classes.firstOrNull { it.active }?.id ?: "") }
+    var classId by remember(state.level) { mutableStateOf(d.classes.firstOrNull { it.active && it.level == state.level }?.id ?: "") }
     val year = d.academicYears.firstOrNull { it.currentTermId != null } ?: d.academicYears.firstOrNull()
     val term = year?.terms?.firstOrNull { it.id == year.currentTermId } ?: year?.terms?.firstOrNull()
     val cls = d.classes.firstOrNull { it.id == classId }
@@ -572,7 +572,7 @@ fun AnalyticsScreen(state: AppState) {
 
     ScreenTitle("Analytics", "Live performance insights — averages, rankings, subject trends, gender split.")
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        ClassPickerChips(d.classes.filter { it.active }, classId) { classId = it }
+        ClassPickerChips(d.classes.filter { it.active && it.level == state.level }, classId) { classId = it }
         if (results.isEmpty()) {
             CardBox { Text(if (cls == null || term == null) "Set up classes and an academic year first." else "No marks entered for this class/term yet — enter marks in the Marks Grid to see analytics.", color = Theme.MUTED, fontSize = 14.sp) }
         } else {
@@ -673,7 +673,7 @@ fun AnalyticsScreen(state: AppState) {
 @Composable
 fun AttendanceScreen(state: AppState) {
     val d = state.data
-    var classId by remember { mutableStateOf(d.classes.firstOrNull { it.active }?.id ?: "") }
+    var classId by remember(state.level) { mutableStateOf(d.classes.firstOrNull { it.active && it.level == state.level }?.id ?: "") }
     var msg by remember { mutableStateOf("") }
     val klass = d.classes.firstOrNull { it.id == classId }
     val students = d.enrollments.filter { it.classId == classId }
@@ -683,7 +683,7 @@ fun AttendanceScreen(state: AppState) {
 
     ScreenTitle("Attendance", "Daily register from teacher phones — present / absent / late, per class.")
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        ClassPickerChips(d.classes.filter { it.active }, classId) { classId = it }
+        ClassPickerChips(d.classes.filter { it.active && it.level == state.level }, classId) { classId = it }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             StatCard("Recorded days", recs.map { it.date }.distinct().count().toString(), Theme.GOOD)
             StatCard("Students", students.size.toString())
@@ -796,9 +796,9 @@ fun CommentBankScreen(state: AppState) {
 @Composable
 fun PromotionScreen(state: AppState) {
     val d = state.data
-    val active = d.classes.filter { it.active }
-    var fromId by remember { mutableStateOf(active.firstOrNull()?.id ?: "") }
-    var toId by remember { mutableStateOf(active.lastOrNull()?.id ?: "") }
+    val active = d.classes.filter { it.active && it.level == state.level }
+    var fromId by remember(state.level) { mutableStateOf(active.firstOrNull()?.id ?: "") }
+    var toId by remember(state.level) { mutableStateOf(active.lastOrNull()?.id ?: "") }
     var msg by remember { mutableStateOf("") }
     var rolloverConfirm by remember { mutableStateOf(false) }
 

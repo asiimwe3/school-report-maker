@@ -51,7 +51,7 @@ internal fun Donut(percent: Int, label: String, modifier: Modifier = Modifier) {
             Text("$percent%", color = Theme.INK, fontSize = 17.sp, fontWeight = FontWeight.Bold)
         }
         Spacer(Modifier.height(4.dp))
-        Text(label, color = Theme.MUTED, fontSize = 10.sp)
+        Text(label, color = Theme.MUTED, fontSize = 13.sp)
     }
 }
 
@@ -78,7 +78,7 @@ internal fun Pill(text: String, tone: String = "teal") {
         else -> Theme.TEAL_SOFT to Theme.TEAL
     }
     Text(
-        text, color = fg, fontSize = 10.sp, fontWeight = FontWeight.SemiBold,
+        text, color = fg, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
         style = TextStyle(letterSpacing = 0.3.sp),
         modifier = Modifier.background(bg, RoundedCornerShape(20.dp)).padding(horizontal = 9.dp, vertical = 4.dp)
     )

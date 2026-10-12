@@ -30,11 +30,10 @@ fun FeesScreen(state: AppState) {
     val d = state.data
     val year = d.academicYears.firstOrNull { it.currentTermId != null } ?: d.academicYears.firstOrNull()
     val term = year?.terms?.firstOrNull { it.id == year.currentTermId } ?: year?.terms?.firstOrNull()
-    var classId by remember { mutableStateOf(d.classes.firstOrNull { it.active }?.id ?: "") }
+    var classId by remember(state.level) { mutableStateOf(d.classes.firstOrNull { it.active && it.level == state.level }?.id ?: "") }
     // v2.2.3: filter by level so schools with many streams (and Senior 4+) don't hit the old
     // hard cutoff — previously only the FIRST 10 classes ever showed here, silently hiding
     // Senior 4, 5 and 6 for any school with 7 primary classes + streams.
-    var feesLevel by remember { mutableStateOf<Level?>(null) }
     var feeCategory by remember { mutableStateOf(FeeCategory.SCHOOL_FEES) }
     var feeAmount by remember { mutableStateOf("") }
     var msg by remember { mutableStateOf("") }
@@ -148,14 +147,7 @@ fun FeesScreen(state: AppState) {
             Spacer(Modifier.height(8.dp))
             if (d.classes.isEmpty()) Text("Add classes first.", color = Theme.MUTED, fontSize = 14.sp)
             else {
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    FilterChip(selected = feesLevel == null, onClick = { feesLevel = null }, label = { Text("All levels", fontSize = 12.sp) })
-                    Level.entries.forEach { lvl ->
-                        FilterChip(selected = feesLevel == lvl, onClick = { feesLevel = lvl }, label = { Text(levelLabel(lvl), fontSize = 12.sp) })
-                    }
-                }
-                Spacer(Modifier.height(6.dp))
-                ClassPickerChips(d.classes.filter { it.active && (feesLevel == null || it.level == feesLevel) }, classId) { classId = it }
+                ClassPickerChips(d.classes.filter { it.active && it.level == state.level }, classId) { classId = it }
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                     TextField(if (structure != null && feeAmount.isBlank()) structure.amount.toLong().toString() else feeAmount,

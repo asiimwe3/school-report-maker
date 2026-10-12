@@ -215,7 +215,7 @@ private fun TemplatePreview(layout: TemplateLayout) {
 @Composable
 fun PreviewScreen(state: AppState) {
     val d = state.data
-    var classId by remember { mutableStateOf(d.classes.firstOrNull { it.active }?.id ?: "") }
+    var classId by remember(state.level) { mutableStateOf(d.classes.firstOrNull { it.active && it.level == state.level }?.id ?: "") }
     var studentId by remember { mutableStateOf("") }
     var layout by remember { mutableStateOf(TemplateLayout.CLASSIC) }
     var msg by remember { mutableStateOf("") }
@@ -231,7 +231,7 @@ fun PreviewScreen(state: AppState) {
         CardBox {
             Column {
                 Text("Class:", color = Theme.MUTED, fontSize = 14.sp)
-                ClassPickerChips(d.classes.filter { it.active }, classId) { classId = it; studentId = "" }
+                ClassPickerChips(d.classes.filter { it.active && it.level == state.level }, classId) { classId = it; studentId = "" }
             }
             Spacer(Modifier.height(8.dp))
             Column {

@@ -89,6 +89,8 @@ internal object Theme {
     }
 }
 
+internal val LocalSchoolLevel = androidx.compose.runtime.compositionLocalOf { Level.PRIMARY }
+
 internal val dataDir: Path = Path.of(System.getProperty("user.home"), "SchoolReportMaker")
 internal val dataFile: Path = dataDir.resolve("school-data.json")
 
@@ -100,6 +102,10 @@ class AppState(val repo: SchoolRepository) {
     var unlocked by mutableStateOf(false)
     var screen by mutableStateOf("dashboard")
     var refreshTick by mutableStateOf(0)
+    /** School level chosen in the top bar. Primary classes never mix with secondary. */
+    var level by mutableStateOf(Level.PRIMARY)
+    /** Active classes of the chosen level only. */
+    fun levelClasses() = data.classes.filter { it.active && it.level == level }
     var updateAvailable by mutableStateOf<com.derycode.srs.core.support.UpdateInfo?>(null)
 
     // Observable snapshot of repo.data — every screen reading state.data
@@ -172,10 +178,17 @@ fun App(state: AppState) {
             "importexport" to "Import / Export", "audit" to "Audit Log", "settings" to "Settings"),
         "HELP" to listOf("docs" to "Help & Documentation", "support" to "Support & Licence")
     )
+    // Big & easy to use: 1.25x scale on everything (text, buttons, rows, spacing) together.
+    val baseDensity = androidx.compose.ui.platform.LocalDensity.current
+    androidx.compose.runtime.CompositionLocalProvider(
+        androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(
+            density = baseDensity.density * 1.25f, fontScale = baseDensity.fontScale
+        )
+    ) {
     Row(Modifier.fillMaxSize().background(Theme.NAVY)) {
         // ── Sidebar (Editorial: deep green, gold crest) ──
         Column(
-            Modifier.width(240.dp).fillMaxHeight().background(Theme.DEEP)
+            Modifier.width(250.dp).fillMaxHeight().background(Theme.DEEP)
                 .verticalScroll(rememberScrollState())
                 .padding(vertical = 22.dp, horizontal = 12.dp),
             verticalArrangement = Arrangement.spacedBy(3.dp)
@@ -192,13 +205,13 @@ fun App(state: AppState) {
                 }
                 Spacer(Modifier.width(11.dp))
                 Column {
-                    Text("School Report", color = Color(0xFFE8EFE8), fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                    Text("Maker · Admin console", color = Color(0xFF9DB6AB), fontSize = 10.sp)
+                    Text("School Report", color = Color(0xFFE8EFE8), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text("Maker · Admin console", color = Color(0xFF9DB6AB), fontSize = 12.sp)
                 }
             }
             Spacer(Modifier.height(16.dp))
             navGroups.forEach { (group, entries) ->
-                Text(group, color = Color(0xFF6F9386), fontSize = 9.sp, fontWeight = FontWeight.Black,
+                Text(group, color = Color(0xFF6F9386), fontSize = 12.sp, fontWeight = FontWeight.Black,
                     style = TextStyle(letterSpacing = 1.3.sp),
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp))
                 entries.forEach { (key, label) ->
@@ -210,7 +223,7 @@ fun App(state: AppState) {
                             .clickable { state.screen = key }
                             .padding(horizontal = 12.dp, vertical = 9.dp)
                     ) {
-                        Text(label, color = if (selected) Theme.DEEP else Color(0xFFACC1B8), fontSize = 12.sp,
+                        Text(label, color = if (selected) Theme.DEEP else Color(0xFFACC1B8), fontSize = 15.sp,
                             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal)
                     }
                 }
@@ -250,6 +263,7 @@ fun App(state: AppState) {
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 28.dp, vertical = 24.dp)
             ) {
+                androidx.compose.runtime.CompositionLocalProvider(LocalSchoolLevel provides state.level) {
                 when (state.screen) {
                     "dashboard" -> DashboardScreen(state)
                     "setup" -> SetupScreen(state)
@@ -283,8 +297,10 @@ fun App(state: AppState) {
                     "docs" -> HelpDocsScreen(state)
                     "support" -> SupportScreenDesktop(state)
                 }
+                }
             }
         }
+    }
     }
 }
 
@@ -326,11 +342,29 @@ private fun TopBar(state: AppState) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(Modifier.weight(1f)) {
-            Text(kicker, color = Theme.MUTED, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+            Text(kicker, color = Theme.MUTED, fontSize = 13.sp, fontWeight = FontWeight.Bold,
                 style = TextStyle(letterSpacing = 1.4.sp), maxLines = 1)
             Spacer(Modifier.height(3.dp))
-            Text(screenLabel(state.screen), color = Theme.INK, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            Text(screenLabel(state.screen), color = Theme.INK, fontSize = 22.sp, fontWeight = FontWeight.Bold)
         }
+        // ── School level switch: Primary / O-Level / A-Level never mix ──
+        Row(
+            Modifier.background(Theme.ACCENT_SOFT, RoundedCornerShape(14.dp)).padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            listOf(Level.PRIMARY to "Primary", Level.O_LEVEL to "O-Level", Level.A_LEVEL to "A-Level").forEach { (lvl, label) ->
+                val on = state.level == lvl
+                Text(
+                    label, fontSize = 18.sp, fontWeight = FontWeight.Bold,
+                    color = if (on) Color.White else Theme.ACCENT,
+                    modifier = Modifier
+                        .background(if (on) Theme.ACCENT else Color.Transparent, RoundedCornerShape(11.dp))
+                        .clickable { state.level = lvl }
+                        .padding(horizontal = 20.dp, vertical = 10.dp)
+                )
+            }
+        }
+        Spacer(Modifier.width(14.dp))
         Row(
             Modifier.background(Theme.TEAL_SOFT, RoundedCornerShape(20.dp))
                 .padding(horizontal = 11.dp, vertical = 6.dp),
@@ -338,7 +372,7 @@ private fun TopBar(state: AppState) {
         ) {
             Box(Modifier.size(7.dp).background(Theme.TEAL, RoundedCornerShape(4.dp)))
             Spacer(Modifier.width(7.dp))
-            Text("Saved locally · offline first", color = Theme.TEAL, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+            Text("Saved locally", color = Theme.TEAL, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
         }
         Spacer(Modifier.width(12.dp))
         Row(
@@ -380,12 +414,12 @@ fun StatCard(label: String, value: String, tint: Color = Theme.ACCENT, detail: S
             .border(1.dp, Theme.LINE, RoundedCornerShape(14.dp))
             .padding(18.dp)
     ) {
-        Text(label, color = Theme.MUTED, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+        Text(label, color = Theme.MUTED, fontSize = 15.sp, fontWeight = FontWeight.Medium)
         Spacer(Modifier.height(7.dp))
         Text(value, color = tint, fontSize = 27.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Serif)
         if (detail.isNotBlank()) {
             Spacer(Modifier.height(4.dp))
-            Text(detail, color = Theme.MUTED, fontSize = 11.sp)
+            Text(detail, color = Theme.MUTED, fontSize = 14.sp)
         }
     }
 }
@@ -396,17 +430,17 @@ fun Row3(content: @Composable RowScope.() -> Unit) {
 }
 
 @Composable
-fun FieldLabel(text: String) = Text(text, color = Theme.MUTED, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+fun FieldLabel(text: String) = Text(text, color = Theme.MUTED, fontSize = 16.sp, fontWeight = FontWeight.Medium)
 
 @Composable
 fun TextField(value: String, onValueChange: (String) -> Unit, modifier: Modifier = Modifier, placeholder: String = "") {
     OutlinedTextField(
         value = value, onValueChange = onValueChange,
         modifier = modifier,
-        placeholder = { Text(placeholder, color = Color(0xFF5A6B8C), fontSize = 14.sp) },
+        placeholder = { Text(placeholder, color = Color(0xFF5A6B8C), fontSize = 16.sp) },
         singleLine = true,
         shape = RoundedCornerShape(8.dp),
-        textStyle = androidx.compose.ui.text.TextStyle(color = Theme.TEXT, fontSize = 15.sp)
+        textStyle = androidx.compose.ui.text.TextStyle(color = Theme.TEXT, fontSize = 17.sp)
     )
 }
 
@@ -418,18 +452,18 @@ fun Btn(label: String, primary: Boolean = true, onClick: () -> Unit) {
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
         colors = if (primary) ButtonDefaults.buttonColors(containerColor = Theme.ACCENT, contentColor = Color.White)
         else ButtonDefaults.buttonColors(containerColor = Theme.ACCENT_SOFT, contentColor = Theme.TEXT)
-    ) { Text(label, fontSize = 14.sp, fontWeight = FontWeight.SemiBold) }
+    ) { Text(label, fontSize = 17.sp, fontWeight = FontWeight.SemiBold) }
 }
 
 @Composable
-fun HeaderCell(text: String) = Text(text, color = Theme.MUTED, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+fun HeaderCell(text: String) = Text(text, color = Theme.MUTED, fontSize = 15.sp, fontWeight = FontWeight.Bold)
 
 @Composable
 fun Cell(text: String, bold: Boolean = false, color: Color = Theme.TEXT) =
-    Text(text, color = color, fontSize = 14.sp, fontWeight = if (bold) FontWeight.SemiBold else FontWeight.Normal)
+    Text(text, color = color, fontSize = 16.sp, fontWeight = if (bold) FontWeight.SemiBold else FontWeight.Normal)
 
 @Composable
-fun ErrorText(msg: String) = Text(msg, color = Theme.WARN, fontSize = 13.sp)
+fun ErrorText(msg: String) = Text(msg, color = Theme.WARN, fontSize = 16.sp)
 
 /**
  * Class picker chips grouped by level (Primary / O-Level / A-Level) that WRAP
@@ -439,7 +473,8 @@ fun ErrorText(msg: String) = Text(msg, color = Theme.WARN, fontSize = 13.sp)
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun ClassPickerChips(classes: List<SchoolClass>, selectedId: String, onSelect: (String) -> Unit) {
-    Level.entries.forEach { lvl ->
+    val lvlNow = LocalSchoolLevel.current
+    Level.entries.filter { it == lvlNow }.forEach { lvl ->
         val inLevel = classes.filter { it.level == lvl }
         if (inLevel.isNotEmpty()) {
             Row(
@@ -447,7 +482,7 @@ fun ClassPickerChips(classes: List<SchoolClass>, selectedId: String, onSelect: (
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
             ) {
-                Text(levelLabel(lvl), color = Theme.ACCENT, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Text(levelLabel(lvl), color = Theme.ACCENT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalArrangement = Arrangement.spacedBy(2.dp)
@@ -456,7 +491,7 @@ fun ClassPickerChips(classes: List<SchoolClass>, selectedId: String, onSelect: (
                         FilterChip(
                             selected = selectedId == c.id,
                             onClick = { onSelect(c.id) },
-                            label = { Text(if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}", fontSize = 12.sp) }
+                            label = { Text(if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}", fontSize = 16.sp, fontWeight = FontWeight.SemiBold) }
                         )
                     }
                 }

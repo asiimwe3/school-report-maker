@@ -25,7 +25,7 @@ import com.derycode.srs.core.model.*
 fun StudentsScreen(state: AppState) {
     val d = state.data
     var search by remember { mutableStateOf("") }
-    var levelFilter by remember { mutableStateOf(Level.O_LEVEL) }
+    val levelFilter = state.level
     var classFilter by remember { mutableStateOf("") } // "" = all
     var adding by remember { mutableStateOf(false) }
     var newStudent by remember { mutableStateOf(NewStudentForm()) }
@@ -59,10 +59,7 @@ fun StudentsScreen(state: AppState) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
             TextField(search, { search = it }, Modifier.width(220.dp), "Search name / adm no…")
-            Level.entries.forEach { lvl ->
-                FilterChip(selected = levelFilter == lvl && classFilter.isBlank(), onClick = { levelFilter = lvl; classFilter = "" },
-                    label = { Text(lvl.name, fontSize = 13.sp) })
-            }
+            Text(levelLabel(state.level), color = Theme.ACCENT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.weight(1f))
             Btn(if (adding) "Cancel" else "+ Add student") {
                 if (!adding && activeCount >= planLimit) {
@@ -395,21 +392,14 @@ fun ClassesScreen(state: AppState) {
     var streamOpenFor by remember { mutableStateOf("") }   // class name+level key currently adding a stream
     var streamName by remember { mutableStateOf("") }
     var customName by remember { mutableStateOf("") }
-    var customLevel by remember { mutableStateOf(Level.O_LEVEL) }
+    var customLevel by remember(state.level) { mutableStateOf(state.level) }
     var showCustom by remember { mutableStateOf(false) }
     var teacherPickerFor by remember { mutableStateOf("") }  // class id currently picking a teacher for
     // v2.2.3: pick one level at a time so the page doesn't need scrolling through P1-S6 every time.
-    var selectedLevel by remember { mutableStateOf<Level?>(null) }
+    val selectedLevel: Level? = state.level
 
     ScreenTitle("Classes & Streams", "Primary 1 → Senior 6 already set up for every school. Just add streams (East/West, A/B…) where a class is split.")
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("Level:", color = Theme.MUTED, fontSize = 14.sp)
-            FilterChip(selected = selectedLevel == null, onClick = { selectedLevel = null }, label = { Text("All", fontSize = 13.sp) })
-            Level.entries.forEach { lvl ->
-                FilterChip(selected = selectedLevel == lvl, onClick = { selectedLevel = lvl }, label = { Text(levelLabel(lvl), fontSize = 13.sp) })
-            }
-        }
         Level.entries.filter { selectedLevel == null || it == selectedLevel }.forEach { lvl ->
             val inLevel = d.classes.filter { it.level == lvl && it.active }
             if (inLevel.isNotEmpty()) {
@@ -573,7 +563,7 @@ fun SubjectsScreen(state: AppState) {
     val d = state.data
     var name by remember { mutableStateOf("") }
     var code by remember { mutableStateOf("") }
-    var level by remember { mutableStateOf(Level.O_LEVEL) }
+    val level = state.level
     var compulsory by remember { mutableStateOf(true) }
 
     ScreenTitle("Subjects", "Preloaded defaults — add or remove anything your school offers")
@@ -586,9 +576,7 @@ fun SubjectsScreen(state: AppState) {
                 Column(Modifier.weight(1f)) { FieldLabel("Code"); TextField(code, { code = it }, Modifier.fillMaxWidth(), "F/MATH") }
                 Column(Modifier.weight(1f)) {
                     FieldLabel("Level")
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Level.entries.forEach { lvl -> FilterChip(selected = level == lvl, onClick = { level = lvl }, label = { Text(levelLabel(lvl), fontSize = 9.sp) }) }
-                    }
+                    Text(levelLabel(level), color = Theme.ACCENT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
                 Column(Modifier.weight(1f)) {
                     FieldLabel("Compulsory")
@@ -611,7 +599,7 @@ fun SubjectsScreen(state: AppState) {
             }
         }
         CardBox {
-            Level.entries.forEach { lvl ->
+            Level.entries.filter { it == state.level }.forEach { lvl ->
                 val subs = d.subjects.filter { it.level == lvl && it.active }
                 if (subs.isNotEmpty()) {
                     Text(levelLabel(lvl), color = Theme.MUTED, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = 4.dp))
@@ -778,7 +766,7 @@ fun TeachersScreen(state: AppState) {
                     }
                     Column(Modifier.width(180.dp)) {
                         FieldLabel("Class")
-                        Level.entries.forEach { lvl ->
+                        Level.entries.filter { it == state.level }.forEach { lvl ->
                             val inLevel = d.classes.filter { it.active && it.level == lvl }
                             if (inLevel.isNotEmpty()) {
                                 Text(levelLabel(lvl), color = Theme.ACCENT, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 5.dp))
