@@ -565,61 +565,81 @@ fun SubjectsScreen(state: AppState) {
     var code by remember { mutableStateOf("") }
     val level = state.level
     var compulsory by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf("") }
+    val subs = d.subjects.filter { it.level == level && it.active }
+    val nCompulsory = subs.count { it.compulsory }
+    fun teachersOf(sid: String) = d.assignments.filter { it.subjectId == sid }.mapNotNull { a -> d.teachers.firstOrNull { it.id == a.teacherId }?.name }.distinct()
 
-    ScreenTitle("Subjects", "Preloaded defaults — add or remove anything your school offers")
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    ScreenTitle("Subjects", "${levelLabel(level)} · ${subs.size} subjects — add or remove anything your school offers")
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Row3 {
+            StatCard("Total subjects", "${subs.size}", detail = levelLabel(level))
+            StatCard("Compulsory", "$nCompulsory", detail = "taught to every student")
+            StatCard("Optional", "${subs.size - nCompulsory}", detail = "chosen by students")
+        }
+
         CardBox {
-            Text("Add subject", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(8.dp))
-            Row3 {
+            Text("Add subject", color = Theme.TEXT, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Bottom) {
                 Column(Modifier.weight(2f)) { FieldLabel("Subject name"); TextField(name, { name = it }, Modifier.fillMaxWidth(), "Further Mathematics") }
                 Column(Modifier.weight(1f)) { FieldLabel("Code"); TextField(code, { code = it }, Modifier.fillMaxWidth(), "F/MATH") }
                 Column(Modifier.weight(1f)) {
-                    FieldLabel("Level")
-                    Text(levelLabel(level), color = Theme.ACCENT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                }
-                Column(Modifier.weight(1f)) {
-                    FieldLabel("Compulsory")
+                    FieldLabel("Compulsory?")
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        FilterChip(selected = compulsory, onClick = { compulsory = true }, label = { Text("Yes", fontSize = 13.sp) })
-                        FilterChip(selected = !compulsory, onClick = { compulsory = false }, label = { Text("Optional", fontSize = 13.sp) })
+                        FilterChip(selected = compulsory, onClick = { compulsory = true }, label = { Text("Yes", fontSize = 14.sp) })
+                        FilterChip(selected = !compulsory, onClick = { compulsory = false }, label = { Text("Optional", fontSize = 14.sp) })
                     }
                 }
-                Column(Modifier.weight(1f)) {
-                    Spacer(Modifier.height(22.dp))
-                    Btn("Add") {
-                        if (name.isBlank()) return@Btn
-                        val id = state.repo.nextId()
-                        state.repo.mutate("SUBJECT_ADDED", "Subject", id, new = name) { dd ->
-                            dd.copy(subjects = dd.subjects + Subject(id = id, name = name, code = code, level = level, compulsory = compulsory))
-                        }
-                        name = ""; code = ""; state.refresh()
+                Btn("Add subject") {
+                    if (name.isBlank()) { error = "Type the subject name first."; return@Btn }
+                    val id = state.repo.nextId()
+                    state.repo.mutate("SUBJECT_ADDED", "Subject", id, new = name) { dd ->
+                        dd.copy(subjects = dd.subjects + Subject(id = id, name = name, code = code, level = level, compulsory = compulsory))
                     }
+                    name = ""; code = ""; error = ""; state.refresh()
                 }
             }
+            if (error.isNotBlank()) { Spacer(Modifier.height(6.dp)); ErrorText(error) }
         }
-        CardBox {
-            Level.entries.filter { it == state.level }.forEach { lvl ->
-                val subs = d.subjects.filter { it.level == lvl && it.active }
-                if (subs.isNotEmpty()) {
-                    Text(levelLabel(lvl), color = Theme.MUTED, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = 4.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.wrapContentWidth()) {
-                        subs.forEach { s ->
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.background(Theme.ACCENT_SOFT, RoundedCornerShape(8.dp)).padding(horizontal = 10.dp, vertical = 5.dp).clickable { }
-                            ) {
-                                Text("${s.name}", color = Theme.TEXT, fontSize = 13.sp)
-                                if (!s.compulsory) Text(" · optional", color = Theme.WARN, fontSize = 12.sp)
-                                TextButton(onClick = {
-                                    state.repo.mutate("SUBJECT_REMOVED", "Subject", s.id, old = s.name) { dd ->
-                                        dd.copy(subjects = dd.subjects.map { if (it.id == s.id) it.copy(active = false) else it })
+
+        if (subs.isEmpty()) {
+            CardBox {
+                Text("No subjects at ${levelLabel(level)} yet.", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(4.dp))
+                Text("Add your first subject in the box above.", color = Theme.MUTED, fontSize = 14.sp)
+            }
+        } else {
+            subs.chunked(3).forEach { rowItems ->
+                Row3 {
+                    rowItems.forEach { sItem ->
+                        val teachers = teachersOf(sItem.id)
+                        Column(
+                            Modifier.weight(1f).background(Theme.CARD, RoundedCornerShape(14.dp))
+                                .border(1.dp, Theme.LINE, RoundedCornerShape(14.dp)).padding(16.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(sItem.name, color = Theme.INK, fontSize = 16.sp, fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.weight(1f), maxLines = 2)
+                                if (sItem.code.isNotBlank()) Text(sItem.code.uppercase(), color = Theme.MUTED, fontSize = 13.sp,
+                                    modifier = Modifier.background(Color(0xFFECEAE0), RoundedCornerShape(6.dp)).padding(horizontal = 7.dp, vertical = 2.dp))
+                            }
+                            Spacer(Modifier.height(8.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Pill(if (sItem.compulsory) "Compulsory" else "Optional", if (sItem.compulsory) "teal" else "gold")
+                                if (teachers.isNotEmpty()) Text(teachers.joinToString(", "), color = Theme.MUTED, fontSize = 12.sp)
+                            }
+                            Spacer(Modifier.height(10.dp))
+                            Text("Remove", color = Theme.RUST, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.clickable {
+                                    state.repo.mutate("SUBJECT_REMOVED", "Subject", sItem.id, old = sItem.name) { dd ->
+                                        dd.copy(subjects = dd.subjects.map { if (it.id == sItem.id) it.copy(active = false) else it })
                                     }
                                     state.refresh()
-                                }) { Text("×", color = Theme.MUTED, fontSize = 14.sp) }
-                            }
+                                })
                         }
                     }
+                    repeat(3 - rowItems.size) { Spacer(Modifier.weight(1f)) }
                 }
             }
         }

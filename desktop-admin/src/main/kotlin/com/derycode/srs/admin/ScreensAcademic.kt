@@ -1,7 +1,10 @@
 package com.derycode.srs.admin
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -877,6 +880,7 @@ private fun csvCell(s: String): String = "\"" + s.replace("\"", "\"\"") + "\""
 
 private val DAY_LABELS = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun TimetableScreen(state: AppState) {
     val d = state.data
@@ -886,110 +890,120 @@ fun TimetableScreen(state: AppState) {
     var pClass by remember { mutableStateOf("") }
     var pSubject by remember { mutableStateOf("") }
     var pTeacher by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf("") }
+
+    val cls = d.classes.firstOrNull { it.id == pClass }
+    val dayPeriods = d.timetable.filter { it.day == day }.sortedWith(compareBy({ it.start }, { it.end }))
+    val perDay = (1..6).map { dd -> d.timetable.count { it.day == dd } }
+    val subjectsForClass = d.subjects.filter { it.active && (cls == null || it.level == cls.level) }
 
     ScreenTitle("Timetable", "Build the weekly timetable — teachers see their periods in the phone app after pulling school setup")
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         CardBox {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 DAY_LABELS.forEachIndexed { i, lbl ->
                     val dv = i + 1
-                    FilterChip(selected = day == dv, onClick = { day = dv }, label = { Text(lbl) })
+                    val on = day == dv
+                    Column(
+                        Modifier.background(if (on) Theme.ACCENT else Theme.ACCENT_SOFT, RoundedCornerShape(12.dp))
+                            .clickable { day = dv }
+                            .padding(horizontal = 18.dp, vertical = 10.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(lbl, color = if (on) Color.White else Theme.ACCENT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Text("${perDay[i]} periods", color = if (on) Color(0xFFDFF0ED) else Theme.MUTED, fontSize = 11.sp)
+                    }
                 }
             }
-            Spacer(Modifier.height(12.dp))
-            val dayPeriods = d.timetable.filter { it.day == day }.sortedWith(compareBy({ it.start }, { it.end }))
+            Spacer(Modifier.height(16.dp))
             if (dayPeriods.isEmpty()) {
-                Text("No periods yet for ${DAY_LABELS[day - 1]}. Add one below.", color = Theme.MUTED, fontSize = 14.sp)
+                Column(Modifier.fillMaxWidth().background(Theme.ACCENT_SOFT.copy(alpha = 0.4f), RoundedCornerShape(12.dp)).padding(22.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("No periods yet for ${DAY_LABELS[day - 1]}", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(4.dp))
+                    Text("Add the first one below.", color = Theme.MUTED, fontSize = 14.sp)
+                }
             } else {
-                dayPeriods.forEach { p ->
-                    val c = d.classes.firstOrNull { it.id == p.classId }
-                    val s = p.subjectId?.let { d.subjects.firstOrNull { x -> x.id == it } }
-                    val t = d.teachers.firstOrNull { it.id == p.teacherId }
-                    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Box(Modifier.width(110.dp)) {
-                                Text("${p.start} – ${p.end}", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    dayPeriods.forEach { p ->
+                        val c = d.classes.firstOrNull { it.id == p.classId }
+                        val sbj = p.subjectId?.let { d.subjects.firstOrNull { x -> x.id == it } }
+                        val t = d.teachers.firstOrNull { it.id == p.teacherId }
+                        Row(
+                            Modifier.fillMaxWidth().background(Theme.CARD, RoundedCornerShape(12.dp))
+                                .border(1.dp, Theme.LINE, RoundedCornerShape(12.dp)).padding(10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(14.dp)
+                        ) {
+                            Column(
+                                Modifier.width(92.dp).background(Theme.ACCENT_SOFT, RoundedCornerShape(10.dp)).padding(vertical = 8.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(p.start, color = Theme.ACCENT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                Text(p.end, color = Theme.MUTED, fontSize = 12.sp)
                             }
-                            Column {
-                                Text("${s?.name ?: p.notes.ifBlank { "—" }} · ${c?.let { if (it.stream.isBlank()) it.name else "${it.name} ${it.stream}" } ?: "?"}", color = Theme.TEXT, fontSize = 14.sp)
-                                Text(t?.name ?: "any teacher", color = Theme.MUTED, fontSize = 12.sp)
+                            Column(Modifier.weight(1f)) {
+                                Text(sbj?.name ?: p.notes.ifBlank { "Free period" }, color = Theme.INK, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                                Spacer(Modifier.height(2.dp))
+                                val clsName = c?.let { if (it.stream.isBlank()) it.name else "${it.name} ${it.stream}" } ?: "?"
+                                Text(if (t != null) "$clsName · ${t.name}" else clsName, color = Theme.MUTED, fontSize = 13.sp)
                             }
+                            Text("Remove", color = Theme.RUST, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.clickable {
+                                    state.repo.mutate("PERIOD_REMOVED", "TimetablePeriod", p.id) { dd ->
+                                        dd.copy(timetable = dd.timetable.filterNot { it.id == p.id })
+                                    }
+                                    state.refresh()
+                                })
                         }
-                        Text("remove", color = Theme.ACCENT, fontSize = 12.sp, modifier = Modifier.clickable {
-                            state.repo.mutate("PERIOD_REMOVED", "TimetablePeriod", p.id) { dd ->
-                                dd.copy(timetable = dd.timetable.filterNot { it.id == p.id })
-                            }
-                            state.refresh()
-                        })
                     }
                 }
             }
         }
 
         CardBox {
-            Text("Add period — ${DAY_LABELS[day - 1]}", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(8.dp))
+            Text("Add period — ${DAY_LABELS[day - 1]}", color = Theme.TEXT, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(10.dp))
             if (d.classes.isEmpty()) {
                 Text("Add classes first.", color = Theme.MUTED, fontSize = 14.sp)
             } else {
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.width(90.dp)) {
-                        FieldLabel("Start")
-                        TextField(pStart, { pStart = it }, Modifier.fillMaxWidth(), "08:00")
-                    }
-                    Column(Modifier.width(90.dp)) {
-                        FieldLabel("End")
-                        TextField(pEnd, { pEnd = it }, Modifier.fillMaxWidth(), "09:00")
-                    }
-                    Column(Modifier.width(180.dp)) {
-                        FieldLabel("Class")
-                        LazyColumn(Modifier.height(280.dp)) {
-                            items(d.classes.filter { it.active }) { c ->
-                                Text((if (pClass == c.id) "● " else "○ ") + if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}",
-                                    color = if (pClass == c.id) Theme.ACCENT else Theme.TEXT, fontSize = 14.sp,
-                                    modifier = Modifier.fillMaxWidth().clickable { pClass = c.id }.padding(vertical = 3.dp))
-                            }
-                        }
-                    }
-                    Column(Modifier.width(150.dp)) {
-                        FieldLabel("Subject (optional)")
-                        LazyColumn(Modifier.height(280.dp)) {
-                            items(d.subjects.filter { it.active }) { s ->
-                                Text((if (pSubject == s.id) "● " else "○ ") + s.name,
-                                    color = if (pSubject == s.id) Theme.ACCENT else Theme.TEXT, fontSize = 14.sp,
-                                    modifier = Modifier.fillMaxWidth().clickable { pSubject = if (pSubject == s.id) "" else s.id }.padding(vertical = 3.dp))
-                            }
-                        }
-                    }
-                    Column(Modifier.width(150.dp)) {
-                        FieldLabel("Teacher (optional)")
-                        LazyColumn(Modifier.height(280.dp)) {
-                            items(d.teachers) { t ->
-                                Text((if (pTeacher == t.id) "● " else "○ ") + t.name,
-                                    color = if (pTeacher == t.id) Theme.ACCENT else Theme.TEXT, fontSize = 14.sp,
-                                    modifier = Modifier.fillMaxWidth().clickable { pTeacher = if (pTeacher == t.id) "" else t.id }.padding(vertical = 3.dp))
-                            }
-                        }
-                    }
-                    Column {
-                        Spacer(Modifier.height(22.dp))
-                        Btn("Add period") {
-                            if (pClass.isBlank() || pStart.isBlank()) return@Btn
-                            val id = state.repo.nextId()
-                            state.repo.mutate("PERIOD_ADDED", "TimetablePeriod", id) { dd ->
-                                dd.copy(timetable = dd.timetable + TimetablePeriod(
-                                    id = id, day = day, start = pStart.trim(), end = pEnd.trim(),
-                                    classId = pClass, subjectId = pSubject.ifBlank { null },
-                                    teacherId = pTeacher, notes = ""))
-                            }
-                            state.refresh()
-                        }
-                        Spacer(Modifier.height(6.dp))
-                        Text("Times use 24h HH:mm.", color = Theme.MUTED, fontSize = 11.sp)
+                FieldLabel("Class")
+                ClassPickerChips(d.classes.filter { it.active && it.level == state.level }, pClass) { pClass = it }
+                Spacer(Modifier.height(8.dp))
+                FieldLabel("Subject (optional)")
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    subjectsForClass.forEach { sbj ->
+                        FilterChip(selected = pSubject == sbj.id, onClick = { pSubject = if (pSubject == sbj.id) "" else sbj.id },
+                            label = { Text(sbj.name, fontSize = 13.sp) })
                     }
                 }
+                Spacer(Modifier.height(8.dp))
+                FieldLabel("Teacher (optional)")
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    d.teachers.forEach { t ->
+                        FilterChip(selected = pTeacher == t.id, onClick = { pTeacher = if (pTeacher == t.id) "" else t.id },
+                            label = { Text(t.name, fontSize = 13.sp) })
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.Bottom) {
+                    Column(Modifier.width(110.dp)) { FieldLabel("Starts"); TextField(pStart, { pStart = it }, Modifier.fillMaxWidth(), "08:00") }
+                    Column(Modifier.width(110.dp)) { FieldLabel("Ends"); TextField(pEnd, { pEnd = it }, Modifier.fillMaxWidth(), "09:00") }
+                    Btn("Add period") {
+                        if (pClass.isBlank()) { error = "Pick the class first."; return@Btn }
+                        if (pStart.isBlank()) { error = "Type the start time (24h HH:mm)."; return@Btn }
+                        val id = state.repo.nextId()
+                        state.repo.mutate("PERIOD_ADDED", "TimetablePeriod", id) { dd ->
+                            dd.copy(timetable = dd.timetable + TimetablePeriod(
+                                id = id, day = day, start = pStart.trim(), end = pEnd.trim(),
+                                classId = pClass, subjectId = pSubject.ifBlank { null },
+                                teacherId = pTeacher, notes = ""))
+                        }
+                        error = ""; state.refresh()
+                    }
+                }
+                if (error.isNotBlank()) { Spacer(Modifier.height(6.dp)); ErrorText(error) }
                 Spacer(Modifier.height(10.dp))
-                Text("Week overview: ${d.timetable.size} period(s) across ${d.timetable.map { it.day }.distinct().size} day(s).", color = Theme.MUTED, fontSize = 13.sp)
+                Text("Times use 24h HH:mm · ${d.timetable.size} period(s) across ${d.timetable.map { it.day }.distinct().size} day(s) this week.", color = Theme.MUTED, fontSize = 13.sp)
             }
         }
     }
