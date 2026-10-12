@@ -1,8 +1,8 @@
 {
-  "console": "2.2.32",
-  "teacher": "1.13.13",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.32.msi",
-  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.13.13.apk",
-  "releaseNotes": "Admin console 2.2.32: School Setup now collects full school information in 6 organised sections (identity, location, contact, official records, leadership, branding) and report cards print the complete header: P.O. Box, district, both phones, email, website, registration, EMIS and UNEB centre numbers, stamp. Teacher app 1.13.13 (unchanged).",
+  "console": "2.2.33",
+  "teacher": "1.14.0",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.33.msi",
+  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.14.0.apk",
+  "releaseNotes": "Teacher app 1.14.0: invite code now registers a teacher fully \u2014 account (phone + password), passport photo, role, contacts, then picks their classes and subjects. Stays active until the school disconnects them. Admin console 2.2.33: Cloud staff on Teachers screen with photo, contacts, editable info and Disconnect.",
   "released": "2026-10-12"
 }
