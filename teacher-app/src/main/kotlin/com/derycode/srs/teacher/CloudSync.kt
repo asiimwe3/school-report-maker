@@ -97,16 +97,27 @@ class TeacherCloud(private val context: Context) {
     }
 
     // ── Auth ──────────────────────────────────────────────────────────────
+    /** Accepts an email OR a phone number as the login identity.
+     *  Phones map to a stable auto-email (0772123456@srs-teacher.app) so a
+     *  teacher can always sign back in with just phone + password. */
+    private fun identity(login: String): String {
+        val t = login.trim()
+        return if (t.contains("@")) t.lowercase()
+        else t.filter { it.isLetterOrDigit() }.lowercase() + "@srs-teacher.app"
+    }
+
     fun signUp(email: String, password: String, fullName: String): CloudResult {
-        val b = "{\"email\":\"${esc(email.trim().lowercase())}\",\"password\":\"${esc(password)}\",\"data\":{\"full_name\":\"${esc(fullName)}\"}}"
+        val em = identity(email)
+        val b = "{\"email\":\"${esc(em)}\",\"password\":\"${esc(password)}\",\"data\":{\"full_name\":\"${esc(fullName)}\"}}"
         val (code, body) = http("POST", "/auth/v1/signup", null, b)
-        return authResult(code, body, "Could not create the account — email may already be registered", email.trim().lowercase())
+        return authResult(code, body, "Could not create the account — this phone may already be registered", em)
     }
 
     fun login(email: String, password: String): CloudResult {
-        val b = "{\"email\":\"${esc(email.trim().lowercase())}\",\"password\":\"${esc(password)}\"}"
+        val em = identity(email)
+        val b = "{\"email\":\"${esc(em)}\",\"password\":\"${esc(password)}\"}"
         val (code, body) = http("POST", "/auth/v1/token?grant_type=password", null, b)
-        return authResult(code, body, "Sign-in failed — check email and password", email.trim().lowercase())
+        return authResult(code, body, "Sign-in failed — check phone/email and password", em)
     }
 
     private fun authResult(code: Int, body: String, fail: String, accountEmail: String = ""): CloudResult {
@@ -185,6 +196,43 @@ class TeacherCloud(private val context: Context) {
                 else Pair(payload, "ok")
             } else Pair("", "Pull failed — unexpected server response")
         } catch (_: Exception) { Pair("", "Pull failed — wrong data format") }
+    }
+
+    // ── v3: full teacher self-registration ─────────────────────────────────
+    /** Register with an invite code + complete profile (photo, contacts,
+     *  classes, subjects). Call AFTER sign-up with the fresh token. */
+    fun registerTeacher(token: String, code: String, myName: String, myRole: String,
+                        myPhone: String, myContacts: String, myClasses: String,
+                        mySubjects: String, photoB64: String): CloudResult {
+        val clean = code.uppercase().filter { it.isLetterOrDigit() }
+        if (clean.isBlank()) return CloudResult(false, msg = "Enter the invite code from your head teacher's console")
+        val b = "{\"p_code\":\"${esc(clean)}\",\"p_name\":\"${esc(myName)}\",\"p_role\":\"${esc(myRole)}\"," +
+                "\"p_phone\":\"${esc(myPhone)}\",\"p_contacts\":\"${esc(myContacts)}\"," +
+                "\"p_classes\":\"${esc(myClasses)}\",\"p_subjects\":\"${esc(mySubjects)}\",\"p_photo\":\"${esc(photoB64)}\"}"
+        val (c, body) = http("POST", "/rest/v1/rpc/srs_register_teacher", token, b)
+        if (c in 200..299) return CloudResult(true, token = token, msg = "ok")
+        val m = member(body, "message")
+        val friendly = if (m.contains("srs_register_teacher", true) || m.contains("Could not choose", true) || c == 404)
+            "The school cloud needs the v3 update script (docs/supabase-setup-v3.sql) — ask the head teacher to run it once in the Supabase dashboard, then try again."
+            else m.ifBlank { "Registration failed — check internet and try again" }
+        return CloudResult(false, msg = friendly)
+    }
+
+    /** Update the teacher's own profile (classes, subjects, photo, phone). */
+    fun updateMyProfile(token: String, schoolId: String, myName: String, myRole: String,
+                        myPhone: String, myContacts: String, myClasses: String,
+                        mySubjects: String, photoB64: String): CloudResult {
+        val uid = account.uid
+        if (uid.isBlank()) return CloudResult(false, msg = "Account error — sign in again")
+        val patch = buildString {
+            append("{\"teacher_name\":\"${esc(myName)}\",\"role\":\"${esc(myRole)}\",\"phone\":\"${esc(myPhone)}\",")
+            append("\"contacts\":\"${esc(myContacts)}\",\"classes\":\"${esc(myClasses)}\",\"subjects\":\"${esc(mySubjects)}\"")
+            if (photoB64.isNotBlank()) append(",\"photo\":\"${esc(photoB64)}\"")
+            append("}")
+        }
+        val (c, body) = http("PATCH", "/rest/v1/srs_teacher_schools?teacher_uid=eq.$uid&school_id=eq.$schoolId", token, patch)
+        return if (c in 200..299) CloudResult(true, token = token, msg = "Profile saved ✓")
+        else CloudResult(false, msg = "Could not save profile — check internet and try again (${member(body, "message")})")
     }
 
     /** Push the teacher's marks bundle to the school console. */

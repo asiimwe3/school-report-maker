@@ -1,5 +1,6 @@
 package com.derycode.srs.admin
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -12,6 +13,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -666,6 +669,7 @@ fun TeachersScreen(state: AppState) {
     var cloudErr by remember { mutableStateOf(false) }
 
     ScreenTitle("Teachers", "Teachers, roles and subject/class assignments")
+    CloudStaffSection(state)
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         CardBox {
             Text("Staff roster", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
@@ -901,4 +905,150 @@ private fun bulkSex(s: String): String = when (s.trim().lowercase()) {
     "m", "male", "boy" -> "M"
     "f", "female", "girl" -> "F"
     else -> ""
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Cloud staff — teachers who registered via invite code (v3)
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+fun CloudStaffSection(state: AppState) {
+    val s = state.data.settings
+    if (s.cloudSchoolId.isBlank()) return
+    var list by remember { mutableStateOf(emptyList<CloudApi.CloudTeacher>()) }
+    var busy by remember { mutableStateOf(false) }
+    var msg by remember { mutableStateOf("") }
+    var err by remember { mutableStateOf(false) }
+    var editingUid by remember { mutableStateOf("") }
+    var loaded by remember { mutableStateOf(false) }
+
+    fun say(e: Boolean, m: String) { err = e; msg = m }
+
+    fun load() {
+        if (busy) return
+        busy = true; say(false, "Loading connected teachers…")
+        val st = state.data.settings
+        Thread {
+            val (teachers, m) = CloudSync.withFreshToken(state.repo, errorOf = { it.second }) { tok ->
+                CloudApi.listCloudTeachers(CloudSync.url(st), CloudSync.key(st), tok, st.cloudSchoolId)
+            }
+            list = teachers
+            busy = false
+            if (m != "ok") say(true, m)
+            else if (!loaded) { loaded = true; msg = "" }
+        }.start()
+    }
+
+    LaunchedEffect(s.cloudSchoolId) { if (!loaded) load() }
+
+    CardBox {
+        Column {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Cloud staff — ${list.size} connected teacher(s)", color = Theme.INK, fontSize = 17.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                OutlinedButton(onClick = { load() }, enabled = !busy, shape = RoundedCornerShape(8.dp), modifier = Modifier.height(34.dp)) {
+                    Text("Refresh", fontSize = 13.sp)
+                }
+            }
+            Spacer(Modifier.height(4.dp))
+            Text("Teachers who registered with your invite code. Their photo, role and contacts appear here — edit any of it at any time.", color = Theme.MUTED, fontSize = 13.sp)
+            if (msg.isNotEmpty()) { Spacer(Modifier.height(6.dp)); Text(msg, color = if (err) Color(0xFFB3261E) else Theme.GOOD, fontSize = 13.sp) }
+            Spacer(Modifier.height(10.dp))
+
+            if (list.isEmpty()) {
+                Text(if (busy) "Loading…" else "No teachers connected yet — generate an invite code below and share it. When the teacher registers with it, they appear here.", color = Theme.MUTED, fontSize = 14.sp)
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    list.forEach { t ->
+                        val editing = editingUid == t.uid
+                        Column(
+                            Modifier.fillMaxWidth().background(if (editing) Theme.ACCENT_SOFT.copy(alpha = 0.35f) else Theme.CARD, RoundedCornerShape(12.dp))
+                                .border(1.dp, Theme.LINE, RoundedCornerShape(12.dp)).padding(14.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                val photoBmp = remember(t.uid, t.photo) {
+                                    if (t.photo.isBlank()) null
+                                    else try { org.jetbrains.skia.Image.makeFromEncoded(java.util.Base64.getDecoder().decode(t.photo)).toComposeImageBitmap() } catch (_: Exception) { null }
+                                }
+                                Box(Modifier.size(52.dp).background(Theme.MUTED, RoundedCornerShape(26.dp)), contentAlignment = Alignment.Center) {
+                                    if (photoBmp != null) Image(BitmapPainter(photoBmp), contentDescription = t.name, modifier = Modifier.fillMaxSize())
+                                    else Text("${t.name.trim().split(" ").mapNotNull { it.firstOrNull()?.uppercaseChar() }.take(2).joinToString("")}", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                                }
+                                Column(Modifier.weight(1f)) {
+                                    Text(t.name.ifBlank { "Unnamed teacher" }, color = Theme.INK, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                    val infoLine = listOf(roleLabelPretty(t.role), t.phone, t.contacts).filter { it.isNotBlank() }.joinToString(" | ")
+                                    Text(infoLine, color = Theme.MUTED, fontSize = 13.sp)
+                                    if (t.classes.isNotBlank()) Text("Classes: ${t.classes}", color = Theme.TEXT, fontSize = 13.sp)
+                                    if (t.subjects.isNotBlank()) Text("Subjects: ${t.subjects}", color = Theme.TEXT, fontSize = 13.sp)
+                                    Text("Connected since ${t.addedAt.ifBlank { "—" }} · active until disconnected", color = Theme.MUTED, fontSize = 12.sp)
+                                }
+                                Text(if (editing) "Close" else "Edit", color = Theme.ACCENT, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.clickable { editingUid = if (editing) "" else t.uid; msg = "" })
+                            }
+                            if (editing) {
+                                Spacer(Modifier.height(10.dp))
+                                var eName by remember(t.uid) { mutableStateOf(t.name) }
+                                var ePhone by remember(t.uid) { mutableStateOf(t.phone) }
+                                var eContacts by remember(t.uid) { mutableStateOf(t.contacts) }
+                                var eClasses by remember(t.uid) { mutableStateOf(t.classes) }
+                                var eSubjects by remember(t.uid) { mutableStateOf(t.subjects) }
+                                var eRole by remember(t.uid) { mutableStateOf(t.role) }
+                                Row3 {
+                                    Column(Modifier.weight(1f)) { FieldLabel("Name"); TextField(eName, { eName = it }, Modifier.fillMaxWidth()) }
+                                    Column(Modifier.weight(1f)) { FieldLabel("Role"); TextField(eRole, { eRole = it.uppercase() }, Modifier.fillMaxWidth()) }
+                                }
+                                Spacer(Modifier.height(8.dp))
+                                Row3 {
+                                    Column(Modifier.weight(1f)) { FieldLabel("Phone"); TextField(ePhone, { ePhone = it }, Modifier.fillMaxWidth()) }
+                                    Column(Modifier.weight(1f)) { FieldLabel("Other contacts"); TextField(eContacts, { eContacts = it }, Modifier.fillMaxWidth()) }
+                                }
+                                Spacer(Modifier.height(8.dp))
+                                Row3 {
+                                    Column(Modifier.weight(1f)) { FieldLabel("Classes taught"); TextField(eClasses, { eClasses = it }, Modifier.fillMaxWidth()) }
+                                    Column(Modifier.weight(1f)) { FieldLabel("Subjects taught"); TextField(eSubjects, { eSubjects = it }, Modifier.fillMaxWidth()) }
+                                }
+                                Spacer(Modifier.height(10.dp))
+                                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Btn("Save changes") {
+                                        busy = true; say(false, "Saving…")
+                                        val st = state.data.settings
+                                        Thread {
+                                            val (ok, m) = CloudSync.withFreshToken(state.repo, errorOf = { it.second }) { tok ->
+                                                CloudApi.updateCloudTeacher(CloudSync.url(st), CloudSync.key(st), tok, t.uid, st.cloudSchoolId, eName, eRole.uppercase(), ePhone, eContacts, eClasses, eSubjects)
+                                            }
+                                            busy = false
+                                            if (ok) { editingUid = ""; load() } else say(true, m)
+                                        }.start()
+                                    }
+                                    Text("Disconnect", color = Color(0xFFB3261E), fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                                        modifier = Modifier.clickable {
+                                            busy = true; say(false, "Disconnecting…")
+                                            val st = state.data.settings
+                                            Thread {
+                                                val (ok, m) = CloudSync.withFreshToken(state.repo, errorOf = { it.second }) { tok ->
+                                                    CloudApi.disconnectCloudTeacher(CloudSync.url(st), CloudSync.key(st), tok, t.uid, st.cloudSchoolId)
+                                                }
+                                                busy = false
+                                                if (ok) { editingUid = ""; load() } else say(true, m)
+                                            }.start()
+                                        })
+                                    Spacer(Modifier.weight(1f))
+                                    Text("Disconnecting removes their cloud access; their marks already imported stay.", color = Theme.MUTED, fontSize = 12.sp, modifier = Modifier.weight(1f))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    Spacer(Modifier.height(16.dp))
+}
+
+private fun roleLabelPretty(role: String): String = when (role.uppercase()) {
+    "TEACHER" -> "Teacher"
+    "HEAD_TEACHER" -> "Head Teacher"
+    "SCHOOL_ADMIN" -> "School Admin"
+    "DATA_ENTRY" -> "Data Entry"
+    else -> role
 }

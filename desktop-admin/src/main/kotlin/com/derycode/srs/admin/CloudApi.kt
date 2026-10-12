@@ -187,6 +187,49 @@ object CloudApi {
     data class TeacherInvite(val id: String = "", val code: String = "", val name: String = "", val used: Boolean = false)
     data class LinkedTeacher(val uid: String = "", val name: String = "", val role: String = "TEACHER")
 
+    // ── v3: connected teacher roster (full profile from self-registration) ──
+    data class CloudTeacher(
+        val uid: String = "", val name: String = "", val role: String = "TEACHER",
+        val phone: String = "", val contacts: String = "", val classes: String = "",
+        val subjects: String = "", val photo: String = "", val addedAt: String = "")
+
+    /** All connected teachers of the school, with their registered profile. */
+    fun listCloudTeachers(url: String, key: String, token: String, schoolId: String): Pair<List<CloudTeacher>, String> {
+        val r = http("GET", "$url/rest/v1/srs_teacher_schools?school_id=eq.$schoolId&select=teacher_uid,teacher_name,role,phone,contacts,classes,subjects,photo,added_at&order=added_at.asc", key, token, null)
+        if (r.first !in 200..299) return Pair(emptyList(), "Could not load the teacher list (${r.first}): ${r.second.take(120)}")
+        val out = ArrayList<CloudTeacher>()
+        try {
+            val root = Json.parseToJsonElement(r.second)
+            if (root is JsonArray) for (el in root) {
+                if (el is JsonObject) {
+                    fun str(m: String) = (el[m] as? kotlinx.serialization.json.JsonPrimitive)?.content ?: ""
+                    out.add(CloudTeacher(
+                        uid = str("teacher_uid"), name = str("teacher_name"), role = str("role"),
+                        phone = str("phone"), contacts = str("contacts"), classes = str("classes"),
+                        subjects = str("subjects"), photo = str("photo"), addedAt = str("added_at").take(10)))
+                }
+            }
+        } catch (_: Exception) { }
+        return Pair(out as List<CloudTeacher>, "ok")
+    }
+
+    /** Admin edits a connected teacher's info (name, role, phone, contacts, classes, subjects). */
+    fun updateCloudTeacher(url: String, key: String, token: String, teacherUid: String, schoolId: String,
+                           name: String, role: String, phone: String, contacts: String,
+                           classes: String, subjects: String): Pair<Boolean, String> {
+        val body = "{\"teacher_name\":\"${esc(name)}\",\"role\":\"${esc(role)}\",\"phone\":\"${esc(phone)}\"," +
+                "\"contacts\":\"${esc(contacts)}\",\"classes\":\"${esc(classes)}\",\"subjects\":\"${esc(subjects)}\"}"
+        val r = http("PATCH", "$url/rest/v1/srs_teacher_schools?teacher_uid=eq.$teacherUid&school_id=eq.$schoolId", key, token, body)
+        return if (r.first in 200..299) Pair(true, "Saved") else Pair(false, "Could not save (${r.first}): ${r.second.take(120)}")
+    }
+
+    /** Disconnect a teacher: deletes the link row. The teacher's account stays, but
+     *  they lose access to this school and their cloud sync stops working. */
+    fun disconnectCloudTeacher(url: String, key: String, token: String, teacherUid: String, schoolId: String): Pair<Boolean, String> {
+        val r = http("DELETE", "$url/rest/v1/srs_teacher_schools?teacher_uid=eq.$teacherUid&school_id=eq.$schoolId", key, token, null)
+        return if (r.first in 200..299) Pair(true, "Disconnected") else Pair(false, "Could not disconnect (${r.first}): ${r.second.take(120)}")
+    }
+
     /** Create a personal single-use invite code for one teacher. */
     fun createTeacherInvite(url: String, key: String, token: String, schoolId: String, teacherName: String, code: String): Pair<TeacherInvite, String> {
         val body = "{\"school_id\":\"$schoolId\",\"code\":\"${esc(code)}\",\"teacher_name\":\"${esc(teacherName)}\"}"
