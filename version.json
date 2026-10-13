@@ -1,8 +1,8 @@
 {
-  "console": "2.2.34",
+  "console": "2.2.35",
   "teacher": "1.14.0",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.34.msi",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.35.msi",
   "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.14.0.apk",
-  "releaseNotes": "Admin console 2.2.34: Templates now preview the real report card with your school name, logo and colours, and you can assign a template to any class. Report Preview shows the live A4 page with actual marks, exactly as it prints. Teacher app 1.14.0 (unchanged).",
+  "releaseNotes": "Admin console 2.2.35: Templates rebuilt clean \u2014 designs auto-named after your school, rename and colour editing per card, real school branding on every preview. Teacher app 1.14.0 (unchanged).",
   "released": "2026-10-13"
 }
