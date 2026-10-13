@@ -84,7 +84,8 @@ data class SchoolClass(
     val stream: String = "",         // "East", "West" — empty means no streams
     val classTeacherId: String? = null,
     val combinationId: String? = null,   // A-level classes follow a combination
-    val active: Boolean = true
+    val active: Boolean = true,
+    val templateId: String = ""      // chosen report template (Templates screen); empty = school default
 )
 
 @Serializable

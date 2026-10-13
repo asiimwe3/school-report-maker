@@ -218,33 +218,34 @@ object DocxReport {
 
     // ── report card content ────────────────────────────────────────────────
 
-    fun writeStudentReport(out: Path, data: SchoolData, result: TermResult, layout: TemplateLayout = TemplateLayout.CLASSIC): Path {
+    fun writeStudentReport(out: Path, data: SchoolData, result: TermResult, layout: TemplateLayout = TemplateLayout.CLASSIC, accentHex: String? = null): Path {
         Files.createDirectories(out.toAbsolutePath().parent)
-        Files.write(out, studentReportBytes(data, result))
+        Files.write(out, studentReportBytes(data, result, layout, accentHex))
         return out
     }
 
-    fun writeClassReport(out: Path, data: SchoolData, results: List<TermResult>): Path {
+    fun writeClassReport(out: Path, data: SchoolData, results: List<TermResult>, layout: TemplateLayout = TemplateLayout.CLASSIC, accentHex: String? = null): Path {
         val doc = Doc()
         results.forEachIndexed { i, r ->
             if (i > 0) doc.pageBreak()
-            render(doc, data, r)
+            render(doc, data, r, layout, accentHex)
         }
         Files.createDirectories(out.toAbsolutePath().parent)
         Files.write(out, doc.toBytes())
         return out
     }
 
-    fun studentReportBytes(data: SchoolData, result: TermResult): ByteArray {
+    fun studentReportBytes(data: SchoolData, result: TermResult, layout: TemplateLayout = TemplateLayout.CLASSIC, accentHex: String? = null): ByteArray {
         val doc = Doc()
-        render(doc, data, result)
+        render(doc, data, result, layout, accentHex)
         return doc.toBytes()
     }
 
-    private fun render(doc: Doc, data: SchoolData, result: TermResult) {
+    private fun render(doc: Doc, data: SchoolData, result: TermResult, layout: TemplateLayout = TemplateLayout.CLASSIC, accentHex: String? = null) {
         val student = data.students.firstOrNull { it.id == result.studentId } ?: return
         val school = data.school
-        val accent = if (school.colorPrimary.isBlank()) "1F4E79" else colorHex(school.colorPrimary)
+        var accent = (accentHex ?: school.colorPrimary).ifBlank { "1F4E79" }.let { colorHex(it) }
+        if (layout == TemplateLayout.PLAIN) accent = "222222"
         val ink = if (school.colorSecondary.isBlank()) "222222" else colorHex(school.colorSecondary)
         val term = data.academicYears.asSequence()
             .flatMap { y -> y.terms.asSequence().map { t -> y to t } }
@@ -260,7 +261,9 @@ object DocxReport {
 
         // ── header — compact: the whole card must print on ONE page ──
         readLogo(school)?.let { (bytes, ext) -> doc.logo(bytes, ext) }
-        doc.p(school.name, bold = true, size = 28, align = "center", color = ink, spacingAfter = 10)
+        val hdrSize = when (layout) { TemplateLayout.COMPACT -> 22; TemplateLayout.MODERN -> 26; else -> 28 }
+        doc.p(school.name, bold = true, size = hdrSize, align = "center", color = ink,
+            spacingAfter = if (layout == TemplateLayout.COMPACT) 4 else 10)
         val place = listOfNotNull(school.village.ifBlank { null }, school.subCounty.ifBlank { null }, school.district.ifBlank { null }).distinct().joinToString(", ")
         val contact = listOfNotNull(
             school.address.ifBlank { null },
@@ -277,7 +280,17 @@ object DocxReport {
             school.unebCentreNo.ifBlank { null }?.let { "UNEB Centre: $it" },
             school.foundedYear.ifBlank { null }?.let { "Est. $it" }).joinToString(" \u00B7 ")
         if (regLine.isNotBlank()) doc.p(regLine, size = 14, align = "center", color = "999999", spacingAfter = 16)
-        doc.p("TERMLY REPORT CARD", bold = true, size = 22, align = "center", color = accent, spacingAfter = 30)
+        val termLabel = "TERM ${term?.second?.number ?: 1} ${term?.first?.year ?: ""}".trim()
+        when (layout) {
+            TemplateLayout.MODERN -> doc.table(
+                listOf("TERMLY REPORT CARD — $termLabel"),
+                listOf(listOf(school.name)))
+            else -> doc.p(
+                if (layout == TemplateLayout.COMPACT) "TERMLY REPORT CARD — $termLabel" else "TERMLY REPORT CARD",
+                bold = true, size = if (layout == TemplateLayout.COMPACT) 18 else 22, align = "center",
+                color = if (layout == TemplateLayout.PLAIN) ink else accent,
+                spacingAfter = if (layout == TemplateLayout.COMPACT) 20 else 30)
+        }
 
         // ── student identity ──
         doc.table(

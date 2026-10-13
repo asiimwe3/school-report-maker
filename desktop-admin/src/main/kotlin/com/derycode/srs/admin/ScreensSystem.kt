@@ -98,16 +98,32 @@ fun TemplatesScreen(state: AppState) {
 
 @Composable
 private fun TemplateCard(state: AppState, t: ReportTemplate) {
+    val d = state.data
     Column(
         Modifier.width(230.dp).background(Theme.CARD, RoundedCornerShape(14.dp))
             .border(1.dp, if (t.isDefault) Theme.ACCENT else Color(0xFF1E2A47), RoundedCornerShape(14.dp)).padding(12.dp)
     ) {
         if (t.isDefault) Text("DEFAULT", color = Theme.ACCENT, fontSize = 9.sp, fontWeight = FontWeight.Black)
         Text(t.name, color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-        Text(t.layout.name.lowercase().replaceFirstChar { it.uppercase() } + " layout", color = Theme.MUTED, fontSize = 12.sp)
+        Text(t.layout.name.lowercase().replaceFirstChar { it.uppercase() } + " layout — live preview with your school details", color = Theme.MUTED, fontSize = 11.sp)
         Spacer(Modifier.height(8.dp))
-        TemplatePreview(t.layout)
+        val sampleCls = d.classes.firstOrNull { it.active && (t.level == null || it.level == t.level) }
+        ReportPaper(d, t, sampleCls, null, null, null, widthDp = 206)
         Spacer(Modifier.height(10.dp))
+        Text("Use this template for a class:", color = Theme.MUTED, fontSize = 12.sp)
+        Spacer(Modifier.height(4.dp))
+        @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+        androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            d.classes.filter { it.active && it.level == state.level }.forEach { c ->
+                FilterChip(selected = c.templateId == t.id, onClick = {
+                    state.repo.mutate("CLASS_TEMPLATE_ASSIGNED", "SchoolClass", c.id, new = t.name) { dd ->
+                        dd.copy(classes = dd.classes.map { x -> if (x.id == c.id) x.copy(templateId = if (x.templateId == t.id) "" else t.id) else x })
+                    }
+                    state.refresh()
+                }, label = { Text(if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}", fontSize = 11.sp) })
+            }
+        }
+        Spacer(Modifier.height(6.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             if (!t.isDefault) Btn("Default", primary = false, onClick = {
                 state.repo.mutate("TEMPLATE_DEFAULT_CHANGED", "ReportTemplate", t.id, new = t.name) { dd ->
@@ -217,7 +233,8 @@ fun PreviewScreen(state: AppState) {
     val d = state.data
     var classId by remember(state.level) { mutableStateOf(d.classes.firstOrNull { it.active && it.level == state.level }?.id ?: "") }
     var studentId by remember { mutableStateOf("") }
-    var layout by remember { mutableStateOf(TemplateLayout.CLASSIC) }
+    var layout by remember(classId) { mutableStateOf(templateFor(d, d.classes.firstOrNull { it.id == classId })?.layout ?: TemplateLayout.CLASSIC) }
+    val classTemplate = templateFor(d, d.classes.firstOrNull { it.id == classId })
     var msg by remember { mutableStateOf("") }
     val year = d.academicYears.firstOrNull { it.currentTermId != null } ?: d.academicYears.firstOrNull()
     val term = year?.terms?.firstOrNull { it.id == year.currentTermId } ?: year?.terms?.firstOrNull()
@@ -261,24 +278,32 @@ fun PreviewScreen(state: AppState) {
         } else if (classStudents.isEmpty()) {
             Text("No active students in this class.", color = Theme.MUTED, fontSize = 14.sp)
         } else {
+            val sid = studentId.ifBlank { classStudents.first().id }
+            val student = d.students.firstOrNull { it.id == sid }
+            val termPair = term?.let { t -> year?.let { y -> y to t } }
+            val liveResult = remember(sid, term.id, state.refreshTick) {
+                try { ResultEngine.studentTermResult(d, sid, term.id, scheme.id, emptyList(), emptySet()) } catch (_: Exception) { null }
+            }
             CardBox {
-                Text("Preview as Word document", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.height(6.dp))
-                Text("The preview uses the exact same engine as batch printing — it opens in Word (.docx), exactly as it will print.", color = Theme.MUTED, fontSize = 14.sp)
-                Spacer(Modifier.height(10.dp))
-                Btn("Preview selected student") {
-                    val sid = studentId.ifBlank { classStudents.first().id }
-                    val result = ResultEngine.studentTermResult(
-                        d, sid, term.id, scheme.id,
-                        principalSubjectIds = emptyList(),
-                        compulsorySubjectIds = emptySet()
-                    )
-                    val outDir = dataDir.resolve("reports")
-                    Files.createDirectories(outDir)
-                    val f = outDir.resolve("preview-${sid}.docx")
-                    DocxReport.writeStudentReport(f, d, result, layout)
-                    try { Desktop.getDesktop().open(f.toFile()) } catch (_: Exception) { }
-                    msg = "Saved to ${f.fileName}"
+                Text("Live preview — exactly as it prints on A4 paper", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(4.dp))
+                Text("Below is the real report card with ${student?.fullName ?: "this student"}'s actual marks — what you see is what prints. " +
+                    (if (classTemplate != null) "Template: ${classTemplate.name}. " else "") + "Change the design with the chips above.", color = Theme.MUTED, fontSize = 14.sp)
+                Spacer(Modifier.height(12.dp))
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopStart) {
+                    ReportPaper(d, templateFor(d, cls), cls, termPair, student, liveResult, widthDp = 620)
+                }
+                Spacer(Modifier.height(14.dp))
+                Btn("Open this student's report in Word (.docx)") {
+                    val r = liveResult
+                    if (r != null) {
+                        val outDir = dataDir.resolve("reports")
+                        Files.createDirectories(outDir)
+                        val f = outDir.resolve("preview-${sid}.docx")
+                        DocxReport.writeStudentReport(f, d, r, layout, classTemplate?.accentColor)
+                        try { Desktop.getDesktop().open(f.toFile()) } catch (_: Exception) { }
+                        msg = "Saved to ${f.fileName}"
+                    }
                 }
                 if (msg.isNotEmpty()) Text(msg, color = Theme.GOOD, fontSize = 14.sp)
             }

@@ -351,7 +351,7 @@ fun ResultsScreen(state: AppState) {
 fun ReportsScreen(state: AppState) {
     val d = state.data
     var classId by remember(state.level) { mutableStateOf(d.classes.firstOrNull { it.active && it.level == state.level }?.id ?: "") }
-    var layout by remember { mutableStateOf(TemplateLayout.CLASSIC) }
+    var layout by remember(classId) { mutableStateOf(templateFor(d, d.classes.firstOrNull { it.id == classId })?.layout ?: TemplateLayout.CLASSIC) }
     val year = d.academicYears.firstOrNull { it.currentTermId != null } ?: d.academicYears.firstOrNull()
     val term = year?.terms?.firstOrNull { it.id == year.currentTermId } ?: year?.terms?.firstOrNull()
     val cls = d.classes.firstOrNull { it.id == classId }
@@ -386,7 +386,7 @@ fun ReportsScreen(state: AppState) {
                             val outDir = dataDir.resolve("reports")
                             Files.createDirectories(outDir)
                             val f = outDir.resolve("class-${cls.name.replace(" ", "")}-${term.number}-reports.docx")
-                            DocxReport.writeClassReport(f, d, results)
+                            DocxReport.writeClassReport(f, d, results, layout, templateFor(d, cls)?.accentColor)
                             // record generated reports with frozen scheme version
                             state.repo.mutate("REPORTS_GENERATED", "Report", classId) { dd ->
                                 dd.copy(reports = results.map { r ->
@@ -413,7 +413,7 @@ fun ReportsScreen(state: AppState) {
                             val outDir = dataDir.resolve("reports")
                             Files.createDirectories(outDir)
                             val f = outDir.resolve("student-${results.first().studentId}-report.docx")
-                            DocxReport.writeStudentReport(f, d, results.first(), layout)
+                            DocxReport.writeStudentReport(f, d, results.first(), layout, templateFor(d, cls)?.accentColor)
                             try { Desktop.getDesktop().open(f.toFile()) } catch (_: Exception) { }
                         }
                     }
