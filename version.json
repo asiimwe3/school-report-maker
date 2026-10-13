@@ -1,8 +1,8 @@
 {
-  "console": "2.2.33",
+  "console": "2.2.34",
   "teacher": "1.14.0",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.33.msi",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.34.msi",
   "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.14.0.apk",
-  "releaseNotes": "Teacher app 1.14.0: invite code now registers a teacher fully \u2014 account (phone + password), passport photo, role, contacts, then picks their classes and subjects. Stays active until the school disconnects them. Admin console 2.2.33: Cloud staff on Teachers screen with photo, contacts, editable info and Disconnect.",
-  "released": "2026-10-12"
+  "releaseNotes": "Admin console 2.2.34: Templates now preview the real report card with your school name, logo and colours, and you can assign a template to any class. Report Preview shows the live A4 page with actual marks, exactly as it prints. Teacher app 1.14.0 (unchanged).",
+  "released": "2026-10-13"
 }
