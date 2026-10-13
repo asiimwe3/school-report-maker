@@ -148,6 +148,16 @@ fun main() = application {
     repo.seedIfNeeded(Seeds.ALL_SUBJECTS, Seeds.COMPONENTS)
 
     Theme.apply(repo.data.settings.theme.ifBlank { "Dark" })
+    // v2.2.35 — name the default templates after the school, not generic words
+    run {
+        val generic = setOf("Classic", "Modern", "Compact", "Plain")
+        val sname = repo.data.school.name.ifBlank { "School" }
+        if (repo.data.templates.any { it.name in generic }) {
+            repo.mutate("TEMPLATES_AUTONAMED", "ReportTemplate") { dd ->
+                dd.copy(templates = dd.templates.map { if (it.name in generic) it.copy(name = "$sname ${it.name}") else it })
+            }
+        }
+    }
     val state = remember { AppState(repo) }
     Thread { state.updateAvailable = DesktopUpdateChecker.check() }.start()   // auto-check on launch
     // Auto-connect: on launch, pull every teacher who has joined via an invite

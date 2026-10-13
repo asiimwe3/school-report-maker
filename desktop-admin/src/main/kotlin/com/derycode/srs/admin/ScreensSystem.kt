@@ -42,78 +42,144 @@ fun TemplatesScreen(state: AppState) {
     val d = state.data
     var name by remember { mutableStateOf("") }
     var layout by remember { mutableStateOf(TemplateLayout.CLASSIC) }
+    var accent by remember { mutableStateOf(TemplateColors.first()) }
+    val schoolName = d.school.name.ifBlank { "My School" }
 
-    ScreenTitle("Report Template Library", "Designs for report cards — create, duplicate, set a default.")
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        CardBox {
-            Text("Create / duplicate a template", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                TextField(name, { name = it }, Modifier.width(180.dp), "e.g. P7 Classic 2026")
-                TemplateLayout.entries.forEach { l ->
-                    FilterChip(selected = layout == l, onClick = { layout = l },
-                        label = { Text(l.name.lowercase().replaceFirstChar { it.uppercase() }, fontSize = 12.sp) })
-                }
-                Btn("Add template") {
-                    if (name.isNotBlank()) {
-                        val id = state.repo.nextId()
-                        state.repo.mutate("TEMPLATE_ADDED", "ReportTemplate", id, new = name) { dd ->
-                            dd.copy(templates = dd.templates + ReportTemplate(id = id, name = name, layout = layout))
-                        }
-                        name = ""
-                        state.refresh()
+    ScreenTitle("Report Templates", "Every card below is a real preview with your school name, logo and colours. Tap a design, then tap the classes that will use it.")
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        // ── school profile hint: previews are only as good as the profile ──
+        if (d.school.name.isBlank() || d.school.name == "My School") {
+            CardBox {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Make these designs yours", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.height(4.dp))
+                        Text("Add your school name and logo in School Setup — every template preview and printed report card will use them.", color = Theme.MUTED, fontSize = 14.sp)
                     }
+                    Btn("Open School Setup", primary = true) { state.screen = "setup" }
                 }
             }
         }
-        // ── Template gallery: visual preview cards ──
+        // ── gallery ──
         @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
         androidx.compose.foundation.layout.FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            d.templates.filter { !it.archived }.forEach { t ->
-                TemplateCard(state, t)
+            d.templates.filter { !it.archived }.forEach { t -> TemplateCard(state, t) }
+        }
+        // ── create: one clean card at the bottom, out of the way ──
+        CardBox {
+            Text("Add a new design", color = Theme.TEXT, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(4.dp))
+            Text("Start from a layout and colour, then fine-tune the name.", color = Theme.MUTED, fontSize = 13.sp)
+            Spacer(Modifier.height(10.dp))
+            TextField(name, { name = it }, Modifier.fillMaxWidth(), "$schoolName — new design")
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                TemplateLayout.entries.forEach { l ->
+                    FilterChip(selected = layout == l, onClick = { layout = l },
+                        label = { Text(l.name.lowercase().replaceFirstChar { it.uppercase() }, fontSize = 13.sp) })
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("Colour", color = Theme.MUTED, fontSize = 13.sp)
+                TemplateColors.forEach { c ->
+                    Box(Modifier.size(24.dp).background(hexToColor(c), androidx.compose.foundation.shape.CircleShape)
+                        .border(if (accent == c) 2.dp else 1.dp, if (accent == c) Theme.TEXT else Color(0xFFB9BEC9),
+                            androidx.compose.foundation.shape.CircleShape)
+                        .clickable { accent = c })
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Btn("Add design") {
+                    val finalName = name.ifBlank { "$schoolName ${layout.name.lowercase().replaceFirstChar { it.uppercase() }}" }
+                    val id = state.repo.nextId()
+                    state.repo.mutate("TEMPLATE_ADDED", "ReportTemplate", id, new = finalName) { dd ->
+                        dd.copy(templates = dd.templates + ReportTemplate(id = id, name = finalName, layout = layout, accentColor = accent))
+                    }
+                    name = ""
+                    state.refresh()
+                }
             }
         }
-        CardBox {
-            Text("Archived templates", color = Theme.TEXT, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(6.dp))
-            val archived = d.templates.filter { it.archived }
-            if (archived.isEmpty()) Text("None.", color = Theme.MUTED, fontSize = 14.sp)
-            archived.forEach { t ->
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(vertical = 3.dp)) {
-                    Text(t.name, color = Theme.MUTED, fontSize = 14.sp, modifier = Modifier.width(220.dp))
-                    Btn("Restore", primary = false, onClick = {
-                        state.repo.mutate("TEMPLATE_RESTORED", "ReportTemplate", t.id) { dd ->
-                            dd.copy(templates = dd.templates.map { if (it.id == t.id) it.copy(archived = false) else it })
-                        }
-                        state.refresh()
-                    })
+        // ── archived ──
+        val archived = d.templates.filter { it.archived }
+        if (archived.isNotEmpty()) {
+            CardBox {
+                Text("Archived", color = Theme.TEXT, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(6.dp))
+                archived.forEach { t ->
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(vertical = 3.dp)) {
+                        Text(t.name, color = Theme.MUTED, fontSize = 14.sp, modifier = Modifier.weight(1f))
+                        Btn("Restore", primary = false, onClick = {
+                            state.repo.mutate("TEMPLATE_RESTORED", "ReportTemplate", t.id) { dd ->
+                                dd.copy(templates = dd.templates.map { if (it.id == t.id) it.copy(archived = false) else it })
+                            }
+                            state.refresh()
+                        })
+                    }
                 }
             }
         }
     }
 }
 
+internal val TemplateColors = listOf("#C9A227", "#1F7A4D", "#1F4E79", "#7A1F2B", "#4B2E83", "#222222")
+
+internal fun hexToColor(hex: String): Color {
+    val h = hex.removePrefix("#")
+    return try { Color(("FF" + h.padEnd(6, '0').take(6)).toLong(16)) } catch (_: Exception) { Theme.ACCENT }
+}
+
 @Composable
 private fun TemplateCard(state: AppState, t: ReportTemplate) {
     val d = state.data
+    var renaming by remember { mutableStateOf(false) }
+    var renameField by remember { mutableStateOf(t.name) }
     Column(
-        Modifier.width(230.dp).background(Theme.CARD, RoundedCornerShape(14.dp))
-            .border(1.dp, if (t.isDefault) Theme.ACCENT else Color(0xFF1E2A47), RoundedCornerShape(14.dp)).padding(12.dp)
+        Modifier.width(250.dp).background(Theme.CARD, RoundedCornerShape(14.dp))
+            .border(if (t.isDefault) 1.5.dp else 1.dp, if (t.isDefault) Theme.ACCENT else Theme.LINE, RoundedCornerShape(14.dp)).padding(14.dp)
     ) {
-        if (t.isDefault) Text("DEFAULT", color = Theme.ACCENT, fontSize = 9.sp, fontWeight = FontWeight.Black)
-        Text(t.name, color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-        Text(t.layout.name.lowercase().replaceFirstChar { it.uppercase() } + " layout — live preview with your school details", color = Theme.MUTED, fontSize = 11.sp)
-        Spacer(Modifier.height(8.dp))
-        val sampleCls = d.classes.firstOrNull { it.active && (t.level == null || it.level == t.level) }
-        ReportPaper(d, t, sampleCls, null, null, null, widthDp = 206)
+        if (renaming) {
+            TextField(renameField, { renameField = it }, Modifier.fillMaxWidth(), t.name)
+            Spacer(Modifier.height(6.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Btn("Save", onClick = {
+                    if (renameField.isNotBlank()) {
+                        state.repo.mutate("TEMPLATE_RENAMED", "ReportTemplate", t.id, new = renameField) { dd ->
+                            dd.copy(templates = dd.templates.map { if (it.id == t.id) it.copy(name = renameField) else it })
+                        }
+                        state.refresh()
+                    }
+                    renaming = false
+                })
+                Btn("Cancel", primary = false, onClick = { renaming = false; renameField = t.name })
+            }
+        } else {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(t.name, color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold,
+                    maxLines = 1, modifier = Modifier.weight(1f))
+                if (t.isDefault) Text(" DEFAULT", color = Theme.ACCENT, fontSize = 9.sp, fontWeight = FontWeight.Black)
+            }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Box(Modifier.size(9.dp).background(hexToColor(t.accentColor), androidx.compose.foundation.shape.CircleShape))
+                Text(t.layout.name.lowercase().replaceFirstChar { it.uppercase() }, color = Theme.MUTED, fontSize = 12.sp)
+            }
+        }
         Spacer(Modifier.height(10.dp))
-        Text("Use this template for a class:", color = Theme.MUTED, fontSize = 12.sp)
+        val sampleCls = d.classes.firstOrNull { it.active && (t.level == null || it.level == t.level) }
+        ReportPaper(d, t, sampleCls, null, null, null, widthDp = 222)
+        Spacer(Modifier.height(12.dp))
+        Text("Classes using this design:", color = Theme.MUTED, fontSize = 13.sp)
         Spacer(Modifier.height(4.dp))
         @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
-        androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        androidx.compose.foundation.layout.FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(5.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
             d.classes.filter { it.active && it.level == state.level }.forEach { c ->
                 FilterChip(selected = c.templateId == t.id, onClick = {
                     state.repo.mutate("CLASS_TEMPLATE_ASSIGNED", "SchoolClass", c.id, new = t.name) { dd ->
@@ -123,7 +189,7 @@ private fun TemplateCard(state: AppState, t: ReportTemplate) {
                 }, label = { Text(if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}", fontSize = 11.sp) })
             }
         }
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(10.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             if (!t.isDefault) Btn("Default", primary = false, onClick = {
                 state.repo.mutate("TEMPLATE_DEFAULT_CHANGED", "ReportTemplate", t.id, new = t.name) { dd ->
@@ -131,95 +197,38 @@ private fun TemplateCard(state: AppState, t: ReportTemplate) {
                 }
                 state.refresh()
             })
+            Btn("Rename", primary = false, onClick = { renaming = true; renameField = t.name })
             Btn("Duplicate", primary = false, onClick = {
                 val id = state.repo.nextId()
-                state.repo.mutate("TEMPLATE_DUPLICATED", "ReportTemplate", id, new = "${t.name} copy") { dd ->
-                    dd.copy(templates = dd.templates + t.copy(id = id, name = "${t.name} copy", isDefault = false))
-                }
-                state.refresh()
-            })
-            Btn("Archive", primary = false, onClick = {
-                state.repo.mutate("TEMPLATE_ARCHIVED", "ReportTemplate", t.id) { dd ->
-                    dd.copy(templates = dd.templates.map { if (it.id == t.id) it.copy(archived = true) else it })
+                state.repo.mutate("TEMPLATE_ADDED", "ReportTemplate", id, new = "${t.name} (copy)") { dd ->
+                    dd.copy(templates = dd.templates + t.copy(id = id, name = "${t.name} (copy)", isDefault = false))
                 }
                 state.refresh()
             })
         }
-    }
-}
-
-/** Miniature visual mock of a report card per layout. */
-@Composable
-private fun TemplatePreview(layout: TemplateLayout) {
-    val paper = Color(0xFFFCFCFD)
-    val ink = Color(0xFF1C2333)
-    val faint = Color(0xFFB8BEC9)
-    val accent = Theme.ACCENT
-    Column(
-        Modifier.fillMaxWidth().height(190.dp)
-            .background(paper, RoundedCornerShape(6.dp))
-            .border(1.dp, Color(0xFFE2E5EA), RoundedCornerShape(6.dp))
-            .padding(12.dp)
-    ) {
-        when (layout) {
-            TemplateLayout.CLASSIC -> {
-                Text("ST. MARY'S COLLEGE", color = ink, fontSize = 11.sp, fontWeight = FontWeight.Bold, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.fillMaxWidth())
-                Text("TERMLY REPORT CARD", color = accent, fontSize = 8.sp, fontWeight = FontWeight.Bold, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.fillMaxWidth())
-                Spacer(Modifier.height(6.dp))
-                Box(Modifier.fillMaxWidth().height(1.dp).background(accent))
-                Spacer(Modifier.height(6.dp))
-                repeat(4) { i ->
-                    Row(Modifier.fillMaxWidth().padding(vertical = 1.dp)) {
-                        Box(Modifier.weight(2f).height(7.dp).background(if (i == 0) accent.copy(alpha = 0.15f) else Color.Transparent))
-                        Spacer(Modifier.width(4.dp))
-                        Box(Modifier.weight(1f).height(7.dp).background(faint.copy(alpha = 0.5f), RoundedCornerShape(2.dp)))
-                        Spacer(Modifier.width(4.dp))
-                        Box(Modifier.weight(1f).height(7.dp).background(faint.copy(alpha = 0.5f), RoundedCornerShape(2.dp)))
-                    }
-                }
-                Spacer(Modifier.height(6.dp))
-                Box(Modifier.fillMaxWidth().height(14.dp).background(accent.copy(alpha = 0.1f), RoundedCornerShape(3.dp)))
-            }
-            TemplateLayout.MODERN -> {
-                Box(Modifier.fillMaxWidth().height(30.dp).background(accent, RoundedCornerShape(6.dp)), contentAlignment = Alignment.Center) {
-                    Text("SCHOOL REPORT", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                }
-                Spacer(Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                    repeat(3) { i ->
-                        Column(Modifier.weight(1f).height(24.dp).background(if (i == 1) accent.copy(alpha = 0.15f) else Color(0xFFF1F3F6), RoundedCornerShape(4.dp)), verticalArrangement = Arrangement.Center) {
-                            Text(if (i == 0) "AVG" else if (i == 1) "RANK" else "GRADE", color = ink, fontSize = 7.sp, fontWeight = FontWeight.Bold, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.fillMaxWidth())
-                        }
-                    }
-                }
-                Spacer(Modifier.height(8.dp))
-                repeat(3) {
-                    Box(Modifier.fillMaxWidth().height(6.dp).background(Color(0xFFECEEF2), RoundedCornerShape(3.dp)))
-                    Spacer(Modifier.height(5.dp))
+        Spacer(Modifier.height(4.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("Colour", color = Theme.MUTED, fontSize = 12.sp)
+                TemplateColors.forEach { c ->
+                    Box(Modifier.size(20.dp).background(hexToColor(c), androidx.compose.foundation.shape.CircleShape)
+                        .border(if (t.accentColor == c) 2.dp else 1.dp, if (t.accentColor == c) Theme.TEXT else Color(0xFFB9BEC9),
+                            androidx.compose.foundation.shape.CircleShape)
+                        .clickable {
+                            state.repo.mutate("TEMPLATE_COLOR_CHANGED", "ReportTemplate", t.id, new = c) { dd ->
+                                dd.copy(templates = dd.templates.map { if (it.id == t.id) it.copy(accentColor = c) else it })
+                            }
+                            state.refresh()
+                        })
                 }
             }
-            TemplateLayout.COMPACT -> {
-                Box(Modifier.fillMaxWidth().height(12.dp).background(ink, RoundedCornerShape(2.dp)), contentAlignment = Alignment.Center) {
-                    Text("COMPACT REPORT", color = Color.White, fontSize = 7.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.weight(1f))
+            Btn("Archive", primary = false, onClick = {
+                state.repo.mutate("TEMPLATE_ARCHIVED", "ReportTemplate", t.id) { dd ->
+                    dd.copy(templates = dd.templates.map { if (it.id == t.id) it.copy(archived = true, isDefault = false) else it })
                 }
-                Spacer(Modifier.height(5.dp))
-                repeat(8) { i ->
-                    Row(Modifier.fillMaxWidth().padding(vertical = 0.5.dp)) {
-                        Box(Modifier.weight(1.5f).height(5.dp).background(if (i % 2 == 0) Color(0xFFF1F3F6) else Color.Transparent))
-                        Box(Modifier.weight(1f).height(5.dp).background(accent.copy(alpha = 0.35f), RoundedCornerShape(2.dp)))
-                    }
-                    Spacer(Modifier.height(2.dp))
-                }
-            }
-            TemplateLayout.PLAIN -> {
-                Text("Report of Academic Performance", color = ink, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.height(8.dp))
-                repeat(5) {
-                    Box(Modifier.fillMaxWidth(0.92f).height(6.dp).background(Color(0xFFE7E9ED), RoundedCornerShape(1.dp)))
-                    Spacer(Modifier.height(7.dp))
-                }
-                Box(Modifier.fillMaxWidth().height(1.dp).background(Color(0xFFD7DAE0)))
-            }
+                state.refresh()
+            })
         }
     }
 }
