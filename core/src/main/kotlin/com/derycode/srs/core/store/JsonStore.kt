@@ -129,7 +129,7 @@ class JsonStore(
             val mergedPasses = data.gatePasses.filter { g -> bundle.gatePasses.none { it.id == g.id } } + bundle.gatePasses
             val mergedAttendance = data.attendance.filter { a -> bundle.attendance.none { it.id == a.id } } + bundle.attendance
             val bits = mutableListOf<String>()
-            if (merged.isNotEmpty()) bits.add("${merged.size} marks")
+            if (bundle.marks.isNotEmpty()) bits.add("${bundle.marks.size} marks")
             if (newReqs.isNotEmpty()) bits.add("${newReqs.size} new students enrolled")
             if (bundle.dutyRecords.isNotEmpty()) bits.add("${bundle.dutyRecords.size} duty records")
             if (bundle.gatePasses.isNotEmpty()) bits.add("${bundle.gatePasses.size} gate passes")
@@ -145,18 +145,17 @@ class JsonStore(
 
     /** Merge marks into data, newest-wins, both versions kept on conflict. */
     fun mergeMarks(data: SchoolData, incoming: List<Mark>): List<Mark> {
-        val merged = mutableListOf<Mark>()
         val key = { m: Mark -> "${m.studentId}|${m.subjectId}|${m.termId}|${m.componentId}" }
-        val byKey = data.marks.associateBy(key)
-        val result = incoming.map { inc ->
-            val existing = byKey[key(inc)]
-            when {
-                existing == null -> inc.also { merged.add(it) }
-                inc.updatedAt >= existing.updatedAt -> inc.also { merged.add(it) }
-                else -> existing   // local newer — keep
-            }
+        val incomingByKey = incoming.associateBy(key)
+        // Newest wins per mark, but every mark already in the school is KEPT.
+        // (Before v2.2.36 this returned only the incoming marks, so importing one
+        // class or subject wiped the marks of every other class in the school.)
+        val updatedExisting = data.marks.map { ex ->
+            val inc = incomingByKey[key(ex)]
+            if (inc != null && inc.updatedAt >= ex.updatedAt) inc else ex
         }
-        return result.ifEmpty { emptyList() }.also { /* merged list used for audit */ }
+        val existingKeys = data.marks.map(key).toSet()
+        return updatedExisting + incoming.filter { key(it) !in existingKeys }
     }
     private val cfgJson = Json { ignoreUnknownKeys = true }
 
