@@ -1,8 +1,8 @@
 {
-  "console": "2.2.39",
+  "console": "2.2.40",
   "teacher": "1.16.0",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.39.msi",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.40.msi",
   "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.16.0.apk",
-  "releaseNotes": "Full teacher control. Manage any teacher on the console: role or a custom post (DOS, Deputy Head, Bursar, or anything you type), class teacher of, classes taught, subjects taught, extra duties from a preset list or your own wording, access on/off, and their activity. Teachers scan the school code, tap Find my name, choose themselves, and get their classes and duties. Both apps now ask you to update on launch.",
+  "releaseNotes": "Cloud & Online now has a Cloud status check you can run yourself: it proves the server is reachable, the school and backup tables answer, your key is accepted, and the teacher link function is present. Also lets you point the console at a different Supabase project simply by pasting its URL and anon key. Full teacher control, one-code QR join and A4 fee-free reports from the previous builds are all included.",
   "released": "2026-11-02"
 }

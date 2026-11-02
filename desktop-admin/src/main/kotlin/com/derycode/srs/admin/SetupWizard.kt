@@ -382,6 +382,10 @@ fun CloudScreen(state: AppState) {
 
     fun say(e: Boolean, m: String) { err = e; msg = m }
 
+    // Cloud self-check — answers "is my cloud working?" without needing any keys.
+    var checks by remember { mutableStateOf(emptyList<CloudApi.CloudCheck>()) }
+    var checkBusy by remember { mutableStateOf(false) }
+
     // v2.2.23 — self-heal an orphaned cloud link. If the school this console
     // points to was deleted/reset on the server (support cleanup, a fresh
     // demo reset, etc.) the console kept saying "Connected" forever and every
@@ -409,6 +413,37 @@ fun CloudScreen(state: AppState) {
         Text("Cloud & Online Backup", color = Theme.TEXT, fontSize = 20.sp, fontWeight = FontWeight.Bold)
         Text("Supabase cloud — automatic off-site backup and teacher sync.", color = Theme.MUTED, fontSize = 12.sp)
         Spacer(Modifier.height(16.dp))
+
+        // ── Self-check: prove the cloud works, no keys needed ──
+        Box(Modifier.fillMaxWidth().background(Theme.CARD, RoundedCornerShape(12.dp)).border(1.dp, Theme.LINE, RoundedCornerShape(12.dp)).padding(18.dp)) {
+            Column {
+                Text("Cloud status", color = Theme.TEXT, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                Text("Check the connection yourself. Nothing here changes your data.", color = Theme.MUTED, fontSize = 12.sp)
+                Spacer(Modifier.height(8.dp))
+                Button({
+                    if (checkBusy) return@Button
+                    checkBusy = true
+                    Thread {
+                        checks = runCatching { CloudApi.diagnose(CloudSync.url(s), CloudSync.key(s)) }.getOrElse { emptyList() }
+                        checkBusy = false
+                    }.start()
+                }, shape = RoundedCornerShape(10.dp), colors = ButtonDefaults.buttonColors(containerColor = Theme.ACCENT), modifier = Modifier.height(38.dp)) {
+                    Text(if (checkBusy) "Checking…" else "Run check", fontSize = 12.sp)
+                }
+                checks.forEach { c ->
+                    Spacer(Modifier.height(7.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(if (c.ok) "✓" else "✕", color = if (c.ok) Theme.GOOD else Theme.WARN, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.width(8.dp))
+                        Column {
+                            Text(c.label, color = Theme.TEXT, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                            Text(c.detail, color = if (c.ok) Theme.MUTED else Theme.WARN, fontSize = 11.sp)
+                        }
+                    }
+                }
+            }
+        }
+        Spacer(Modifier.height(14.dp))
 
         // Status card
         Box(Modifier.fillMaxWidth().background(Theme.CARD, RoundedCornerShape(12.dp)).border(1.dp, Theme.LINE, RoundedCornerShape(12.dp)).padding(18.dp)) {

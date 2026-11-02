@@ -33,7 +33,7 @@ object CloudApi {
     // HttpURLConnection instead of java.net.http.HttpClient — works on Java 8 too,
     // so cloud sync never crashes on school PCs with an old Java installed (fix for
     // NoClassDefFoundError: java/net/http/HttpClient on Java 8).
-    private fun http(method: String, url: String, key: String, token: String?, body: String?): Pair<Int, String> {
+    internal fun http(method: String, url: String, key: String, token: String?, body: String?): Pair<Int, String> {
         val conn = URI.create(url).toURL().openConnection() as HttpURLConnection
         try {
             conn.requestMethod = method
@@ -108,6 +108,39 @@ object CloudApi {
     }
 
     /** Create the school row (owner_uid defaults to auth.uid() server-side). Returns school id or error. */
+    data class CloudCheck(val label: String, val ok: Boolean, val detail: String)
+
+    /**
+     * Self-check the cloud without any credentials beyond the shipped public key:
+     * is the API reachable, is auth alive, can we read the school table, and does the
+     * teacher-link function exist. Answers "is my cloud working?" from inside the app.
+     */
+    fun diagnose(url: String, key: String): List<CloudCheck> {
+        val out = mutableListOf<CloudCheck>()
+        // 1. reachability
+        val (c1, b1) = http("GET", "$url/auth/v1/health", key, null, null)
+        out += CloudCheck("Cloud server reachable", c1 in 200..299,
+            if (c1 in 200..299) "supabase auth responding" else "no answer ($c1) — check internet")
+        // 2. tables
+        val (c2, _) = http("GET", "$url/rest/v1/srs_schools?select=id&limit=1", key, null, null)
+        out += CloudCheck("Schools table readable", c2 in 200..299, if (c2 in 200..299) "srs_schools ok" else "HTTP $c2 — table missing or blocked")
+        // 3. key validity
+        val (c3, b3) = http("GET", "$url/rest/v1/srs_backups?select=school_id&limit=1", key, null, null)
+        out += CloudCheck("Backups table readable", c3 in 200..299, if (c3 in 200..299) "srs_backups ok" else "HTTP $c3 — key rejected")
+        // 4. invite-code link function (needs no login to prove it exists)
+        val (c4, b4) = http("POST", "$url/rest/v1/rpc/srs_link_teacher", key, null,
+            "{\"p_code\":\"ZZZZ-0000\",\"p_name\":\"probe\",\"p_role\":\"TEACHER\"}")
+        val exists = b4.contains("Sign in first", true) || b4.contains("Invalid", true) || c4 in 200..299
+        out += CloudCheck("Teacher invite-code function", exists,
+            if (exists) "srs_link_teacher ready" else "missing — run docs/supabase-setup.sql on the project")
+        // 5. v3 extras (optional, only adds phone/photo on the roster)
+        val (c5, b5) = http("POST", "$url/rest/v1/rpc/srs_register_teacher", key, null, "{}")
+        out += CloudCheck("Full teacher sign-up (v3)", b5.contains("srs_register_teacher", true).not() || c5 in 200..299,
+            if (c5 == 404 || b5.contains("srs_register_teacher", true)) "not installed — teachers still join with the classic link; run docs/supabase-setup-v3.sql to enable phone/photo capture"
+            else "ready")
+        return out
+    }
+
     fun createSchool(url: String, key: String, token: String, name: String, district: String, address: String,
                      headTeacher: String, plan: String, licenseKey: String, studentCount: Int, inviteCode: String): Pair<String, String> {
         val body = "{\"name\":\"${esc(name)}\",\"district\":\"${esc(district)}\",\"address\":\"${esc(address)}\",\"head_teacher\":\"${esc(headTeacher)}\",\"plan\":\"${esc(plan)}\",\"license_key\":\"${esc(licenseKey)}\",\"student_count\":$studentCount,\"invite_code\":\"${esc(inviteCode)}\"}"
