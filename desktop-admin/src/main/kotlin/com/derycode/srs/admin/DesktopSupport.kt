@@ -51,28 +51,75 @@ object DesktopCrashTracker {
 // Auto-update (desktop) — checks GitHub on every launch, one click to install
 // ─────────────────────────────────────────────────────────────────────────────
 
+/** Shared flag so the top-bar pill can re-open the update prompt after "Later". */
+object UpdatePrompt {
+    var open by androidx.compose.runtime.mutableStateOf(false)
+}
+
 object DesktopUpdateChecker {
     const val CURRENT_VERSION = APP_VERSION   // audit fix: was hardcoded "2.0.0"
 
+    /** One small JSON fetch. Cache-busted so a fresh release is seen immediately. */
     fun check(): UpdateInfo? = try {
-        val conn = URL(Support.VERSION_URL).openConnection()
-        conn.connectTimeout = 8000; conn.readTimeout = 8000
+        val stamp = System.currentTimeMillis()
+        val conn = URL("${Support.VERSION_URL}?t=$stamp").openConnection()
+        conn.connectTimeout = 12000; conn.readTimeout = 12000
+        conn.setRequestProperty("Cache-Control", "no-cache")
         val text = conn.getInputStream().bufferedReader().readText()
-        parseVersionJson(text)?.takeIf { it.consoleVersion.isNotBlank() && it.consoleVersion != CURRENT_VERSION }
+        parseVersionJson(text)?.takeIf {
+            it.consoleVersion.isNotBlank() && isNewerVersion(it.consoleVersion, CURRENT_VERSION)
+        }
     } catch (_: Exception) { null }
 
-    fun downloadAndRunInstaller(url: String): String {
+    /**
+     * Downloads the installer and runs it, exactly like the phone app updates
+     * itself. [onProgress] reports megabytes so the admin sees it moving on a
+     * slow school connection instead of a dead button.
+     */
+    fun downloadAndRunInstaller(url: String, onProgress: (String) -> Unit = {}): String {
         return try {
             val dir = dataDir.resolve("updates")
             Files.createDirectories(dir)
             val out = dir.resolve("SchoolReportMaker-update.msi")
-            URL(url).openStream().use { input -> Files.copy(input, out) }
+            Files.deleteIfExists(out)
+
+            val conn = URL(url).openConnection()
+            conn.connectTimeout = 20000
+            conn.readTimeout = 60000
+            val total = conn.contentLengthLong
+            onProgress(if (total > 0) "Downloading… 0 of ${total / 1048576} MB" else "Downloading…")
+            conn.getInputStream().use { input ->
+                Files.newOutputStream(out).use { fos ->
+                    val buf = ByteArray(64 * 1024)
+                    var got = 0L
+                    var lastShown = 0
+                    while (true) {
+                        val n = input.read(buf)
+                        if (n <= 0) break
+                        fos.write(buf, 0, n)
+                        got += n
+                        val mb = (got / 1048576).toInt()
+                        if (mb != lastShown) {
+                            lastShown = mb
+                            onProgress(if (total > 0) "Downloading… $mb of ${total / 1048576} MB"
+                                       else "Downloading… $mb MB")
+                        }
+                    }
+                }
+            }
+            if (Files.size(out) < 1_000_000) {
+                onProgress("The download stopped early — trying the releases page instead.")
+                openReleasesPage()
+                return "Download was incomplete. The releases page is open — download the .msi there."
+            }
+
+            // Run the installer, then close this console so Windows can replace files
+            // that are locked while the app is running.
             if (System.getProperty("os.name").lowercase().contains("win")) {
-                // Launch the installer, then close THIS console so Windows can replace
-                // files that are locked while the app is running (broken-install fix).
                 ProcessBuilder("msiexec", "/i", out.toAbsolutePath().toString()).start()
+                onProgress("Installer started — the console is closing so Windows can finish. Your data is safe.")
                 Thread {
-                    Thread.sleep(1200)
+                    Thread.sleep(1500)
                     Runtime.getRuntime().halt(0)
                 }.start()
                 "Installer launched — this console is closing. Follow the setup wizard; your data is safe."
@@ -80,7 +127,15 @@ object DesktopUpdateChecker {
                 try { Desktop.getDesktop().open(out.toFile()); "Installer downloaded — close this app, then follow the setup wizard." }
                 catch (_: Exception) { "Downloaded to ${out.toAbsolutePath()}. Run it to update." }
             }
-        } catch (_: Exception) { "Download failed — check internet, or grab it from the releases page." }
+        } catch (e: Exception) {
+            openReleasesPage()
+            "Could not download the update (${e.message?.take(60) ?: "network"}). The releases page is open — get the .msi there."
+        }
+    }
+
+    /** Fallback so an admin is never stuck: opens the download page in their browser. */
+    fun openReleasesPage() {
+        try { Desktop.getDesktop().browse(URI(Support.RELEASES_PAGE)) } catch (_: Exception) { }
     }
 }
 

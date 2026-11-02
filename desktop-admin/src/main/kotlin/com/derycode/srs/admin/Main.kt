@@ -314,6 +314,7 @@ private fun LaunchSplash(logo: androidx.compose.ui.graphics.painter.Painter?) {
 fun App(state: AppState) {
     // ── Update prompt: ask, don't just hint ──
     var askUpdate by remember { mutableStateOf(state.updateAvailable != null) }
+    LaunchedEffect(UpdatePrompt.open) { if (UpdatePrompt.open) { askUpdate = true; UpdatePrompt.open = false } }
     var updateMsg by remember { mutableStateOf("") }
     val upd = state.updateAvailable
     if (upd != null && askUpdate) {
@@ -329,17 +330,24 @@ fun App(state: AppState) {
                         Text(upd.releaseNotes.take(400), color = Theme.MUTED, fontSize = 12.sp)
                     }
                     Text("Your school data stays exactly as it is.", color = Theme.MUTED, fontSize = 12.sp)
+                    if (updateMsg.isNotBlank()) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(updateMsg, color = Theme.ACCENT, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             },
             confirmButton = {
                 TextButton({
-                    askUpdate = false
-                    updateMsg = "Downloading… see Support if nothing opens"
+                    // Stay open and show progress: the download runs here, then the
+                    // installer starts and this console closes itself.
+                    updateMsg = "Downloading…"
                     Thread {
-                        val res = runCatching { DesktopUpdateChecker.downloadAndRunInstaller(upd.consoleMsiUrl) }
-                        updateMsg = res.getOrElse { "Update failed: ${it.message}" }
+                        val res = runCatching {
+                            DesktopUpdateChecker.downloadAndRunInstaller(upd.consoleMsiUrl.ifBlank { com.derycode.srs.core.support.Support.RELEASES_PAGE }) { line -> updateMsg = line }
+                        }
+                        updateMsg = res.getOrElse { "Update failed: ${it.message?.take(80)}" }
                     }.start()
-                }) { Text("Update now", color = Theme.ACCENT, fontWeight = FontWeight.Bold) }
+                }) { Text(if (updateMsg.startsWith("Downloading")) "Downloading…" else "Update now", color = Theme.ACCENT, fontWeight = FontWeight.Bold) }
             },
             dismissButton = { TextButton({ askUpdate = false }) { Text("Later", color = Theme.MUTED) } }
         )
@@ -555,6 +563,20 @@ private fun TopBar(state: AppState) {
                 style = TextStyle(letterSpacing = 1.4.sp), maxLines = 1)
             Spacer(Modifier.height(3.dp))
             Text(screenLabel(state.screen), color = Theme.INK, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        }
+        // ── Update ready pill: one click to download and run, like the phone app ──
+        state.updateAvailable?.let { u ->
+            Row(
+                Modifier.background(Theme.ACCENT, RoundedCornerShape(12.dp))
+                    .clickable { UpdatePrompt.open = true }
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(7.dp)
+            ) {
+                Text("\u2193", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Black)
+                Text("Update ${u.consoleVersion}", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            }
+            Spacer(Modifier.width(12.dp))
         }
         // ── School level switch. A secondary school only offers O-Level (S1–S4)
         //    and A-Level (S5–S6); a primary school only offers Primary. ──

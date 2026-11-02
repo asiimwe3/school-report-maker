@@ -1,7 +1,7 @@
 {
-  "console": "2.3.4",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.4.msi",
+  "console": "2.3.5",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.5.msi",
   "teacher": "1.18.1",
   "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.18.1.apk",
-  "notes": "Scan once and the school loads"
+  "notes": "Console updates itself: tap the Update pill on the top bar and it downloads and installs. Teacher app: scan once, school loads."
 }

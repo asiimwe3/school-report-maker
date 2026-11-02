@@ -36,6 +36,23 @@ data class UpdateInfo(
     val consoleMsiUrl: String get() = consoleDownload.ifBlank { msiUrl }
 }
 
+/**
+ * True when [remote] is a genuinely newer dotted version than [current].
+ * Older and equal versions return false, so an install never gets nudged to
+ * "update" backwards (which used to happen and could downgrade a school).
+ */
+fun isNewerVersion(remote: String, current: String): Boolean {
+    fun parts(v: String) = v.trim().removePrefix("v").split('.', '-', '+')
+        .map { it.takeWhile { c -> c.isDigit() }.toIntOrNull() ?: 0 }
+    val a = parts(remote); val b = parts(current)
+    if (a.isEmpty() || a.all { it == 0 }) return false
+    for (i in 0 until maxOf(a.size, b.size)) {
+        val x = a.getOrElse(i) { 0 }; val y = b.getOrElse(i) { 0 }
+        if (x != y) return x > y
+    }
+    return false
+}
+
 fun parseVersionJson(text: String): UpdateInfo? = try {
     Json { ignoreUnknownKeys = true }.decodeFromString(UpdateInfo.serializer(), text)
 } catch (_: Exception) { null }
