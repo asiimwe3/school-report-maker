@@ -212,10 +212,19 @@ class TeacherCloud(private val context: Context) {
         val (c, body) = http("POST", "/rest/v1/rpc/srs_register_teacher", token, b)
         if (c in 200..299) return CloudResult(true, token = token, msg = "ok")
         val m = member(body, "message")
-        val friendly = if (m.contains("srs_register_teacher", true) || m.contains("Could not choose", true) || c == 404)
-            "The school cloud needs the v3 update script (docs/supabase-setup-v3.sql) — ask the head teacher to run it once in the Supabase dashboard, then try again."
-            else m.ifBlank { "Registration failed — check internet and try again" }
-        return CloudResult(false, msg = friendly)
+        // Older school clouds only have the original link function. Connecting must never
+        // dead-end on a teacher's phone: fall back to the simple invite-code join, which
+        // works on every school cloud ever set up.
+        if (m.contains("srs_register_teacher", true) || m.contains("Could not find", true) ||
+            m.contains("Could not choose", true) || c == 404 || c == 400) {
+            val legacy = joinSchool(token, clean, myName, myRole)
+            if (legacy.ok) return CloudResult(true, token = token, msg = "ok")
+            val lm = legacy.msg
+            if (lm.contains("srs_link_teacher", true) || lm.contains("Could not choose", true))
+                return CloudResult(false, msg = "Your school's cloud needs a one-time update — ask the head teacher to open the console and re-save Cloud & Online, then scan the code again.")
+            return CloudResult(false, msg = lm)
+        }
+        return CloudResult(false, msg = m.ifBlank { "Registration failed — check internet and try again" })
     }
 
     /** Update the teacher's own profile (classes, subjects, photo, phone). */

@@ -40,7 +40,7 @@ import java.io.ByteArrayOutputStream
 
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
-fun CloudScreen(state: TeacherState) {
+fun CloudScreen(state: TeacherState, onScan: () -> Unit = {}) {
     val scope = rememberCoroutineScope()
     val ctx = LocalContext.current
     var busy by remember { mutableStateOf(false) }
@@ -51,6 +51,14 @@ fun CloudScreen(state: TeacherState) {
 
     // registration form
     var inviteCode by remember { mutableStateOf("") }
+    // A code just came back from the QR scanner — drop it into the field ready to go.
+    LaunchedEffect(state.scannedInvite) {
+        if (state.scannedInvite.isNotBlank()) {
+            inviteCode = state.scannedInvite
+            state.scannedInvite = ""
+        }
+    }
+
     var fullName by remember { mutableStateOf(state.me?.name ?: "") }
     var phone by remember { mutableStateOf(state.me?.phone ?: "") }
     var contacts by remember { mutableStateOf("") }
@@ -101,9 +109,21 @@ fun CloudScreen(state: TeacherState) {
                     Cell("Join your school", MUTED, true)
                 }
                 Spacer(Modifier.height(4.dp))
-                Cell("Enter YOUR personal invite code from your head teacher. It creates your account, registers you with the school, and downloads your classes, students and subjects.", MUTED)
+                Cell("Scan the school's QR code once — or type the code your head teacher gave you. Either way it registers you with the school and downloads your classes, students and subjects.", MUTED)
                 Spacer(Modifier.height(12.dp))
-                OutlinedTextField(inviteCode, { inviteCode = it }, label = { Text("Your personal code") },
+                Button(
+                    onClick = onScan,
+                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = BLUE)
+                ) {
+                    Icon(Icons.Filled.QrCodeScanner, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Scan the school code", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                }
+                Spacer(Modifier.height(6.dp))
+                Cell("No camera? Type the code below instead.", MUTED)
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(inviteCode, { inviteCode = it }, label = { Text("School code") },
                     singleLine = true, modifier = Modifier.fillMaxWidth())
                 Spacer(Modifier.height(8.dp))
                 OutlinedTextField(fullName, { fullName = it }, label = { Text("Your full name") }, singleLine = true, modifier = Modifier.fillMaxWidth())

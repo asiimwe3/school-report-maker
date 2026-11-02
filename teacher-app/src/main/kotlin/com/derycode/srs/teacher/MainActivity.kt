@@ -248,7 +248,7 @@ class TeacherState(context: Context) {
     }
 
     var updateAvailable by mutableStateOf<UpdateInfo?>(null)
-        private set
+    var scannedInvite by mutableStateOf("")   // filled by the QR scanner
 
     fun checkForUpdate() {
         Thread {
@@ -501,6 +501,7 @@ sealed class Route {
     object Assessments : Route()
     data class Students(val classId: String? = null) : Route()
     data class StudentDetail(val studentId: String) : Route()
+    object ScanCode : Route()
     object More : Route()
     object Comments : Route()
     object Sync : Route()
@@ -537,7 +538,7 @@ fun TeacherApp(state: TeacherState) {
         is Route.Classes, is Route.ClassDetail, is Route.EnterMarks -> Tab.CLASSES
         is Route.Assessments -> Tab.ASSESSMENTS
         is Route.Students, is Route.StudentDetail -> Tab.STUDENTS
-        is Route.More, is Route.Comments, is Route.Sync, is Route.Duty, is Route.Register, is Route.Attendance, is Route.Support, is Route.Cloud, is Route.Timetable, is Route.Tutorial -> Tab.MORE
+        is Route.More, is Route.Comments, is Route.Sync, is Route.Duty, is Route.Register, is Route.Attendance, is Route.Support, is Route.Cloud, is Route.ScanCode, is Route.Timetable, is Route.Tutorial -> Tab.MORE
     }
 
     // ── Side menu (drawer): every section reachable in one tap ──
@@ -602,7 +603,10 @@ fun TeacherApp(state: TeacherState) {
                     is Route.Register -> RegisterScreen(state)
                     is Route.Support -> SupportScreen(state)
                     is Route.Tutorial -> TutorialScreen(state)
-                    is Route.Cloud -> CloudScreen(state)
+                    is Route.Cloud -> CloudScreen(state, onScan = { push(Route.ScanCode) })
+                    is Route.ScanCode -> QrScannerScreen(
+                        onCode = { code -> state.scannedInvite = code; pop() },
+                        onClose = { pop() })
                 }
             }
         }
@@ -675,6 +679,7 @@ private fun titleFor(state: TeacherState, route: Route): Pair<String, Boolean> =
     is Route.Assessments -> "Assessments" to false
     is Route.Students -> "Students" to false
     is Route.StudentDetail -> "Student Details" to true
+    is Route.ScanCode -> "Scan code" to false
     is Route.More -> "More" to false
     is Route.Comments -> "Class Comments" to true
     is Route.Sync -> "Sync & Support Data" to true

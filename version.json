@@ -1,8 +1,8 @@
 {
-  "console": "2.2.36",
-  "teacher": "1.14.1",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.36.msi",
-  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.14.1.apk",
-  "releaseNotes": "Themes now change the WHOLE app. 7 complete looks \u2014 Editorial, Ivory, Forest, Ocean, Plum, Midnight and Midnight Gold. Switching a theme restyles the page background, cards, sidebar, text, lines, charts and buttons on the console, and the teacher app follows the school's theme automatically. Also: cleaner filter chips on white cards, tidier attendance list, bigger mark boxes, safer cloud marks send, dead buttons now respond.",
+  "console": "2.2.37",
+  "teacher": "1.15.0",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.37.msi",
+  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.15.0.apk",
+  "releaseNotes": "One code connects every teacher. The console now shows your school code as a QR (Cloud & Online, and the setup wizard). A teacher opens Cloud in the phone app, taps Scan code, points the camera, and is connected instantly with your classes, students and subjects. Typing the code still works. The app also connects on older school clouds that have not run the v3 update yet.",
   "released": "2026-11-02"
 }

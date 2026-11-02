@@ -390,9 +390,11 @@ fun SettingsScreen(state: AppState) {
                 Spacer(Modifier.height(8.dp))
                 Btn("Go to Cloud & Online") { state.screen = "cloud" }
             } else {
-                Text("Share this code — a teacher enters it once in the phone app (Cloud tab) and is registered, linked to your school and gets your classes, students and subjects automatically. No email or password needed.", color = Theme.MUTED, fontSize = 13.sp)
-                Spacer(Modifier.height(8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("Every teacher scans this ONE code with the phone app (Cloud tab → Scan code) and is registered, linked to your school, and gets your classes, students and subjects automatically. The code below is also for typing by hand.", color = Theme.MUTED, fontSize = 13.sp)
+                Spacer(Modifier.height(12.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                    InviteQr(s.cloudInviteCode, caption = "All teachers scan this")
+                    Column(horizontalAlignment = Alignment.Start, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Box(Modifier.background(Theme.ACCENT_SOFT, RoundedCornerShape(8.dp)).padding(horizontal = 16.dp, vertical = 8.dp)) {
                         Text(s.cloudInviteCode, color = Theme.ACCENT, fontSize = 22.sp, fontWeight = FontWeight.Black)
                     }
@@ -406,6 +408,8 @@ fun SettingsScreen(state: AppState) {
                         shareInviteOnWhatsApp(state.data.school.name, s.cloudInviteCode, state.data.school.headTeacher.ifBlank { "The Head Teacher" })
                     }
                     Btn("Manage teachers", primary = false) { state.screen = "teachers" }
+                        Text("Print it, or show it on screen — one code for the whole staff.", color = Theme.MUTED, fontSize = 12.sp)
+                    }
                 }
                 Spacer(Modifier.height(10.dp))
                 Text("Teachers on this school's staff list:", color = Theme.MUTED, fontSize = 12.sp)

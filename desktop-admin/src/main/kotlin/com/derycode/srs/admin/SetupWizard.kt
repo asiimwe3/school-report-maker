@@ -312,9 +312,15 @@ private fun StepDone(state: AppState) {
                 Text("School: ${state.data.school.name}", color = Theme.TEXT, fontSize = 13.sp)
                 Text("Plan: ${s.licencePlan}  (expires ${s.licenceExpiry})", color = Theme.MUTED, fontSize = 12.sp)
                 if (s.teacherCloudEnabled && s.cloudInviteCode.isNotBlank()) {
-                    Text("Teacher school code: ", color = Theme.MUTED, fontSize = 12.sp)
-                    Text(s.cloudInviteCode, color = Theme.ACCENT, fontSize = 18.sp, fontWeight = FontWeight.Black)
-                    Text("Teachers download the SRM Teacher app, create an account with this code, and their marks sync automatically.", color = Theme.MUTED, fontSize = 11.sp)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Column {
+                            Text("Teacher school code: ", color = Theme.MUTED, fontSize = 12.sp)
+                            Text(s.cloudInviteCode, color = Theme.ACCENT, fontSize = 18.sp, fontWeight = FontWeight.Black)
+                            Spacer(Modifier.height(4.dp))
+                            Text("Every teacher scans this one code with the SRM Teacher app — they are connected instantly and their marks sync automatically.", color = Theme.MUTED, fontSize = 11.sp, modifier = Modifier.width(300.dp))
+                        }
+                        InviteQr(s.cloudInviteCode, size = 132)
+                    }
                 } else {
                     Text("Offline mode — cloud backup can be enabled later under Sync & Backup.", color = Theme.MUTED, fontSize = 12.sp)
                 }

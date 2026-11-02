@@ -26,7 +26,7 @@ plugins {
 
 kotlin { jvmToolchain(17) }
 
-val consoleVersion = "2.2.36"   // single source of truth — also drives packageVersion below
+val consoleVersion = "2.2.37"   // single source of truth — also drives packageVersion below
 
 // Generate AppVersion.kt so runtime code always matches the packaged version
 // (audit fix: DesktopSupport had a stale hardcoded "2.0.0")
@@ -48,6 +48,7 @@ dependencies {
     implementation(project(":core"))
     implementation(compose.desktop.currentOs)
     implementation(compose.material3)
+    implementation("com.google.zxing:core:3.5.3")   // QR code for the teacher invite
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
     implementation("org.apache.poi:poi-ooxml:5.2.5") // Excel bridge: read .xlsx/.xls uploads, export the register
     testImplementation(kotlin("test"))
