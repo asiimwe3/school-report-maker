@@ -305,7 +305,7 @@ fun PreviewScreen(state: AppState) {
             Text("No active students in this class.", color = Theme.MUTED, fontSize = 14.sp)
         } else if (showAll) {
             // ── whole class, one page ────────────────────────────────────────
-            val termPair = year to term
+            val termPair = year?.let { it to term }
             val results = remember(classId, term.id, scheme.id, state.refreshTick) {
                 try { ResultEngine.classResults(d, classId, term.id, scheme.id) } catch (_: Exception) { emptyList() }
             }
@@ -330,7 +330,7 @@ fun PreviewScreen(state: AppState) {
                     try {
                         DocxReport.writeClassReport(f, d, results, layout, classTemplate?.accentColor)
                         try { Desktop.getDesktop().open(f.toFile()) } catch (_: Exception) { }
-                        msg = "Saved ${results.size} reports to ${f.name}"
+                        msg = "Saved ${results.size} reports to ${f.fileName}"
                     } catch (e: Exception) { msg = "Could not generate: ${e.message}" }
                 }
                 if (msg.isNotEmpty()) { Spacer(Modifier.height(6.dp)); Text(msg, color = Theme.GOOD, fontSize = 14.sp) }
@@ -363,7 +363,7 @@ fun PreviewScreen(state: AppState) {
             // ── one student ─────────────────────────────────────────────────
             val sid = studentId.ifBlank { classStudents.first().id }
             val student = d.students.firstOrNull { it.id == sid }
-            val termPair = year to term
+            val termPair = year?.let { it to term }
             val liveResult = remember(sid, term.id, scheme.id, state.refreshTick) {
                 try { ResultEngine.studentTermResult(d, sid, term.id, scheme.id, emptyList(), emptySet()) } catch (_: Exception) { null }
             }
