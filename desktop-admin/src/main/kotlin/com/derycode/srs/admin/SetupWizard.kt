@@ -18,9 +18,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.derycode.srs.core.model.SchoolCategory
 import com.derycode.srs.core.support.LicenseKeys
 import java.io.File
 
@@ -37,7 +40,17 @@ fun SetupWizard(state: AppState) {
     Box(Modifier.fillMaxSize().background(Theme.NAVY)) {
         Column(Modifier.fillMaxSize().padding(40.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("SRM", color = Theme.ACCENT, fontWeight = FontWeight.Black, fontSize = 26.sp)
+                val wizLogo = remember {
+                    try {
+                        val bytes = Thread.currentThread().contextClassLoader?.getResourceAsStream("icon.png")?.readBytes()
+                        if (bytes != null) androidx.compose.ui.graphics.painter.BitmapPainter(org.jetbrains.skia.Image.makeFromEncoded(bytes).toComposeImageBitmap()) else null
+                    } catch (_: Exception) { null }
+                }
+                if (wizLogo != null) {
+                    androidx.compose.foundation.Image(wizLogo, null, Modifier.size(40.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(11.dp)))
+                } else {
+                    Text("SRM", color = Theme.ACCENT, fontWeight = FontWeight.Black, fontSize = 26.sp)
+                }
                 Spacer(Modifier.width(10.dp))
                 Column { Text("School Report Maker", color = Theme.TEXT, fontWeight = FontWeight.Bold, fontSize = 16.sp); Text("First-time setup", color = Theme.MUTED, fontSize = 12.sp) }
             }
@@ -115,6 +128,25 @@ private fun StepSchool(state: AppState, next: () -> Unit) {
     Column(Modifier.fillMaxWidth()) {
         Text("School Profile", color = Theme.TEXT, fontSize = 20.sp, fontWeight = FontWeight.Bold)
         Text("These details appear on report cards and leaving certificates.", color = Theme.MUTED, fontSize = 12.sp)
+        Spacer(Modifier.height(14.dp))
+        // ── Primary / Secondary / Combined: the console only ever shows this ladder ──
+        Text("What kind of school is this?", color = Theme.TEXT, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(6.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            SchoolCategory.entries.forEach { cat ->
+                val on = com.derycode.srs.core.model.SchoolScope.fromStored(s.category).category == cat
+                Column(
+                    Modifier.weight(1f)
+                        .background(if (on) Theme.ACCENT_SOFT else Theme.CARD, RoundedCornerShape(10.dp))
+                        .border(if (on) 2.dp else 1.dp, if (on) Theme.ACCENT else Theme.LINE, RoundedCornerShape(10.dp))
+                        .clickable { s = s.copy(category = cat.name) }
+                        .padding(11.dp)
+                ) {
+                    Text(cat.label, color = if (on) Theme.ACCENT else Theme.TEXT, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    Text(cat.detail, color = Theme.MUTED, fontSize = 10.sp)
+                }
+            }
+        }
         Spacer(Modifier.height(16.dp))
         Row(Modifier.fillMaxWidth()) {
             Column(Modifier.weight(1f)) { FieldLabel("School name *"); TextField(s.name, { s = s.copy(name = it) }, Modifier.fillMaxWidth(), "e.g. St. Peter's Primary School") }
@@ -133,7 +165,11 @@ private fun StepSchool(state: AppState, next: () -> Unit) {
         var err by remember { mutableStateOf(false) }
         if (err) Text("Please enter the school name.", color = Color(0xFFFF6B6B), fontSize = 12.sp)
         Row {
-            Button({ if (s.name.isBlank()) err = true else { state.repo.mutate("SETUP_SCHOOL", "School") { d -> d.copy(school = s) }; state.refresh(); next() } },
+            Button({ if (s.name.isBlank()) err = true else {
+                    state.repo.mutate("SETUP_SCHOOL", "School") { d -> d.copy(school = s) }
+                    applySchoolCategory(state, com.derycode.srs.core.model.SchoolScope.fromStored(s.category).category)
+                    next()
+                } },
                 shape = RoundedCornerShape(10.dp), colors = ButtonDefaults.buttonColors(containerColor = Theme.ACCENT), modifier = Modifier.height(44.dp).width(200.dp)) {
                 Text("Save & Continue", fontSize = 14.sp, fontWeight = FontWeight.Bold)
             }

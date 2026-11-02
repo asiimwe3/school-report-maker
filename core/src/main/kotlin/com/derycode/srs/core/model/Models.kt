@@ -35,6 +35,8 @@ data class School(
     val motto: String = "",
     val regNo: String = "",
     val schoolType: String = "",
+    /** PRIMARY / SECONDARY / COMBINED — see [SchoolScope]. Empty = COMBINED (older installs). */
+    val category: String = "",
     val headTeacher: String = "",
     val deputyHeadTeacher: String = "",
     val district: String = "",

@@ -3,6 +3,7 @@ package com.derycode.srs.admin
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -202,10 +203,14 @@ class AppState(val repo: SchoolRepository) {
     var unlocked by mutableStateOf(false)
     var screen by mutableStateOf("dashboard")
     var refreshTick by mutableStateOf(0)
+    /** Which levels this school actually runs (Primary / Secondary / Combined). */
+    val scope: SchoolScope get() = SchoolScope.of(data.school)
     /** School level chosen in the top bar. Primary classes never mix with secondary. */
     var level by mutableStateOf(Level.PRIMARY)
-    /** Active classes of the chosen level only. */
-    fun levelClasses() = data.classes.filter { it.active && it.level == level }
+    /** Active classes of the chosen level only, always inside the school's levels. */
+    fun levelClasses() = data.classes.filter { it.active && it.level == scope.coerce(level) }
+    /** Every active class the school runs, across its levels (secondary: S1–S6). */
+    fun scopeClasses() = scope.classes(data.classes)
     var updateAvailable by mutableStateOf<com.derycode.srs.core.support.UpdateInfo?>(null)
 
     // Observable snapshot of repo.data — every screen reading state.data
@@ -239,6 +244,9 @@ fun main() = application {
         }
     }
     val state = remember { AppState(repo) }
+    // A secondary school starts on O-level, a primary school on Primary: the
+    // school's own ladder decides, never a level the school does not run.
+    LaunchedEffect(state.data.school.category) { state.level = state.scope.coerce(state.level) }
     Thread { state.updateAvailable = DesktopUpdateChecker.check() }.start()   // auto-check on launch
     // Auto-connect: on launch, pull every teacher who has joined via an invite
     // code into the local teachers list (they stay connected until disconnected).
@@ -370,11 +378,24 @@ fun App(state: AppState) {
                 .take(2).mapNotNull { it.firstOrNull()?.uppercase() }.joinToString("")
                 .ifBlank { "SR" }
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)) {
-                Box(
-                    Modifier.size(38.dp).background(Theme.GOLD, RoundedCornerShape(12.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(initials, color = Theme.DEEP, fontWeight = FontWeight.Black, fontSize = 15.sp, fontFamily = FontFamily.Serif)
+                val brand = remember {
+                    try {
+                        val bytes = Thread.currentThread().contextClassLoader?.getResourceAsStream("icon.png")?.readBytes()
+                        if (bytes != null) BitmapPainter(Image.makeFromEncoded(bytes).toComposeImageBitmap()) else null
+                    } catch (_: Exception) { null }
+                }
+                if (brand != null) {
+                    Image(
+                        brand, contentDescription = "DeryCode School Report Maker",
+                        modifier = Modifier.size(40.dp).clip(RoundedCornerShape(11.dp))
+                    )
+                } else {
+                    Box(
+                        Modifier.size(38.dp).background(Theme.GOLD, RoundedCornerShape(12.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(initials, color = Theme.DEEP, fontWeight = FontWeight.Black, fontSize = 15.sp, fontFamily = FontFamily.Serif)
+                    }
                 }
                 Spacer(Modifier.width(11.dp))
                 Column {
@@ -520,20 +541,53 @@ private fun TopBar(state: AppState) {
             Spacer(Modifier.height(3.dp))
             Text(screenLabel(state.screen), color = Theme.INK, fontSize = 22.sp, fontWeight = FontWeight.Bold)
         }
-        // ── School level switch: Primary / O-Level / A-Level never mix ──
-        Row(
-            Modifier.background(Theme.ACCENT_SOFT, RoundedCornerShape(14.dp)).padding(4.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            listOf(Level.PRIMARY to "Primary", Level.O_LEVEL to "O-Level", Level.A_LEVEL to "A-Level").forEach { (lvl, label) ->
-                val on = state.level == lvl
+        // ── School level switch. A secondary school only offers O-Level (S1–S4)
+        //    and A-Level (S5–S6); a primary school only offers Primary. ──
+        val scopeLevels = state.scope.levels
+        if (scopeLevels.size > 1) {
+            Row(
+                Modifier.background(Theme.ACCENT_SOFT, RoundedCornerShape(14.dp)).padding(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                scopeLevels.forEach { lvl ->
+                    val on = state.level == state.scope.coerce(lvl)
+                    Column(
+                        Modifier
+                            .background(if (on) Theme.ACCENT else Color.Transparent, RoundedCornerShape(11.dp))
+                            .clickable { state.level = lvl }
+                            .padding(horizontal = 16.dp, vertical = 7.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            when (lvl) {
+                                Level.PRIMARY -> "Primary"
+                                Level.O_LEVEL -> "O-Level"
+                                Level.A_LEVEL -> "A-Level"
+                            },
+                            fontSize = 17.sp, fontWeight = FontWeight.Bold,
+                            color = if (on) Color.White else Theme.ACCENT
+                        )
+                        Text(
+                            lvl.shortRange(),
+                            fontSize = 11.sp, fontWeight = FontWeight.Medium,
+                            color = if (on) Color(0xFFD9E6FF) else Theme.MUTED
+                        )
+                    }
+                }
+            }
+        } else {
+            Row(
+                Modifier.background(Theme.ACCENT_SOFT, RoundedCornerShape(14.dp)).padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 Text(
-                    label, fontSize = 18.sp, fontWeight = FontWeight.Bold,
-                    color = if (on) Color.White else Theme.ACCENT,
-                    modifier = Modifier
-                        .background(if (on) Theme.ACCENT else Color.Transparent, RoundedCornerShape(11.dp))
-                        .clickable { state.level = lvl }
-                        .padding(horizontal = 20.dp, vertical = 10.dp)
+                    scopeLevels.firstOrNull()?.let { if (it == Level.PRIMARY) "Primary" else "Secondary" } ?: "School",
+                    fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Theme.ACCENT
+                )
+                Text(
+                    if (state.scope.isSecondaryOnly) "S1–S6" else "P1–P7",
+                    fontSize = 12.sp, fontWeight = FontWeight.Medium, color = Theme.MUTED
                 )
             }
         }
@@ -686,6 +740,37 @@ fun SetupScreen(state: AppState) {
 
     ScreenTitle("School Setup", "Offline school account — everything stays on this computer")
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {  // v2.2.15 fix: unbounded LazyColumn inside verticalScroll crashed on open
+        // ── School category: decides which levels the whole console runs ──
+        CardBox {
+            Text("School category", color = Theme.ACCENT, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(4.dp))
+            Text("This decides which classes, students, subjects, teachers and timetable periods the console shows. A secondary school runs Senior 1 → Senior 6 only, split O-level (S1–S4) and A-level (S5–S6). Nothing is deleted when you switch — classes outside the choice are simply hidden and come back intact.", color = Theme.MUTED, fontSize = 12.sp)
+            Spacer(Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                SchoolCategory.entries.forEach { cat ->
+                    val on = SchoolScope.fromStored(school.category).category == cat
+                    Column(
+                        Modifier.weight(1f)
+                            .background(if (on) Theme.ACCENT_SOFT else Theme.CARD, RoundedCornerShape(12.dp))
+                            .border(if (on) 2.dp else 1.dp, if (on) Theme.ACCENT else Theme.LINE, RoundedCornerShape(12.dp))
+                            .clickable { school = school.copy(category = cat.name); applySchoolCategory(state, cat); savedMsg = "" }
+                            .padding(14.dp)
+                    ) {
+                        Text(cat.label, color = if (on) Theme.ACCENT else Theme.TEXT, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.height(3.dp))
+                        Text(cat.detail, color = Theme.MUTED, fontSize = 11.sp)
+                        if (on) {
+                            Spacer(Modifier.height(6.dp))
+                            Text("IN USE", color = Theme.GOOD, fontSize = 10.sp, fontWeight = FontWeight.Black, style = TextStyle(letterSpacing = 1.sp))
+                        }
+                    }
+                }
+            }
+            val sc = state.scope
+            Spacer(Modifier.height(10.dp))
+            Text("Active ladder: ${sc.summary}", color = Theme.ACCENT, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        }
+
         // ── School identity ──
         CardBox {
             Text("1. School identity", color = Theme.ACCENT, fontSize = 17.sp, fontWeight = FontWeight.Bold)
@@ -894,7 +979,7 @@ fun DashboardScreen(state: AppState) {
     val term = year?.terms?.firstOrNull { it.id == year.currentTermId } ?: year?.terms?.firstOrNull()
 
     // ── Real markbook coverage for the current term ──
-    val activeClasses = d.classes.filter { it.active }
+    val activeClasses = state.scopeClasses()
     val activeSubjects = d.subjects.filter { it.active }
     val activeStudents = d.students.filter { it.status == StudentStatus.ACTIVE }
     val termMarks = if (term != null) d.marks.filter { it.termId == term.id && it.type == MarkType.VALUE } else emptyList()
@@ -930,10 +1015,13 @@ fun DashboardScreen(state: AppState) {
     val totalCaptured = perClass.sumOf { it.captured }
     val overallPct = if (totalExpected > 0) (totalCaptured * 100.0 / totalExpected).toInt().coerceAtMost(100) else 0
 
-    // Level breakdown (Primary / O-Level / A-Level)
-    val levels = listOf(
-        "Primary" to Level.PRIMARY, "O-Level" to Level.O_LEVEL, "A-Level" to Level.A_LEVEL
-    ).map { (label, lv) ->
+    // Level breakdown — only the levels this school actually runs
+    val levels = state.scope.levels.map { lv ->
+        val label = when (lv) {
+            Level.PRIMARY -> "Primary"
+            Level.O_LEVEL -> "O-Level (S1–S4)"
+            Level.A_LEVEL -> "A-Level (S5–S6)"
+        }
         val expected = activeClasses.filter { it.level == lv }.sumOf { c ->
             classStudents[c.id].orEmpty().distinctBy { it.id }.size * activeSubjects.count { it.level == lv }
         }
@@ -1050,7 +1138,7 @@ fun DashboardScreen(state: AppState) {
                     Spacer(Modifier.height(12.dp))
                     levels.forEach { (label, pct, _) ->
                         Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text(label, color = Theme.MUTED, fontSize = 10.sp, modifier = Modifier.width(60.dp))
+                            Text(label, color = Theme.MUTED, fontSize = 10.sp, modifier = Modifier.width(112.dp))
                             MiniProgress(pct, Modifier.weight(1f))
                             Spacer(Modifier.width(8.dp))
                             Text("$pct%", color = Theme.INK, fontSize = 10.sp, fontWeight = FontWeight.Bold)
@@ -1141,7 +1229,15 @@ fun DashboardScreen(state: AppState) {
                             r.cls.name + (if (r.cls.stream.isBlank()) "" else " · ${r.cls.stream}"),
                             color = Theme.INK, fontSize = 12.sp, fontWeight = FontWeight.SemiBold
                         )
-                        Text("${r.students} learner" + (if (r.students == 1) "" else "s"), color = Theme.MUTED, fontSize = 9.sp)
+                        Text(
+                            "${r.students} learner" + (if (r.students == 1) "" else "s") + " · " +
+                                when (r.cls.level) {
+                                    Level.PRIMARY -> "Primary"
+                                    Level.O_LEVEL -> "O-Level · S1–S4"
+                                    Level.A_LEVEL -> "A-Level · S5–S6"
+                                },
+                            color = Theme.MUTED, fontSize = 9.sp
+                        )
                     }
                     Text(r.teacher.take(18), color = Theme.MUTED, fontSize = 11.sp, modifier = Modifier.weight(0.8f))
                     Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
@@ -1180,8 +1276,19 @@ fun PinLockScreen(state: AppState) {
             Modifier.width(360.dp).background(Theme.CARD, RoundedCornerShape(16.dp)).padding(28.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(Icons.Filled.Lock, "Locked", Modifier.size(36.dp), tint = Theme.ACCENT)
-            Spacer(Modifier.height(8.dp))
+            val lockLogo = remember {
+                try {
+                    val bytes = Thread.currentThread().contextClassLoader?.getResourceAsStream("icon.png")?.readBytes()
+                    if (bytes != null) BitmapPainter(Image.makeFromEncoded(bytes).toComposeImageBitmap()) else null
+                } catch (_: Exception) { null }
+            }
+            if (lockLogo != null) {
+                Image(lockLogo, contentDescription = "DeryCode School Report Maker",
+                    modifier = Modifier.size(64.dp).clip(RoundedCornerShape(16.dp)))
+            } else {
+                Icon(Icons.Filled.Lock, "Locked", Modifier.size(36.dp), tint = Theme.ACCENT)
+            }
+            Spacer(Modifier.height(10.dp))
             Text(school, color = Theme.TEXT, fontSize = 17.sp, fontWeight = FontWeight.Bold)
             Text("This console is locked with a PIN.", color = Theme.MUTED, fontSize = 12.sp)
             Spacer(Modifier.height(18.dp))

@@ -401,9 +401,9 @@ fun ClassesScreen(state: AppState) {
     // v2.2.3: pick one level at a time so the page doesn't need scrolling through P1-S6 every time.
     val selectedLevel: Level? = state.level
 
-    ScreenTitle("Classes & Streams", "Primary 1 → Senior 6 already set up for every school. Just add streams (East/West, A/B…) where a class is split.")
+    ScreenTitle("Classes & Streams", if (state.scope.isSecondaryOnly) "Senior 1 → Senior 6 already set up for this secondary school — S1–S4 at O-level, S5–S6 at A-level. Just add streams (East/West, A/B…) where a class is split." else if (state.scope.isPrimaryOnly) "Primary 1 → Primary 7 already set up for this primary school. Just add streams (East/West, A/B…) where a class is split." else "Primary 1 → Senior 6 already set up for every school. Just add streams (East/West, A/B…) where a class is split.")
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        Level.entries.filter { selectedLevel == null || it == selectedLevel }.forEach { lvl ->
+        state.scope.levels.filter { selectedLevel == null || it == state.scope.coerce(selectedLevel) }.forEach { lvl ->
             val inLevel = d.classes.filter { it.level == lvl && it.active }
             if (inLevel.isNotEmpty()) {
                 CardBox {
@@ -476,7 +476,7 @@ fun ClassesScreen(state: AppState) {
                     Column(Modifier.weight(1f)) {
                         FieldLabel("Level")
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Level.entries.forEach { lvl ->
+                            state.scope.levels.forEach { lvl ->
                                 FilterChip(selected = customLevel == lvl, onClick = { customLevel = lvl }, label = { Text(if (lvl == Level.O_LEVEL) "O-Level" else if (lvl == Level.PRIMARY) "Primary" else "A-Level", fontSize = 12.sp) })
                             }
                         }

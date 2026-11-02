@@ -26,7 +26,7 @@ plugins {
 
 kotlin { jvmToolchain(17) }
 
-val consoleVersion = "2.3.1"   // single source of truth — also drives packageVersion below
+val consoleVersion = "2.3.2"   // single source of truth — also drives packageVersion below
 
 // Generate AppVersion.kt so runtime code always matches the packaged version
 // (audit fix: DesktopSupport had a stale hardcoded "2.0.0")

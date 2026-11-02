@@ -1,8 +1,8 @@
 {
-  "console": "2.3.1",
+  "console": "2.3.2",
   "teacher": "1.17.1",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.1.msi",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.2.msi",
   "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.17.1.apk",
-  "releaseNotes": "Your DeryCode logo is now the app icon on both apps and the launch screen behind it \u2014 the phone app opens on the navy logo instead of a white flash, and the console opens on a branded launch screen. School accounts, cloud backup and one-code teacher join from 2.3.0 are unchanged.",
+  "releaseNotes": "Secondary schools get their own console. Pick Secondary school in School Setup and the console runs Senior 1 to Senior 6 only: O-Level S1-S4 and A-Level S5-S6 in the level switch, dashboard, classes, students, subjects, teachers, marks, timetable and reports. Primary schools see P1-P7 only, combined schools keep both. Nothing is deleted when you switch. The DeryCode logo now sits inside the console: sidebar, setup wizard and PIN lock screen.",
   "released": "2026-11-02"
 }
