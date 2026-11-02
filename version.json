@@ -1,8 +1,8 @@
 {
-  "console": "2.2.37",
+  "console": "2.2.38",
   "teacher": "1.15.0",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.37.msi",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.38.msi",
   "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.15.0.apk",
-  "releaseNotes": "One code connects every teacher. The console now shows your school code as a QR (Cloud & Online, and the setup wizard). A teacher opens Cloud in the phone app, taps Scan code, points the camera, and is connected instantly with your classes, students and subjects. Typing the code still works. The app also connects on older school clouds that have not run the v3 update yet.",
+  "releaseNotes": "Report cards are now clean A4 academic documents. The fee table (term fees, paid, balance) is gone from every report card - fees stay in the Fees screen and the defaulter list. Printing from the browser fits one A4 sheet: rows never split across pages, no trailing blank page, exact page size A4 portrait. Word reports were already A4 and now carry no fees line.",
   "released": "2026-11-02"
 }

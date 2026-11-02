@@ -390,17 +390,8 @@ object DocxReport {
         }
         doc.p("How to read the marks: " + legend.joinToString("  ·  "), size = 14, color = "555555", spacingAfter = 30)
 
-        // ── fees — one compact table, all categories (each stays its own ledger) ──
-        val enrollment = data.enrollments.lastOrNull { it.studentId == student.id }
-        val feeLines = enrollment?.let { e -> data.feeStructures.filter { it.classId == e.classId && it.termId == result.termId && it.amount > 0 } }.orEmpty()
-        if (feeLines.isNotEmpty()) {
-            val feeRows = feeLines.map { fee ->
-                val paid = data.feePayments.filter { it.studentId == student.id && it.termId == result.termId && it.category == fee.category }.sumOf { it.amount }
-                listOf(fee.category.label, fmt(fee.amount), fmt(paid), fmt((fee.amount - paid).coerceAtLeast(0.0)))
-            }
-            doc.p("Fees (${data.settings.currencySymbol})", bold = true, size = 20, color = accent, spacingAfter = 20)
-            doc.table(listOf("Category", "Term fees", "Paid to date", "Balance"), feeRows)
-        }
+        // Fees are deliberately NOT printed on the report card — a report is an academic
+        // document. Fee balances live in the Fees screen and the defaulter list.
 
         // ── attendance — one compact line ──
         val att = data.attendance.filter { it.studentId == student.id }

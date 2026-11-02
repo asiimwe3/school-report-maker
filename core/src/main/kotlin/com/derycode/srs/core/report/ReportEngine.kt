@@ -155,7 +155,7 @@ object ReportEngine {
         val accent = school.colorPrimary
         val ink = school.colorSecondary
         return """
-        @page { size: A4; margin: 12mm; }
+        @page { size: A4 portrait; margin: 10mm; }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
         body { background: #f3f4f6; padding: 16px; }
         .card { max-width: 800px; margin: 0 auto; background: #fff; padding: 26px 30px;
@@ -185,7 +185,17 @@ object ReportEngine {
         .sig .line { border-bottom: 1px solid #444; width: 170px; height: 34px; margin-bottom: 3px; }
         .grading-key { margin-top: 16px; font-size: 9px; color: #999; text-align: center; }
         .page-break { page-break-after: always; }
-        @media print { body { background: #fff; padding: 0; } .card { border: none; max-width: none; } }
+        /* ── A4 fit: never spill onto a second sheet ── */
+        .marks, .student-info { page-break-inside: avoid; }
+        .marks tr, .student-info tr { page-break-inside: avoid; page-break-after: auto; }
+        .header, .summary, .comments, .signatures { page-break-inside: avoid; }
+        @media print {
+            html, body { width: 210mm; height: 297mm; background: #fff; padding: 0; margin: 0; }
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .card { border: none; max-width: none; width: 100%; padding: 0; border-radius: 0;
+                    box-shadow: none; page-break-after: avoid; }
+            .page-break:last-child { page-break-after: auto; }
+        }
         """.trimIndent()
     }
 
