@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Navy plate colour from the DeryCode School Report System logo.
+         Used for the launcher icon background and the launch screen so the
+         splash and the icon match edge to edge. -->
+    <color name="srs_navy">#021951</color>
+    <color name="ic_launcher_background">#021951</color>
+</resources>

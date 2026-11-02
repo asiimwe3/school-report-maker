@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 12+ draws its own splash. Keep it on-brand: navy behind,
+         the logo plate as the icon. -->
+    <style name="SrsTheme" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@drawable/launch_screen</item>
+        <item name="android:windowSplashScreenBackground">@color/srs_navy</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@color/srs_navy</item>
+        <item name="android:statusBarColor">@color/srs_navy</item>
+        <item name="android:navigationBarColor">@color/srs_navy</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>

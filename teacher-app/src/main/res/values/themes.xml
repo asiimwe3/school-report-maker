@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Launch theme: the DeryCode logo sits on the brand navy until the
+         first Compose frame is ready, so the app never flashes white. -->
+    <style name="SrsTheme" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@drawable/launch_screen</item>
+        <item name="android:statusBarColor">@color/srs_navy</item>
+        <item name="android:navigationBarColor">@color/srs_navy</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>

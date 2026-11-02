@@ -1,8 +1,8 @@
 {
-  "console": "2.3.0",
-  "teacher": "1.17.0",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.0.msi",
-  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.17.0.apk",
-  "releaseNotes": "New cloud project: the whole suite now talks to a fresh Supabase project that has been provisioned and tested end to end \u2014 school accounts, automatic backups, one-code teacher join, teacher marks and the photo roster all verified. Set up your school once on the console (Cloud & Online), then every teacher joins with the school code.",
+  "console": "2.3.1",
+  "teacher": "1.17.1",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.1.msi",
+  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.17.1.apk",
+  "releaseNotes": "Your DeryCode logo is now the app icon on both apps and the launch screen behind it \u2014 the phone app opens on the navy logo instead of a white flash, and the console opens on a branded launch screen. School accounts, cloud backup and one-code teacher join from 2.3.0 are unchanged.",
   "released": "2026-11-02"
 }

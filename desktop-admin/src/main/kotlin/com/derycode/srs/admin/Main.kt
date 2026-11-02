@@ -258,7 +258,38 @@ fun main() = application {
         state = rememberWindowState(placement = WindowPlacement.Maximized),
         onCloseRequest = ::exitApplication
     ) {
-        App(state)
+        // ── Launch screen: brand navy + logo until the console paints ──
+        var splash by remember { mutableStateOf(true) }
+        androidx.compose.runtime.LaunchedEffect(Unit) {
+            kotlinx.coroutines.delay(1100)
+            splash = false
+        }
+        Box(Modifier.fillMaxSize()) {
+            App(state)
+            if (splash) LaunchSplash(windowIcon)
+        }
+    }
+}
+
+/** Full-window launch screen: the DeryCode logo on the brand navy, so the
+ *  console opens on brand instead of a grey window. */
+@Composable
+private fun LaunchSplash(logo: androidx.compose.ui.graphics.painter.Painter?) {
+    val navy = Color(0xFF021951)
+    Box(Modifier.fillMaxSize().background(navy), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            if (logo != null) {
+                Image(logo, contentDescription = null, modifier = Modifier.size(200.dp))
+            } else {
+                Text("DERYCODE", color = Color.White, fontSize = 34.sp, fontWeight = FontWeight.Bold)
+            }
+            Spacer(Modifier.height(18.dp))
+            Text("School Report Maker", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(4.dp))
+            Text("Admin Console", color = Color(0xFF9CC3FF), fontSize = 14.sp)
+            Spacer(Modifier.height(14.dp))
+            Text("SIMPLE · FAST · RELIABLE", color = Color(0xFF6E9BE0), fontSize = 11.sp, letterSpacing = 2.sp)
+        }
     }
 }
 

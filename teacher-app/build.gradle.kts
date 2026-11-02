@@ -12,8 +12,8 @@ android {
         applicationId = "com.derycode.srs.teacher"
         minSdk = 26
         targetSdk = 34
-        versionCode = 32
-        versionName = "1.17.0"
+        versionCode = 33
+        versionName = "1.17.1"
     }
 
     // v1.13.8 — ONE permanent signing key, checked into the repo.
