@@ -4,6 +4,7 @@ import com.derycode.srs.core.store.SchoolRepository
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonPrimitive
 import java.net.HttpURLConnection
 import java.net.URI
@@ -378,6 +379,41 @@ object CloudApi {
         return Pair(false, "Could not disconnect the teacher (${r.first}).$hint")
     }
 
+    /** True when another school already uses this code (codes must be unique). */
+    fun codeTaken(url: String, key: String, token: String, code: String): Boolean {
+        val r = http("GET", "$url/rest/v1/srs_schools?select=id&invite_code=eq.${java.net.URLEncoder.encode(code, "UTF-8")}", key, token, null)
+        if (r.first !in 200..299) return false   // never block on a read error; insert will still be checked
+        return r.second.trim().let { it != "[]" && it.isNotEmpty() }
+    }
+
+    /**
+     * Asks the server, exactly as a teacher's phone would: which school does
+     * this code open? Used by "Verify code online" so the admin sees the same
+     * answer a teacher will see, instead of trusting the locally stored copy.
+     */
+    fun codeOwner(url: String, key: String, code: String): Pair<String, String> {
+        val body = "{\"_code\":\"${esc(code.trim().uppercase())}\"}"
+        val r = http("POST", "$url/rest/v1/rpc/srs_join_by_code", key, null, body)
+        if (r.first !in 200..299) {
+            return Pair("", if (r.second.contains("not found")) "No school on the server uses this code." else "Server said ${r.first}: ${r.second.take(120)}")
+        }
+        return try {
+            val root = Json.parseToJsonElement(r.second)
+            val school = (root as? JsonObject)?.get("school") as? JsonObject
+            val name = (school?.get("name") as? JsonPrimitive)?.content ?: ""
+            val hasSetup = ((root as? JsonObject)?.get("has_setup") as? JsonPrimitive)?.content ?: "false"
+            if (name.isBlank()) Pair("", "The code answered, but with no school name.")
+            else Pair(name, if (hasSetup == "true") "" else "Code works, but no school setup has been published yet.")
+        } catch (_: Exception) { Pair("", "Could not read the server's answer.") }
+    }
+
+    /** Point this school at a brand-new code. The old code stops working at once. */
+    fun setInviteCode(url: String, key: String, token: String, schoolId: String, code: String): Pair<Boolean, String> {
+        val body = "{\"invite_code\":\"${esc(code)}\"}"
+        val r = http("PATCH", "$url/rest/v1/srs_schools?id=eq.$schoolId&select=id,invite_code", key, token, body)
+        return if (r.first in 200..299) Pair(true, code) else Pair(false, "Server error (${r.first}): ${r.second.take(140)}")
+    }
+
     private fun esc(s: String) = s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", " ").replace("\r", " ")
 }
 
@@ -474,6 +510,52 @@ object CloudSync {
                 if (pushed.first) "Cloud is on. School code $code is ready for teachers."
                 else "Cloud is on and the school is registered, but the first backup failed: ${pushed.second}"
             )
+        }.start()
+    }
+
+    /**
+     * New school code, on demand. A code belongs to exactly one school, so we
+     * keep drawing until we get one no other school is using, then save it in
+     * the cloud first (so a teacher scanning it gets OUR school) and only then
+     * on this console.
+     */
+    fun regenerateInviteCode(repo: SchoolRepository, onResult: ((Boolean, String) -> Unit)? = null) {
+        val st = repo.data.settings
+        if (st.cloudSchoolId.isBlank() || st.cloudAccessToken.isBlank()) {
+            onResult?.invoke(false, "Turn on the cloud first — a code only means something online.")
+            return
+        }
+        Thread {
+            val base = url(st); val k = key(st)
+            val letters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+            val rnd = java.security.SecureRandom()
+            val prefix = repo.data.school.name.uppercase().filter { it.isLetterOrDigit() }.take(4).padEnd(4, 'X')
+
+            val res = withFreshToken(repo, { it.second }) { token ->
+                var chosen = ""
+                var lastErr = ""
+                // up to 12 tries: every code is unique across all schools
+                repeat(12) {
+                    if (chosen.isNotEmpty()) return@repeat
+                    val candidate = prefix + (1..4).map { letters[rnd.nextInt(letters.length)] }.joinToString("")
+                    if (CloudApi.codeTaken(base, k, token, candidate)) return@repeat
+                    val (ok, msg) = CloudApi.setInviteCode(base, k, token, st.cloudSchoolId, candidate)
+                    if (ok) chosen = candidate else lastErr = msg
+                }
+                Pair(chosen, lastErr)
+            }
+            val (code, err) = res
+            if (code.isBlank()) {
+                onResult?.invoke(false, err.ifBlank { "Could not create a new code — check the internet and try again." })
+                return@Thread
+            }
+            repo.mutate("cloud-invite-rotated", "settings") { d ->
+                d.copy(settings = d.settings.copy(cloudInviteCode = code))
+            }
+            // Re-publish so the very first scan with the new code already has the school.
+            val payload = Json.encodeToString(com.derycode.srs.core.model.SchoolData.serializer(), repo.data)
+            CloudApi.pushBackup(base, k, repo.data.settings.cloudAccessToken, st.cloudSchoolId, payload)
+            onResult?.invoke(true, "New code $code is live. The old code stopped working.")
         }.start()
     }
 

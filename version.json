@@ -1,7 +1,7 @@
 {
-  "console": "2.3.5",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.5.msi",
-  "teacher": "1.18.1",
-  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.18.1.apk",
-  "notes": "Console updates itself: tap the Update pill on the top bar and it downloads and installs. Teacher app: scan once, school loads."
+  "console": "2.3.6",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.6.msi",
+  "teacher": "1.18.2",
+  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.18.2.apk",
+  "notes": "Each school has one unique code: regenerate it any time, verify online what it opens. The phone now names the school and the code a copy came from, and asks before replacing a different school."
 }

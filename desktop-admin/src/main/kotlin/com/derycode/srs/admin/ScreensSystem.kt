@@ -382,6 +382,29 @@ fun SettingsScreen(state: AppState) {
             if (pinMsg.isNotBlank()) Text(pinMsg, color = if (pinMsg.contains("✓")) Theme.GOOD else Theme.WARN, fontSize = 13.sp)
         }
         // ── Connect Teachers (v2.2.3) ──
+        var askNewCode by remember { mutableStateOf(false) }
+        var codeMsg by remember { mutableStateOf("") }
+        if (askNewCode) {
+            AlertDialog(
+                onDismissRequest = { askNewCode = false },
+                title = { Text("Generate a new school code?", color = Theme.TEXT, fontWeight = FontWeight.Bold) },
+                text = {
+                    Column {
+                        Text("Every phone that has the old code will stop connecting with it — that is how you cut off a teacher who has left, or a code that leaked.", color = Theme.TEXT, fontSize = 14.sp)
+                        Spacer(Modifier.height(6.dp))
+                        Text("Phones that already downloaded the school keep their copy and their marks. You will see the new code and QR here straight away.", color = Theme.MUTED, fontSize = 13.sp)
+                    }
+                },
+                confirmButton = {
+                    TextButton({
+                        askNewCode = false
+                        codeMsg = "Creating a new code…"
+                        CloudSync.regenerateInviteCode(state.repo) { ok, m -> codeMsg = m; if (ok) state.refresh() }
+                    }) { Text("Yes, new code", color = Theme.ACCENT, fontWeight = FontWeight.Bold) }
+                },
+                dismissButton = { TextButton({ askNewCode = false }) { Text("Keep this one", color = Theme.MUTED) } }
+            )
+        }
         CardBox {
             Text("Connect Teachers", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(4.dp))
@@ -391,6 +414,27 @@ fun SettingsScreen(state: AppState) {
                 Btn("Go to Cloud & Online") { state.screen = "cloud" }
             } else {
                 Text("Every teacher scans this ONE code with the phone app (Cloud tab → Scan code) and is registered, linked to your school, and gets your classes, students and subjects automatically. The code below is also for typing by hand.", color = Theme.MUTED, fontSize = 13.sp)
+                Spacer(Modifier.height(8.dp))
+                // What the code actually opens — the phone shows exactly this, so the
+                // admin can check a teacher's screen against their own console.
+                Box(Modifier.fillMaxWidth().background(Theme.ACCENT_SOFT, RoundedCornerShape(8.dp)).padding(horizontal = 14.dp, vertical = 10.dp)) {
+                    Column {
+                        Text("THIS CODE OPENS", color = Theme.MUTED, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            listOf(state.data.school.name.ifBlank { "Your school" },
+                                   state.data.school.district.ifBlank { null }?.let { it },
+                                   "${state.data.students.size} learners").filterNotNull().joinToString("  ·  "),
+                            color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold
+                        )
+                        Spacer(Modifier.height(2.dp))
+                        Text("A code belongs to one school only. Anyone scanning it sees this school and nothing else.", color = Theme.MUTED, fontSize = 12.sp)
+                    }
+                }
+                if (codeMsg.isNotBlank()) {
+                    Spacer(Modifier.height(6.dp))
+                    Text(codeMsg, color = if (codeMsg.startsWith("✓") || codeMsg.contains("live")) Theme.GOOD else Theme.WARN, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                }
                 Spacer(Modifier.height(12.dp))
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
                     InviteQr(s.cloudInviteCode, caption = "All teachers scan this")
@@ -408,6 +452,24 @@ fun SettingsScreen(state: AppState) {
                         shareInviteOnWhatsApp(state.data.school.name, s.cloudInviteCode, state.data.school.headTeacher.ifBlank { "The Head Teacher" })
                     }
                     Btn("Manage teachers", primary = false) { state.screen = "teachers" }
+                    Btn("Verify code online", primary = false) {
+                        codeMsg = "Asking the server…"
+                        Thread {
+                            val st = state.data.settings
+                            val (owner, warn) = CloudApi.codeOwner(CloudSync.url(st), CloudSync.key(st), st.cloudInviteCode)
+                            codeMsg = when {
+                                owner.isBlank() -> "✗ " + warn.ifBlank { "This code is not on the server." } +
+                                    " Tap Regenerate code to make a working one."
+                                warn.isNotBlank() -> "⚠ Code " + st.cloudInviteCode + " opens " + owner + " but " + warn.lowercase() +
+                                    " Publish from Cloud & Online."
+                                owner.equals(state.data.school.name, ignoreCase = true) ->
+                                    "✓ Verified — code " + st.cloudInviteCode + " opens " + owner + " (the same thing a teacher's phone will show)."
+                                else -> "⚠ Mismatch: the server says this code opens " + owner + ", not " + state.data.school.name +
+                                    ". Tap Regenerate code."
+                            }
+                        }.start()
+                    }
+                    Btn("Regenerate code", primary = false) { askNewCode = true }
                         Text("Print it, or show it on screen — one code for the whole staff.", color = Theme.MUTED, fontSize = 12.sp)
                     }
                 }

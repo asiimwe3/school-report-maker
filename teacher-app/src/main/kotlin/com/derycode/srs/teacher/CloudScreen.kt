@@ -59,6 +59,8 @@ fun CloudScreen(state: TeacherState, onScan: () -> Unit = {}) {
     var rosterMsg by remember { mutableStateOf("") }
     var joined by remember { mutableStateOf<TeacherCloud.JoinResult?>(null) }
     var autoConnect by remember { mutableStateOf(false) }
+    var pending by remember { mutableStateOf<TeacherCloud.JoinResult?>(null) }
+    var pendingCode by remember { mutableStateOf("") }
     // A code just came back from the QR scanner — drop it into the field ready to go.
     LaunchedEffect(state.scannedInvite) {
         if (state.scannedInvite.isNotBlank()) {
@@ -90,21 +92,65 @@ fun CloudScreen(state: TeacherState, onScan: () -> Unit = {}) {
     fun report(ok: Boolean, text: String) { msgGood = ok; msg = text }
     fun run(block: suspend () -> Unit) { if (!busy) { busy = true; scope.launch(Dispatchers.IO) { block(); busy = false } } }
 
+    fun adopt(c: String, r: TeacherCloud.JoinResult) {
+        r.data?.let { state.adoptSchoolSetup(it, c) }
+        joined = r
+        report(true, "School on this phone: " + r.schoolName.ifBlank { r.data?.school?.name ?: "" } + " \u00B7 code " + c)
+    }
+
+    /**
+     * One scan -> one school. If this phone already holds a DIFFERENT school,
+     * ask first and name both sides, so the screen can never claim one school's
+     * data came from another school's code.
+     */
+    fun joinWithCode(code: String) {
+        val c = code.trim().uppercase()
+        if (c.length < 4) { report(false, "Type the whole school code first"); return }
+        run {
+            val r = state.cloud.joinByCode(c)
+            withContext(Dispatchers.Main) {
+                if (!r.ok || r.data == null) { report(false, r.msg); return@withContext }
+                val here = state.data.school.name
+                val there = r.data.school.name.ifBlank { r.schoolName }
+                val sameSchool = here.isBlank() || there.equals(here, ignoreCase = true) ||
+                    state.schoolCode.equals(c, ignoreCase = true)
+                if (sameSchool) adopt(c, r) else { pendingCode = c; pending = r
+                    report(false, "Code $c opens $there. Confirm below to replace $here.") }
+            }
+        }
+    }
+
+    // Code opens a different school than the one on this phone — say so plainly.
+    pending?.let { p ->
+        val there = p.data?.school?.name?.ifBlank { p.schoolName } ?: p.schoolName
+        val here = state.data.school.name
+        AlertDialog(
+            onDismissRequest = { pending = null },
+            title = { Text("Replace the school on this phone?", color = NAVY, fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    Text("Code " + pendingCode + " opens " + there + ".", color = NAVY, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(6.dp))
+                    Text("This phone is holding " + here + " (" + state.data.students.size + " learners).", color = MUTED, fontSize = 13.sp)
+                    Spacer(Modifier.height(6.dp))
+                    Text("Replacing it puts " + there + " here instead. Marks you already typed for " + here + " are not deleted until you choose to, but they are no longer shown.", color = MUTED, fontSize = 13.sp)
+                }
+            },
+            confirmButton = {
+                TextButton({ pending?.let { adopt(pendingCode, it) }; pending = null }) {
+                    Text("Use " + there.take(22), color = BLUE, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = { TextButton({ pending = null }) { Text("Keep " + here.take(18), color = MUTED) } }
+        )
+    }
+
+
     // A code that came from the scanner connects immediately — no extra button.
     LaunchedEffect(autoConnect) {
         if (autoConnect && inviteCode.length >= 4) {
             autoConnect = false
-            val code = inviteCode
-            run {
-                val r = state.cloud.joinByCode(code)
-                withContext(Dispatchers.Main) {
-                    if (r.ok && r.data != null) {
-                        state.adoptSchoolSetup(r.data, code)
-                        joined = r
-                        report(true, "School on this phone: ${r.schoolName}")
-                    } else report(false, r.msg)
-                }
-            }
+            joinWithCode(inviteCode)
         }
     }
 
@@ -158,20 +204,7 @@ fun CloudScreen(state: TeacherState, onScan: () -> Unit = {}) {
                 )
                 Spacer(Modifier.height(8.dp))
                 Button(
-                    onClick = {
-                        val code = inviteCode.trim().uppercase()
-                        if (code.length < 4) { report(false, "Type the whole school code first"); return@Button }
-                        run {
-                            val r = state.cloud.joinByCode(code)
-                            withContext(Dispatchers.Main) {
-                                if (r.ok && r.data != null) {
-                                    state.adoptSchoolSetup(r.data, code)
-                                    joined = r
-                                    report(true, "School on this phone: ${r.schoolName}")
-                                } else report(false, r.msg)
-                            }
-                        }
-                    },
+                    onClick = { joinWithCode(inviteCode) },
                     enabled = !busy,
                     modifier = Modifier.fillMaxWidth().height(48.dp),
                     shape = RoundedCornerShape(10.dp),
@@ -208,10 +241,20 @@ fun CloudScreen(state: TeacherState, onScan: () -> Unit = {}) {
                         }
                     }
                     Text(
-                        "${d.school.name}" + (if (d.timetable.isNotEmpty()) " \u00B7 timetable ready" else "") +
-                            (if (d.academicYears.isNotEmpty()) " \u00B7 term dates ready" else ""),
+                        buildString {
+                            append(d.school.name.uppercase())
+                            if (state.schoolCode.isNotBlank()) append(" \u00B7 code " + state.schoolCode)
+                            if (d.timetable.isNotEmpty()) append(" \u00B7 timetable ready")
+                            if (d.academicYears.isNotEmpty()) append(" \u00B7 term dates ready")
+                        },
                         color = MUTED, fontSize = 12.sp
                     )
+                    if (state.schoolCode.isNotBlank() && inviteCode.trim().uppercase() != state.schoolCode) {
+                        Text(
+                            "This copy came from code " + state.schoolCode + ", not the code typed above.",
+                            color = ORANGE, fontSize = 11.sp, fontWeight = FontWeight.SemiBold
+                        )
+                    }
                 }
 
                 // ── Who are you? Picked from the staff list we just downloaded ──
