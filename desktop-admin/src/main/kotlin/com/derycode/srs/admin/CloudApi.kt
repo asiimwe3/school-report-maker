@@ -24,8 +24,8 @@ import java.util.concurrent.TimeUnit
 object CloudApi {
 
     // Defaults for a fresh install — editable in the setup wizard / Cloud screen.
-    const val DEFAULT_URL = "https://ntdghazoglldkynlcndg.supabase.co"
-    const val DEFAULT_KEY = "sb_publishable_efREJ4m-7d5Wkv5MARESIA_KJfr6ARn"
+    const val DEFAULT_URL = "https://hejyndudxtinigbvzolj.supabase.co"
+    const val DEFAULT_KEY = "sb_publishable_AqC-q3-23JiE6VyyCGvNCA_FZ1ZmAd_"
 
 
     data class AuthResult(val ok: Boolean, val error: String = "", val accessToken: String = "", val refreshToken: String = "")

@@ -1,8 +1,8 @@
 {
-  "console": "2.2.40",
-  "teacher": "1.16.0",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.40.msi",
-  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.16.0.apk",
-  "releaseNotes": "Cloud & Online now has a Cloud status check you can run yourself: it proves the server is reachable, the school and backup tables answer, your key is accepted, and the teacher link function is present. Also lets you point the console at a different Supabase project simply by pasting its URL and anon key. Full teacher control, one-code QR join and A4 fee-free reports from the previous builds are all included.",
+  "console": "2.3.0",
+  "teacher": "1.17.0",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.0.msi",
+  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.17.0.apk",
+  "releaseNotes": "New cloud project: the whole suite now talks to a fresh Supabase project that has been provisioned and tested end to end \u2014 school accounts, automatic backups, one-code teacher join, teacher marks and the photo roster all verified. Set up your school once on the console (Cloud & Online), then every teacher joins with the school code.",
   "released": "2026-11-02"
 }

@@ -21,8 +21,8 @@ import java.nio.charset.StandardCharsets
 // ─────────────────────────────────────────────────────────────────────────────
 
 object CloudCfg {
-    const val URL = "https://ntdghazoglldkynlcndg.supabase.co"
-    const val KEY = "sb_publishable_efREJ4m-7d5Wkv5MARESIA_KJfr6ARn"
+    const val URL = "https://hejyndudxtinigbvzolj.supabase.co"
+    const val KEY = "sb_publishable_AqC-q3-23JiE6VyyCGvNCA_FZ1ZmAd_"
 }
 
 data class CloudAccount(
