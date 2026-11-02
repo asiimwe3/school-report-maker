@@ -100,8 +100,10 @@ fun HomeScreen(state: TeacherState, onOpenClass: (String) -> Unit, onQuickAction
         }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                FeatureCard(Modifier.weight(1f), "My Classes", "View & manage all your classes.", Icons.Filled.School, PINK) { onQuickAction(Route.Classes) }
-                FeatureCard(Modifier.weight(1f), "More Tools", "Sync, cloud, duty desk & support.", Icons.Filled.MoreHoriz, ORANGE) { onQuickAction(Route.More) }
+                FeatureCard(Modifier.weight(1f), "Term Insight", "Averages, grade spread and the subject that needs help.", Icons.Filled.Insights, TEAL) { onQuickAction(Route.Insights) }
+                FeatureCard(Modifier.weight(1f), "Ranked Results", "Class positions straight from your own marks.", Icons.Filled.EmojiEvents, BLUE) { onQuickAction(Route.Results) }
+                FeatureCard(Modifier.weight(1f), "Calendar", "Term dates, exams, holidays and meetings.", Icons.Filled.Event, PURPLE) { onQuickAction(Route.Calendar) }
+                FeatureCard(Modifier.weight(1f), "Themes", "Seven palettes, including dark for night marking.", Icons.Filled.Palette, ORANGE) { onQuickAction(Route.Themes) }
             }
         }
         item {

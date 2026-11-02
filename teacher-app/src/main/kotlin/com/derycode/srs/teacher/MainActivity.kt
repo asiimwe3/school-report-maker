@@ -42,7 +42,7 @@ class MainActivity : ComponentActivity() {
         CrashReporter.sendPending(this)   // deliver any previous crash BEFORE the UI (survives startup crash-loops)
         val state = TeacherState(this)
         state.checkForUpdate()   // auto-check on every launch; only asks GitHub, never sends data
-        applyPhoneTheme(state.data.settings.theme)   // paint the first frame in the school's theme
+        applyPhoneTheme(state.phoneTheme)   // paint the first frame in the chosen theme
         setContent {
             MaterialTheme(
                 colorScheme = if (DARK_THEME)
@@ -72,6 +72,21 @@ class TeacherState(context: Context) {
         private set
 
     private val meFile = File(context.filesDir, "teacher-id.txt")
+    private val themeFile = File(context.filesDir, "phone-theme.txt")
+
+    /** A theme chosen on this phone alone; null = follow the school's console theme. */
+    var themeChoice by mutableStateOf<String?>(
+        if (themeFile.exists()) themeFile.readText().trim().ifBlank { null } else null
+    )
+        private set
+
+    fun setThemeOverride(name: String?) {
+        themeChoice = name
+        if (name == null) themeFile.delete() else themeFile.writeText(name.trim())
+    }
+
+    /** The theme actually in use: the phone's own choice first, else the school's. */
+    val phoneTheme: String get() = themeChoice?.takeIf { it.isNotBlank() } ?: data.settings.theme
 
     /** The teacher using this phone — picked once, remembered. */
     var meId by mutableStateOf<String?>(if (meFile.exists() && meFile.readText().isNotBlank()) meFile.readText().trim() else null)
@@ -418,68 +433,23 @@ internal fun avatarColor(seed: String) = AVATAR_PALETTE[kotlin.math.abs(seed.has
  * Same names as the Admin console, so one choice covers console + phone.
  */
 internal fun applyPhoneTheme(name: String) {
-    val n = name.trim().lowercase()
-    val dark = n.contains("midnight") || n.contains("dark")
-    DARK_THEME = dark
-    when {
-        n.contains("midnight") && n.contains("gold") -> {
-            BG = Color(0xFF16130E); CARD = Color(0xFF211C15); CARD_ALT = Color(0xFF2A241B)
-            STROKE = Color(0xFF37301F); NAVY = Color(0xFFF3EDE1); MUTED = Color(0xFFA79B86)
-            BLUE = Color(0xFFC99A45); ACCENT = BLUE; TEAL = Color(0xFFDDB35E)
-            GREEN = Color(0xFF6FBF8F); RED = Color(0xFFE08A6B); ORANGE = Color(0xFFE3A44F)
-            PURPLE = Color(0xFFC0A0E8); PINK = Color(0xFFE8A0BC)
-        }
-        n.contains("midnight") || n.contains("dark") -> {
-            BG = Color(0xFF11161C); CARD = Color(0xFF1A2129); CARD_ALT = Color(0xFF232C36)
-            STROKE = Color(0xFF2B3540); NAVY = Color(0xFFE9EEF4); MUTED = Color(0xFF93A1B1)
-            BLUE = Color(0xFF3FA897); ACCENT = BLUE; TEAL = Color(0xFF4FB3A5)
-            GREEN = Color(0xFF52C79E); RED = Color(0xFFEF6E6E); ORANGE = Color(0xFFE3A44F)
-            PURPLE = Color(0xFFA78BFA); PINK = Color(0xFFF472B6)
-        }
-        n.contains("ivory") -> {
-            BG = Color(0xFFFBF8F1); CARD = Color(0xFFFFFFFF); CARD_ALT = Color(0xFFF3EEE4)
-            STROKE = Color(0xFFE4E0D6); NAVY = Color(0xFF2A2A28); MUTED = Color(0xFF7A7770)
-            BLUE = Color(0xFF8C6A2F); ACCENT = BLUE; TEAL = Color(0xFF1F8A6F)
-            GREEN = Color(0xFF2F7D5B); RED = Color(0xFFB05A3C); ORANGE = Color(0xFFC98A2E)
-            PURPLE = Color(0xFF7A5AA8); PINK = Color(0xFFB0567F)
-        }
-        n.contains("forest") -> {
-            BG = Color(0xFFEDF3EE); CARD = Color(0xFFFBFDFB); CARD_ALT = Color(0xFFE3EEE7)
-            STROKE = Color(0xFFCFDDD3); NAVY = Color(0xFF132A1D); MUTED = Color(0xFF5F7166)
-            BLUE = Color(0xFF1F7A43); ACCENT = BLUE; TEAL = Color(0xFF2A8F72)
-            GREEN = Color(0xFF1F7A43); RED = Color(0xFF9E5B3A); ORANGE = Color(0xFFB98A2E)
-            PURPLE = Color(0xFF6B5AA8); PINK = Color(0xFFA8507F)
-        }
-        n.contains("ocean") -> {
-            BG = Color(0xFFEEF3F8); CARD = Color(0xFFFFFFFF); CARD_ALT = Color(0xFFE4EDF6)
-            STROKE = Color(0xFFCFDBE7); NAVY = Color(0xFF14273A); MUTED = Color(0xFF5E7189)
-            BLUE = Color(0xFF1F6DA8); ACCENT = BLUE; TEAL = Color(0xFF2A8FA8)
-            GREEN = Color(0xFF1F8A6F); RED = Color(0xFFB0603C); ORANGE = Color(0xFFC98A2E)
-            PURPLE = Color(0xFF6B5AA8); PINK = Color(0xFFA8507F)
-        }
-        n.contains("plum") -> {
-            BG = Color(0xFFF5F0F6); CARD = Color(0xFFFFFFFF); CARD_ALT = Color(0xFFEFE6F2)
-            STROKE = Color(0xFFE0D4E4); NAVY = Color(0xFF2B1830); MUTED = Color(0xFF75657C)
-            BLUE = Color(0xFF7A3E8C); ACCENT = BLUE; TEAL = Color(0xFF2A8F8C)
-            GREEN = Color(0xFF2F7D5B); RED = Color(0xFFA8506B); ORANGE = Color(0xFFB98A2E)
-            PURPLE = Color(0xFF7A3E8C); PINK = Color(0xFFB0567F)
-        }
-        n.contains("gold") -> {
-            BG = Color(0xFFF4F0E7); CARD = Color(0xFFFBFAF7); CARD_ALT = Color(0xFFEFE8D9)
-            STROKE = Color(0xFFDED5C2); NAVY = Color(0xFF2A2318); MUTED = Color(0xFF7B6E58)
-            BLUE = Color(0xFFC59A4A); ACCENT = BLUE; TEAL = Color(0xFF1F8A8A)
-            GREEN = Color(0xFF2F7D5B); RED = Color(0xFFB05A3C); ORANGE = Color(0xFFC98A2E)
-            PURPLE = Color(0xFF7A5AA8); PINK = Color(0xFFB0567F)
-        }
-        else -> { // Editorial (cream + deep green) — the console default
-            BG = Color(0xFFF4F0E7); CARD = Color(0xFFFBFAF7); CARD_ALT = Color(0xFFEDE8DC)
-            STROKE = Color(0xFFD7DDD5); NAVY = Color(0xFF18352E); MUTED = Color(0xFF6D7D75)
-            BLUE = Color(0xFF237B71); ACCENT = BLUE; TEAL = Color(0xFF2A8F8A)
-            GREEN = Color(0xFF1F7A43); RED = Color(0xFFA8503C); ORANGE = Color(0xFFB98A2E)
-            PURPLE = Color(0xFF6B5AA8); PINK = Color(0xFFA8507F)
-        }
-    }
-    GOOD = GREEN
+    val p = phonePalette(name)
+    DARK_THEME = p.dark
+    BG = p.bg
+    CARD = p.card
+    CARD_ALT = p.cardAlt
+    STROKE = p.stroke
+    NAVY = p.ink
+    MUTED = p.muted
+    BLUE = p.accent
+    ACCENT = p.accent
+    TEAL = p.teal
+    GREEN = p.green
+    RED = p.red
+    ORANGE = p.orange
+    PURPLE = p.purple
+    PINK = p.pink
+    GOOD = p.green
 }
 
 /** Display-only quick grade band for dashboard color coding (NOT the official PLE/UCE/UACE grading — reports use ResultEngine + the school's real grading scheme). */
@@ -516,6 +486,11 @@ sealed class Route {
     object Support : Route()
     object Cloud : Route()
     object Tutorial : Route()
+    object Themes : Route()
+    object Insights : Route()
+    object Results : Route()
+    object Calendar : Route()
+    object Profile : Route()
 }
 
 private enum class Tab(val route: Route, val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
@@ -530,7 +505,7 @@ private enum class Tab(val route: Route, val label: String, val icon: androidx.c
 fun TeacherApp(state: TeacherState) {
     // Live theme: whenever the school setup (from the console) carries a theme,
     // the WHOLE phone app restyles — background, cards, text, buttons, badges.
-    LaunchedEffect(state.data.settings.theme) { applyPhoneTheme(state.data.settings.theme) }
+    LaunchedEffect(state.phoneTheme) { applyPhoneTheme(state.phoneTheme) }
     val stack = remember { mutableStateListOf<Route>(Route.Home) }
     val current = stack.last()
     fun push(r: Route) { stack.add(r) }
@@ -556,7 +531,7 @@ fun TeacherApp(state: TeacherState) {
         is Route.Classes, is Route.ClassDetail, is Route.EnterMarks -> Tab.CLASSES
         is Route.Assessments -> Tab.ASSESSMENTS
         is Route.Students, is Route.StudentDetail -> Tab.STUDENTS
-        is Route.More, is Route.Comments, is Route.Sync, is Route.Duty, is Route.Register, is Route.Attendance, is Route.Support, is Route.Cloud, is Route.ScanCode, is Route.Timetable, is Route.Tutorial -> Tab.MORE
+        is Route.More, is Route.Comments, is Route.Sync, is Route.Duty, is Route.Register, is Route.Attendance, is Route.Support, is Route.Cloud, is Route.ScanCode, is Route.Timetable, is Route.Tutorial, is Route.Themes, is Route.Insights, is Route.Results, is Route.Calendar, is Route.Profile -> Tab.MORE
     }
 
     // ── Side menu (drawer): every section reachable in one tap ──
@@ -584,6 +559,11 @@ fun TeacherApp(state: TeacherState) {
                 DrawerItem(Icons.Filled.Shield, "Duty Desk", current is Route.Duty) { switchTab(Route.Duty); scope.launch { drawerState.close() } }
                 DrawerItem(Icons.Filled.PersonAdd, "Register student", current is Route.Register) { switchTab(Route.Register); scope.launch { drawerState.close() } }
                 DrawerItem(Icons.Filled.EventAvailable, "Attendance", current is Route.Attendance) { switchTab(Route.Attendance); scope.launch { drawerState.close() } }
+                DrawerItem(Icons.Filled.Insights, "Term Insight", current is Route.Insights) { switchTab(Route.Insights); scope.launch { drawerState.close() } }
+                DrawerItem(Icons.Filled.EmojiEvents, "Ranked Results", current is Route.Results) { switchTab(Route.Results); scope.launch { drawerState.close() } }
+                DrawerItem(Icons.Filled.Event, "Calendar", current is Route.Calendar) { switchTab(Route.Calendar); scope.launch { drawerState.close() } }
+                DrawerItem(Icons.Filled.Palette, "Themes", current is Route.Themes) { switchTab(Route.Themes); scope.launch { drawerState.close() } }
+                DrawerItem(Icons.Filled.Badge, "My Profile", current is Route.Profile) { switchTab(Route.Profile); scope.launch { drawerState.close() } }
                 DrawerItem(Icons.Filled.Cloud, "Cloud Sync", current is Route.Cloud) { switchTab(Route.Cloud); scope.launch { drawerState.close() } }
                 DrawerItem(Icons.Filled.Sync, "Sync & Export", current is Route.Sync) { switchTab(Route.Sync); scope.launch { drawerState.close() } }
                 DrawerItem(Icons.Filled.SupportAgent, "Support & Licence", current is Route.Support) { switchTab(Route.Support); scope.launch { drawerState.close() } }
@@ -595,7 +575,7 @@ fun TeacherApp(state: TeacherState) {
     Column(Modifier.fillMaxSize().background(BG)) {
         Column(Modifier.weight(1f).padding(horizontal = 14.dp)) {
             Spacer(Modifier.height(10.dp))
-            TopBar(state, current, onBack = { pop() }, onProfile = { push(Route.More) }, onMenu = { scope.launch { drawerState.open() } }, onBell = { push(Route.Support) })
+            TopBar(state, current, onBack = { pop() }, onProfile = { push(Route.Profile) }, onMenu = { scope.launch { drawerState.open() } }, onBell = { push(Route.Support) })
             Spacer(Modifier.height(10.dp))
             state.updateAvailable?.let { u ->
                 UpdateBanner(u) { push(Route.Support) }
@@ -622,6 +602,11 @@ fun TeacherApp(state: TeacherState) {
                     is Route.Support -> SupportScreen(state)
                     is Route.Tutorial -> TutorialScreen(state)
                     is Route.Cloud -> CloudScreen(state, onScan = { push(Route.ScanCode) })
+                    is Route.Themes -> ThemeScreen(state)
+                    is Route.Insights -> InsightsScreen(state, onOpenClass = { push(Route.ClassDetail(it)) })
+                    is Route.Results -> ResultsScreen(state, onOpenStudent = { push(Route.StudentDetail(it)) })
+                    is Route.Calendar -> CalendarScreen(state)
+                    is Route.Profile -> ProfileScreen(state, onOpenThemes = { push(Route.Themes) })
                     is Route.ScanCode -> QrScannerScreen(
                         onCode = { code -> state.scannedInvite = code; pop() },
                         onClose = { pop() })
@@ -708,6 +693,11 @@ private fun titleFor(state: TeacherState, route: Route): Pair<String, Boolean> =
     is Route.Support -> "Support & Licence" to true
     is Route.Tutorial -> "How-to Guide" to true
     is Route.Cloud -> "Cloud Sync" to true
+    is Route.Themes -> "Themes" to true
+    is Route.Insights -> "Term Insight" to true
+    is Route.Results -> "Ranked Results" to true
+    is Route.Calendar -> "Calendar" to true
+    is Route.Profile -> "My Profile" to true
 }
 
 @Composable

@@ -58,6 +58,14 @@ fun MoreScreen(state: TeacherState, onOpen: (Route) -> Unit) {
                 MoreRow(Icons.Filled.Schedule, "My Timetable", "Your periods for the week", BLUE) { onOpen(Route.Timetable) }
                 Divider(color = STROKE, modifier = Modifier.padding(vertical = 8.dp))
                 MoreSectionLabel("School operations")
+                MoreRow(Icons.Filled.Insights, "Term Insight", "Averages, grade spread, strongest subject", TEAL) { onOpen(Route.Insights) }
+                MoreRow(Icons.Filled.EmojiEvents, "Ranked Results", "Class positions from your own marks", BLUE) { onOpen(Route.Results) }
+                MoreRow(Icons.Filled.Event, "Calendar", "Term dates, exams, holidays, meetings", PURPLE) { onOpen(Route.Calendar) }
+                Divider(color = STROKE, modifier = Modifier.padding(vertical = 8.dp))
+                MoreSectionLabel("This phone")
+                MoreRow(Icons.Filled.Palette, "Themes", "Seven palettes \u00B7 dark for night marking", ORANGE) { onOpen(Route.Themes) }
+                MoreRow(Icons.Filled.Badge, "My Profile", "Your post, classes and load", BLUE) { onOpen(Route.Profile) }
+                Divider(color = STROKE, modifier = Modifier.padding(vertical = 8.dp))
                 MoreRow(Icons.Filled.Shield, "Duty Desk", "Teacher on duty \u00B7 gate passes \u00B7 duty log", ORANGE) { onOpen(Route.Duty) }
                 MoreRow(Icons.Filled.PersonAdd, "Register student", "Enroll a new student from the field", GREEN) { onOpen(Route.Register) }
                 Divider(color = STROKE, modifier = Modifier.padding(vertical = 8.dp))
