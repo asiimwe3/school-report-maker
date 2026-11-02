@@ -1,8 +1,8 @@
 {
-  "console": "2.3.2",
-  "teacher": "1.17.1",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.2.msi",
-  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.17.1.apk",
-  "releaseNotes": "Secondary schools get their own console. Pick Secondary school in School Setup and the console runs Senior 1 to Senior 6 only: O-Level S1-S4 and A-Level S5-S6 in the level switch, dashboard, classes, students, subjects, teachers, marks, timetable and reports. Primary schools see P1-P7 only, combined schools keep both. Nothing is deleted when you switch. The DeryCode logo now sits inside the console: sidebar, setup wizard and PIN lock screen.",
+  "console": "2.3.3",
+  "teacher": "1.17.2",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.3.msi",
+  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.17.2.apk",
+  "releaseNotes": "A secondary school now sees no Primary anywhere. The console filters all data at the source by school category, so classes, learners, subjects, marks, timetable, dashboard and level tabs only show your own ladder (Secondary: S1-S6, O-Level S1-S4 and A-Level S5-S6). Installs that never chose a school type are asked once on opening. Phones follow the same rule. Nothing is deleted; switching back restores everything.",
   "released": "2026-11-02"
 }

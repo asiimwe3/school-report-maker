@@ -87,16 +87,20 @@ class TeacherState(context: Context) {
     val myFirstName: String get() = me?.name?.split(" ")?.firstOrNull { it.isNotBlank() } ?: "Teacher"
 
     /** ALL classes this teacher is assigned to — a teacher can have multiple classes. */
+    /** Which levels this school runs — a secondary school's phones never show Primary. */
+    val scope: com.derycode.srs.core.model.SchoolScope
+        get() = com.derycode.srs.core.model.SchoolScope.of(data.school)
+
     val myClasses: List<SchoolClass>
-        get() = if (meId == null) data.classes.filter { it.active }
+        get() = (if (meId == null) data.classes.filter { it.active }
                 else data.assignments.filter { it.teacherId == meId }
                     .mapNotNull { a -> data.classes.firstOrNull { c -> c.id == a.classId && c.active } }
-                    .distinctBy { it.id }
+                    .distinctBy { it.id }).filter { scope.allows(it.level) }
 
     /** Subjects this teacher teaches in a given class (null subject assignment = class teacher → all). */
     fun mySubjectsFor(classId: String): List<Subject> {
         val cls = data.classes.firstOrNull { it.id == classId }
-        val base = data.subjects.filter { it.level == cls?.level && it.active }
+        val base = data.subjects.filter { it.level == cls?.level && it.active && scope.allows(it.level) }
         if (meId == null) return base
         val mine = data.assignments.filter { it.teacherId == meId && it.classId == classId }
         if (mine.any { it.subjectId == null }) return base   // class teacher sees all

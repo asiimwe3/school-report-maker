@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
 import org.jetbrains.skia.Image
 import androidx.compose.ui.window.application
+import com.derycode.srs.core.model.scopedView
 import com.derycode.srs.core.model.*
 import com.derycode.srs.core.seed.Seeds
 import com.derycode.srs.core.store.JsonStore
@@ -216,11 +217,19 @@ class AppState(val repo: SchoolRepository) {
     // Observable snapshot of repo.data — every screen reading state.data
     // recomposes whenever refresh() is called. Without this, saves were
     // written to disk but screens never re-read them (the "not taking data" bug).
-    var data by mutableStateOf(repo.data)
-        private set
+    private var rawData by mutableStateOf(repo.data)
+
+    /**
+     * The school's working data, already narrowed to the school category.
+     * A secondary school never sees Primary classes, subjects, learners,
+     * timetable periods or marks anywhere, because every screen reads this
+     * one view. Nothing is deleted: [repo].data still holds everything, and
+     * all writes go to the repository, so switching category brings it back.
+     */
+    val data: SchoolData get() = scopedView(rawData)
 
     fun refresh() {
-        data = repo.data
+        rawData = repo.data
         refreshTick++
         CloudSync.scheduleAutoPush(repo)   // debounced cloud auto-backup after every save
     }
@@ -343,6 +352,12 @@ fun App(state: AppState) {
     // ── Security gate (Section 12): PIN lock on startup ──
     if (state.data.settings.adminPinHash.isNotBlank() && !state.unlocked) {
         PinLockScreen(state)
+        return
+    }
+    // ── School category gate (v2.3.3): an install that never said what kind of
+    //    school it is must say so once, so Primary never shows in a secondary school. ──
+    if (state.data.school.category.isBlank()) {
+        SchoolCategoryPrompt(state)
         return
     }
     val navGroups = listOf(

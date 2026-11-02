@@ -275,7 +275,7 @@ fun CloudScreen(state: TeacherState, onScan: () -> Unit = {}) {
                 Spacer(Modifier.height(12.dp))
                 Cell("My classes", MUTED, true)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    state.data.classes.filter { it.active }.forEach { c ->
+                    state.data.classes.filter { it.active && state.scope.allows(it.level) }.forEach { c ->
                         val nm = if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}"
                         FilterChip(selected = pickedClasses.contains(c.id), onClick = {
                             if (pickedClasses.contains(c.id)) pickedClasses.remove(c.id) else pickedClasses.add(c.id)

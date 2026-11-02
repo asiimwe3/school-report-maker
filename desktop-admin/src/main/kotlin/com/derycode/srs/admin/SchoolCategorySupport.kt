@@ -1,7 +1,20 @@
 package com.derycode.srs.admin
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.derycode.srs.core.model.Level
 import com.derycode.srs.core.model.SchoolCategory
+import com.derycode.srs.core.model.SchoolData
 import com.derycode.srs.core.model.SchoolScope
 import com.derycode.srs.core.model.standardClassesFor
 
@@ -46,3 +59,37 @@ fun applySchoolCategory(state: AppState, category: SchoolCategory) {
 
 /** True when a class belongs to a level this school runs. */
 fun AppState.inScope(level: Level): Boolean = scope.allows(level)
+
+/** One-time question for installs that predate the category setting. */
+@Composable
+fun SchoolCategoryPrompt(state: AppState) {
+    Box(Modifier.fillMaxSize().background(Theme.NAVY), contentAlignment = Alignment.Center) {
+        Column(
+            Modifier.widthIn(max = 760.dp).background(Theme.CARD, RoundedCornerShape(18.dp)).padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text("What kind of school is this?", color = Theme.TEXT, fontSize = 24.sp, fontWeight = FontWeight.Black)
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "The console will only show your own classes. A secondary school never sees Primary 1\u20137, and a primary school never sees Senior 1\u20136. Nothing is deleted, and you can change this later in School Setup.",
+                color = Theme.MUTED, fontSize = 13.sp
+            )
+            Spacer(Modifier.height(22.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                SchoolCategory.entries.forEach { cat ->
+                    Column(
+                        Modifier.weight(1f)
+                            .background(Theme.ACCENT_SOFT, RoundedCornerShape(14.dp))
+                            .border(1.dp, Theme.LINE, RoundedCornerShape(14.dp))
+                            .clickable { applySchoolCategory(state, cat) }
+                            .padding(18.dp)
+                    ) {
+                        Text(cat.label, color = Theme.ACCENT, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.height(5.dp))
+                        Text(cat.detail, color = Theme.MUTED, fontSize = 12.sp)
+                    }
+                }
+            }
+        }
+    }
+}
