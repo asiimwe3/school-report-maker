@@ -1,7 +1,7 @@
 {
-  "console": "2.3.6",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.6.msi",
+  "console": "2.3.7",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.7.msi",
   "teacher": "1.18.2",
   "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.18.2.apk",
-  "notes": "Each school has one unique code: regenerate it any time, verify online what it opens. The phone now names the school and the code a copy came from, and asks before replacing a different school."
+  "notes": "Report Preview now shows EVERY student's report in the class on one page — scroll through the whole class instead of clicking one by one, and open all of them in Word with one button."
 }

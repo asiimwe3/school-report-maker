@@ -384,7 +384,7 @@ private fun DocGuide() {
         "2. Subjects & grading" to "Subjects come preloaded — edit them to match your school. Grading Schemes hold the PLE/UCE/UACE boundaries; create a new version any time. Old reports keep the scheme they were printed with.",
         "3. Entering marks" to "Open Marks Grid, pick a class and subject, type values and press Save all entered marks. Use ABS for absent, EXEMPT for exempted students. Submit sheet sends it for review.",
         "4. Fee collection" to "Use the School fees, Boarding fees and Bursary tabs as separate ledgers. Set an amount per class and term, then record payments under the matching ledger. Each report card shows independent paid and balance figures. See docs/FEE-COLLECTION.md for the full operating procedure.",
-        "5. Reports" to "In Reports, pick class + term + template and generate real Word (.docx) report cards. Use Report Preview to check one student first. Generated reports are archived in Report Archive.",
+        "5. Reports" to "In Reports, pick class + term + template and generate real Word (.docx) report cards. Use Report Preview to see every card in the class on one page (switch to One student to check a single card). Generated reports are archived in Report Archive.",
         "6. Backup — never lose data" to "Every change is saved instantly with a rotating backup (Backup History). Copy the data file to a USB stick for off-site safety, or restore any previous backup in one click.",
         "7. Teacher phones" to "Sync & Backup exports a school config file (no marks). Copy it to a teacher's phone, then import in the teacher app. Teachers enter marks offline and bring back a bundle file you import.",
         "8. Troubleshooting" to "If the console ever crashes, a crash-log.txt appears in your SchoolReportMaker folder (in your user folder) with a one-tap WhatsApp send. If a screen looks wrong, close and reopen the console — your data is always saved."
@@ -438,7 +438,7 @@ private val TRAINING = listOf(
         "A personal code dies after first use — safe to send on WhatsApp."),
     TrainSlide("Reports — the end product", "Real Word (.docx) report cards, offline.",
         listOf("Reports → pick class + term + template",
-            "Report Preview one student first to check the layout",
+            "Report Preview: whole class on one page — check the layout for everyone at once",
             "Generate the whole class in one click — each student gets an A4 card",
             "Marks, grades, aggregate/division, comments and signature lines",
             "Everything you generate is kept in Report Archive"),

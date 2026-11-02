@@ -236,7 +236,7 @@ private fun TemplateCard(state: AppState, t: ReportTemplate) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 8. Report Preview — single student before batch generation
+// 8. Report Preview — the WHOLE class on one page (single-student check optional)
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
@@ -247,6 +247,9 @@ fun PreviewScreen(state: AppState) {
     var layout by remember(classId) { mutableStateOf(templateFor(d, d.classes.firstOrNull { it.id == classId })?.layout ?: TemplateLayout.CLASSIC) }
     val classTemplate = templateFor(d, d.classes.firstOrNull { it.id == classId })
     var msg by remember { mutableStateOf("") }
+    // Default: every card in the class stacked on one scrolling page, so the admin
+    // never has to click student by student. Switch to one student to inspect a card.
+    var showAll by remember { mutableStateOf(true) }
     val year = d.academicYears.firstOrNull { it.currentTermId != null } ?: d.academicYears.firstOrNull()
     val term = year?.terms?.firstOrNull { it.id == year.currentTermId } ?: year?.terms?.firstOrNull()
     val cls = d.classes.firstOrNull { it.id == classId }
@@ -254,28 +257,39 @@ fun PreviewScreen(state: AppState) {
     val classStudents = d.enrollments.filter { it.classId == classId }
         .mapNotNull { e -> d.students.firstOrNull { s -> s.id == e.studentId && s.status == StudentStatus.ACTIVE } }
 
-    ScreenTitle("Report Preview", "Check one student's card before batch-printing the whole class.")
+    ScreenTitle("Report Preview", "Every report in the class on one page — exactly as they print. Switch to One student to check a single card.")
+
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         CardBox {
             Column {
                 Text("Class:", color = Theme.MUTED, fontSize = 14.sp)
                 ClassPickerChips(d.classes.filter { it.active && it.level == state.level }, classId) { classId = it; studentId = "" }
             }
-            Spacer(Modifier.height(8.dp))
-            Column {
-                Text("Student:", color = Theme.MUTED, fontSize = 14.sp)
-                @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
-                androidx.compose.foundation.layout.FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    classStudents.forEach { s ->
-                        FilterChip(selected = studentId == s.id, onClick = { studentId = s.id },
-                            label = { Text(s.fullName, fontSize = 13.sp) })
+            Spacer(Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("View:", color = Theme.MUTED, fontSize = 14.sp)
+                FilterChip(selected = showAll, onClick = { showAll = true },
+                    label = { Text("Whole class — one page", fontSize = 13.sp) })
+                FilterChip(selected = !showAll, onClick = { showAll = false },
+                    label = { Text("One student", fontSize = 13.sp) })
+            }
+            if (!showAll && classStudents.isNotEmpty()) {
+                Spacer(Modifier.height(10.dp))
+                Column {
+                    Text("Student:", color = Theme.MUTED, fontSize = 14.sp)
+                    @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+                    androidx.compose.foundation.layout.FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        classStudents.forEach { s ->
+                            FilterChip(selected = studentId == s.id, onClick = { studentId = s.id },
+                                label = { Text(s.fullName, fontSize = 13.sp) })
+                        }
                     }
                 }
             }
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(10.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text("Design:", color = Theme.MUTED, fontSize = 14.sp)
                 TemplateLayout.entries.forEach { l ->
@@ -284,15 +298,73 @@ fun PreviewScreen(state: AppState) {
                 }
             }
         }
+
         if (term == null || scheme == null) {
             Text("Create an academic year with terms and grading schemes first.", color = Theme.MUTED, fontSize = 14.sp)
         } else if (classStudents.isEmpty()) {
             Text("No active students in this class.", color = Theme.MUTED, fontSize = 14.sp)
+        } else if (showAll) {
+            // ── whole class, one page ────────────────────────────────────────
+            val termPair = year to term
+            val results = remember(classId, term.id, scheme.id, state.refreshTick) {
+                try { ResultEngine.classResults(d, classId, term.id, scheme.id) } catch (_: Exception) { emptyList() }
+            }
+            val missing = results.count { r -> r.subjectResults.isEmpty() }
+            CardBox {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("${results.size} report card${if (results.size == 1) "" else "s"} on this page",
+                        color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.width(10.dp))
+                    if (missing > 0) Text("· $missing with no marks yet", color = Theme.WARN, fontSize = 14.sp)
+                }
+                Spacer(Modifier.height(4.dp))
+                Text("Scroll to see every card in ${cls?.let { if (it.stream.isBlank()) it.name else "${it.name} ${it.stream}" } ?: "this class"} — " +
+                    "same layout, marks and positions as the printed Word reports." +
+                    (if (classTemplate != null) " Template: ${classTemplate.name}." else ""), color = Theme.MUTED, fontSize = 14.sp)
+                Spacer(Modifier.height(10.dp))
+                Btn("Open all reports in Word (.docx)") {
+                    val outDir = dataDir.resolve("reports")
+                    Files.createDirectories(outDir)
+                    val label = cls?.let { if (it.stream.isBlank()) it.name else "${it.name} ${it.stream}" } ?: "class"
+                    val f = outDir.resolve("preview-${label.replace(" ", "")}-term${term.number}.docx")
+                    try {
+                        DocxReport.writeClassReport(f, d, results, layout, classTemplate?.accentColor)
+                        try { Desktop.getDesktop().open(f.toFile()) } catch (_: Exception) { }
+                        msg = "Saved ${results.size} reports to ${f.name}"
+                    } catch (e: Exception) { msg = "Could not generate: ${e.message}" }
+                }
+                if (msg.isNotEmpty()) { Spacer(Modifier.height(6.dp)); Text(msg, color = Theme.GOOD, fontSize = 14.sp) }
+            }
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth().heightIn(max = 1600.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                items(results.size) { i ->
+                    val r = results[i]
+                    val st = d.students.firstOrNull { s -> s.id == r.studentId }
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("${i + 1} of ${results.size}", color = Theme.MUTED, fontSize = 13.sp)
+                            Spacer(Modifier.width(8.dp))
+                            Text(st?.fullName ?: r.studentId, color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                            Spacer(Modifier.width(8.dp))
+                            Text(st?.admissionNo ?: "", color = Theme.MUTED, fontSize = 13.sp)
+                            if (r.subjectResults.isEmpty()) {
+                                Spacer(Modifier.width(8.dp))
+                                Text("no marks yet", color = Theme.WARN, fontSize = 13.sp)
+                            }
+                        }
+                        Spacer(Modifier.height(6.dp))
+                        ReportPaper(d, templateFor(d, cls), cls, termPair, st, r, widthDp = 620)
+                    }
+                }
+            }
         } else {
+            // ── one student ─────────────────────────────────────────────────
             val sid = studentId.ifBlank { classStudents.first().id }
             val student = d.students.firstOrNull { it.id == sid }
-            val termPair = term?.let { t -> year?.let { y -> y to t } }
-            val liveResult = remember(sid, term.id, state.refreshTick) {
+            val termPair = year to term
+            val liveResult = remember(sid, term.id, scheme.id, state.refreshTick) {
                 try { ResultEngine.studentTermResult(d, sid, term.id, scheme.id, emptyList(), emptySet()) } catch (_: Exception) { null }
             }
             CardBox {
