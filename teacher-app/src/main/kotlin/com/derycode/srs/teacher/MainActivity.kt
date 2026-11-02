@@ -532,6 +532,20 @@ fun TeacherApp(state: TeacherState) {
     fun push(r: Route) { stack.add(r) }
     fun pop() { if (stack.size > 1) stack.removeAt(stack.size - 1) }
     fun switchTab(r: Route) { stack.clear(); stack.add(r) }
+    // "The app should ask for update" — a clear prompt the moment a newer build is known.
+    var askUpdate by remember { mutableStateOf(true) }
+    val upd = state.updateAvailable
+    if (upd != null && askUpdate) {
+        AlertDialog(
+            onDismissRequest = { askUpdate = false },
+            title = { Text("Update available", fontWeight = FontWeight.Bold) },
+            text = { Text("SRM Teacher ${upd.teacherVersion} is ready. Install it to get the latest fixes and features. Your marks and classes are kept.") },
+            confirmButton = {
+                TextButton({ askUpdate = false; push(Route.Support) }) { Text("Update now", color = BLUE, fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = { TextButton({ askUpdate = false }) { Text("Later", color = MUTED) } }
+        )
+    }
 
     val activeTab = when (current) {
         is Route.Home -> Tab.HOME
@@ -580,7 +594,7 @@ fun TeacherApp(state: TeacherState) {
             TopBar(state, current, onBack = { pop() }, onProfile = { push(Route.More) }, onMenu = { scope.launch { drawerState.open() } }, onBell = { push(Route.Support) })
             Spacer(Modifier.height(10.dp))
             state.updateAvailable?.let { u ->
-                UpdateBanner(u) { push(Route.More) }
+                UpdateBanner(u) { push(Route.Support) }
                 Spacer(Modifier.height(8.dp))
             }
             Box(Modifier.weight(1f)) {

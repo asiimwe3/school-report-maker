@@ -1,8 +1,8 @@
 {
-  "console": "2.2.38",
-  "teacher": "1.15.0",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.38.msi",
-  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.15.0.apk",
-  "releaseNotes": "Report cards are now clean A4 academic documents. The fee table (term fees, paid, balance) is gone from every report card - fees stay in the Fees screen and the defaulter list. Printing from the browser fits one A4 sheet: rows never split across pages, no trailing blank page, exact page size A4 portrait. Word reports were already A4 and now carry no fees line.",
+  "console": "2.2.39",
+  "teacher": "1.16.0",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.39.msi",
+  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.16.0.apk",
+  "releaseNotes": "Full teacher control. Manage any teacher on the console: role or a custom post (DOS, Deputy Head, Bursar, or anything you type), class teacher of, classes taught, subjects taught, extra duties from a preset list or your own wording, access on/off, and their activity. Teachers scan the school code, tap Find my name, choose themselves, and get their classes and duties. Both apps now ask you to update on launch.",
   "released": "2026-11-02"
 }

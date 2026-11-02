@@ -667,6 +667,7 @@ fun TeachersScreen(state: AppState) {
     var cloudBusy by remember { mutableStateOf("") }
     var cloudMsg by remember { mutableStateOf("") }
     var cloudErr by remember { mutableStateOf(false) }
+    var editing by remember { mutableStateOf("") }
 
     ScreenTitle("Teachers", "Teachers, roles and subject/class assignments")
     CloudStaffSection(state)
@@ -708,7 +709,11 @@ fun TeachersScreen(state: AppState) {
                             }
                         }
                         Box(Modifier.background(Theme.ACCENT, RoundedCornerShape(6.dp)).padding(horizontal = 8.dp, vertical = 3.dp)) {
-                            Text(roleLabel(t.role), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            Text(teacherTitle(t), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                        OutlinedButton(onClick = { editing = if (editing == t.id) "" else t.id },
+                            shape = RoundedCornerShape(8.dp), modifier = Modifier.height(30.dp)) {
+                            Text(if (editing == t.id) "Close" else "Manage", fontSize = 11.sp)
                         }
                         if (t.cloudUid.isNotBlank()) {
                             OutlinedButton({
@@ -739,7 +744,16 @@ fun TeachersScreen(state: AppState) {
                         color = Theme.TEXT, fontSize = 13.sp)
                     Text("Subjects: " + if (subjectsTaught.isEmpty()) "none assigned yet" else subjectsTaught.joinToString(", ") { it.name },
                         color = Theme.MUTED, fontSize = 13.sp)
+                    val ctClass = d.classes.firstOrNull { it.classTeacherId == t.id }
+                    if (ctClass != null) Text("Class teacher of ${if (ctClass.stream.isBlank()) ctClass.name else ctClass.name + " " + ctClass.stream}",
+                        color = Theme.ACCENT, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    if (t.duties.isNotEmpty()) Text("Duties: " + t.duties.joinToString(" · "),
+                        color = Theme.TEXT, fontSize = 13.sp)
                     Spacer(Modifier.height(10.dp))
+                }
+                if (editing == t.id) {
+                    Spacer(Modifier.height(10.dp))
+                    TeacherAdminPanel(state, t) { editing = "" }
                 }
             }
         }
@@ -892,9 +906,17 @@ fun roleLabel(r: Role) = when (r) {
     Role.SUPER_ADMIN -> "Super Admin"
     Role.SCHOOL_ADMIN -> "School Admin"
     Role.HEAD_TEACHER -> "Head Teacher"
+    Role.DEPUTY_HEAD -> "Deputy Head"
+    Role.DOS -> "DOS"
+    Role.CLASS_TEACHER -> "Class Teacher"
     Role.TEACHER -> "Teacher"
+    Role.BURSAR -> "Bursar"
+    Role.LIBRARIAN -> "Librarian"
     Role.DATA_ENTRY -> "Data Entry"
 }
+
+/** What the admin sees on a card: their custom title if they set one, else the standard label. */
+fun teacherTitle(t: com.derycode.srs.core.model.Teacher) = t.roleTitle.ifBlank { roleLabel(t.role) }
 
 private data class BulkRow(
     val adm: String, val first: String, val middle: String,

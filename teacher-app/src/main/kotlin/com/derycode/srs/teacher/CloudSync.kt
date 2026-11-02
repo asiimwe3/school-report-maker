@@ -4,6 +4,7 @@ import android.content.Context
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -36,6 +37,7 @@ data class SchoolLite(val id: String = "", val name: String = "")
 data class CloudResult(val ok: Boolean, val token: String = "", val msg: String = "")
 
 class TeacherCloud(private val context: Context) {
+    private val rosterJson = Json { ignoreUnknownKeys = true; isLenient = true }
 
     private val accFile: File get() = File(context.filesDir, "cloud-account.json")
 
@@ -243,6 +245,40 @@ class TeacherCloud(private val context: Context) {
         return if (c in 200..299) CloudResult(true, token = token, msg = "Profile saved ✓")
         else CloudResult(false, msg = "Could not save profile — check internet and try again (${member(body, "message")})")
     }
+
+    // ── School roster (who teaches here) ─────────────────────────────────
+    /** One teacher the admin has put on the school roster. */
+    data class RosterEntry(val name: String, val title: String)
+
+    /**
+     * Reads the school's published staff list so a teacher can pick their own name
+     * after scanning the school code. No login needed (public read of the school's
+     * own published setup). Returns an empty list when the school has not published
+     * a setup yet — the join form then simply asks for the name by typing it.
+     */
+    fun fetchRoster(code: String): List<RosterEntry> = try {
+        val clean = code.uppercase().filter { it.isLetterOrDigit() }
+        if (clean.isBlank()) emptyList() else {
+            val (c1, b1) = http("GET", "/rest/v1/srs_schools?invite_code=eq.$clean&select=id,name&limit=1", null, null)
+            val schoolId = if (c1 in 200..299) {
+                val arr = Json.parseToJsonElement(b1) as? JsonArray ?: JsonArray(emptyList())
+                ((arr.firstOrNull() as? JsonObject)?.get("id") as? JsonPrimitive)?.content.orEmpty()
+            } else ""
+            if (schoolId.isBlank()) emptyList() else {
+                val (c2, b2) = http("GET", "/rest/v1/srs_backups?school_id=eq.$schoolId&select=payload&limit=1", null, null)
+                if (c2 !in 200..299) emptyList() else {
+                    val arr = Json.parseToJsonElement(b2) as? JsonArray ?: JsonArray(emptyList())
+                    val payload = ((arr.firstOrNull() as? JsonObject)?.get("payload") as? JsonPrimitive)?.content.orEmpty()
+                    if (payload.isBlank()) emptyList() else {
+                        val data = rosterJson.decodeFromString<com.derycode.srs.core.model.SchoolData>(payload)
+                        data.teachers.filter { it.active }.map {
+                            RosterEntry(it.name.trim(), it.roleTitle.ifBlank { it.role.name.replace('_', ' ').lowercase().replaceFirstChar { ch -> ch.uppercase() } })
+                        }
+                    }
+                }
+            }
+        }
+    } catch (_: Exception) { emptyList() }
 
     /** Push the teacher's marks bundle to the school console. */
     fun pushMarks(token: String, schoolId: String, teacherName: String, payload: String): CloudResult {

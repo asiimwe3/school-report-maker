@@ -264,6 +264,38 @@ fun main() = application {
 
 @Composable
 fun App(state: AppState) {
+    // ── Update prompt: ask, don't just hint ──
+    var askUpdate by remember { mutableStateOf(state.updateAvailable != null) }
+    var updateMsg by remember { mutableStateOf("") }
+    val upd = state.updateAvailable
+    if (upd != null && askUpdate) {
+        AlertDialog(
+            onDismissRequest = { askUpdate = false },
+            title = { Text("Update available", color = Theme.TEXT, fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    Text("School Report Maker ${upd.consoleVersion} is ready (you have ${com.derycode.srs.admin.DesktopUpdateChecker.CURRENT_VERSION}).",
+                        color = Theme.TEXT, fontSize = 14.sp)
+                    if (upd.releaseNotes.isNotBlank()) {
+                        Spacer(Modifier.height(6.dp))
+                        Text(upd.releaseNotes.take(400), color = Theme.MUTED, fontSize = 12.sp)
+                    }
+                    Text("Your school data stays exactly as it is.", color = Theme.MUTED, fontSize = 12.sp)
+                }
+            },
+            confirmButton = {
+                TextButton({
+                    askUpdate = false
+                    updateMsg = "Downloading… see Support if nothing opens"
+                    Thread {
+                        val res = runCatching { DesktopUpdateChecker.downloadAndRunInstaller(upd.consoleMsiUrl) }
+                        updateMsg = res.getOrElse { "Update failed: ${it.message}" }
+                    }.start()
+                }) { Text("Update now", color = Theme.ACCENT, fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = { TextButton({ askUpdate = false }) { Text("Later", color = Theme.MUTED) } }
+        )
+    }
     // ── First-run gate (v2.2.0): mandatory setup wizard before dashboard ──
     if (!state.data.settings.setupComplete) {
         SetupWizard(state)

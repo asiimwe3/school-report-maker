@@ -47,6 +47,32 @@ fun HomeScreen(state: TeacherState, onOpenClass: (String) -> Unit, onQuickAction
                 onOpenMarks = { onQuickAction(Route.Assessments) }
             )
         }
+        // ── My post: what the school has given me (role, duties, class) ──
+        state.me?.let { me ->
+            val myCt = d.classes.firstOrNull { it.classTeacherId == me.id }
+            val post = me.roleTitle.ifBlank {
+                me.role.name.replace('_', ' ').lowercase().replaceFirstChar { it.uppercase() }
+            }
+            if (me.duties.isNotEmpty() || me.roleTitle.isNotBlank() || myCt != null) {
+                item {
+                    CardBox {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(Icons.Filled.Badge, contentDescription = null, tint = BLUE, modifier = Modifier.size(18.dp))
+                            Text("My post", color = NAVY, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        }
+                        Spacer(Modifier.height(6.dp))
+                        Text(post, color = BLUE, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        if (myCt != null) Text("Class teacher of ${if (myCt.stream.isBlank()) myCt.name else myCt.name + " " + myCt.stream}",
+                            color = NAVY, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                        if (me.duties.isNotEmpty()) {
+                            Spacer(Modifier.height(4.dp))
+                            Text("Duties", color = MUTED, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                            me.duties.forEach { duty -> Text("• $duty", color = NAVY, fontSize = 14.sp) }
+                        }
+                    }
+                }
+            }
+        }
         item {
             SectionLabel("Today at a glance", "Your live teaching workspace")
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {

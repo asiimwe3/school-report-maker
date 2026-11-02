@@ -9,6 +9,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -30,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -51,6 +53,9 @@ fun CloudScreen(state: TeacherState, onScan: () -> Unit = {}) {
 
     // registration form
     var inviteCode by remember { mutableStateOf("") }
+    var roster by remember { mutableStateOf<List<TeacherCloud.RosterEntry>>(emptyList()) }
+    var rosterBusy by remember { mutableStateOf(false) }
+    var rosterMsg by remember { mutableStateOf("") }
     // A code just came back from the QR scanner — drop it into the field ready to go.
     LaunchedEffect(state.scannedInvite) {
         if (state.scannedInvite.isNotBlank()) {
@@ -123,8 +128,48 @@ fun CloudScreen(state: TeacherState, onScan: () -> Unit = {}) {
                 Spacer(Modifier.height(6.dp))
                 Cell("No camera? Type the code below instead.", MUTED)
                 Spacer(Modifier.height(8.dp))
-                OutlinedTextField(inviteCode, { inviteCode = it }, label = { Text("School code") },
+                OutlinedTextField(inviteCode, { inviteCode = it }, label = { Text("School code (from the QR)") },
                     singleLine = true, modifier = Modifier.fillMaxWidth())
+                Spacer(Modifier.height(6.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedButton(
+                        onClick = {
+                            val code = inviteCode.trim().uppercase()
+                            if (code.isBlank()) rosterMsg = "Scan or type the school code first"
+                            else {
+                                rosterBusy = true; rosterMsg = ""
+                                scope.launch(Dispatchers.IO) {
+                                    val r = state.cloud.fetchRoster(code)
+                                    withContext(Dispatchers.Main) {
+                                        roster = r
+                                        rosterBusy = false
+                                        rosterMsg = if (r.isEmpty())
+                                            "No staff list published yet — type your name below."
+                                        else "Tap your name:"
+                                    }
+                                }
+                            }
+                        },
+                        enabled = !rosterBusy, shape = RoundedCornerShape(10.dp)
+                    ) { Text(if (rosterBusy) "Looking up…" else "Find my name") }
+                    if (rosterMsg.isNotBlank()) Text(rosterMsg, color = MUTED, fontSize = 12.sp)
+                }
+                if (roster.isNotEmpty()) {
+                    Spacer(Modifier.height(6.dp))
+                    roster.chunked(2).forEach { pair ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(vertical = 2.dp)) {
+                            pair.forEach { r ->
+                                FilterChip(
+                                    selected = fullName.equals(r.name, ignoreCase = true),
+                                    onClick = { fullName = r.name },
+                                    label = { Text(if (r.title.isBlank()) r.name else "${r.name} · ${r.title}", fontSize = 12.sp) },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        containerColor = CARD_ALT, labelColor = NAVY,
+                                        selectedContainerColor = BLUE, selectedLabelColor = Color.White))
+                            }
+                        }
+                    }
+                }
                 Spacer(Modifier.height(8.dp))
                 OutlinedTextField(fullName, { fullName = it }, label = { Text("Your full name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 Spacer(Modifier.height(8.dp))

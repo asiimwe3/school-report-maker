@@ -15,7 +15,7 @@ enum class MarkType { VALUE, ABS, MISSING, EXEMPT, NA }
 
 enum class MarkSheetState { DRAFT, SUBMITTED, REVIEWED, APPROVED, LOCKED }
 
-enum class Role { SUPER_ADMIN, SCHOOL_ADMIN, HEAD_TEACHER, TEACHER, DATA_ENTRY }
+enum class Role { SUPER_ADMIN, SCHOOL_ADMIN, HEAD_TEACHER, DEPUTY_HEAD, DOS, CLASS_TEACHER, TEACHER, BURSAR, LIBRARIAN, DATA_ENTRY }
 
 enum class TemplateLayout { CLASSIC, MODERN, COMPACT, PLAIN }
 
@@ -137,6 +137,10 @@ data class Teacher(
     val photoPath: String? = null,
     val signaturePath: String? = null,
     val role: Role = Role.TEACHER,
+    /** Custom title typed by the admin (e.g. "Director of Studies", "Games Master"). Shown instead of [role] when set. */
+    val roleTitle: String = "",
+    /** Extra responsibilities: DOS, class teacher, patron, timekeeper, exam officer … free text list. */
+    val duties: List<String> = emptyList(),
     val username: String = "",
     val pinHash: String = "",
     val active: Boolean = true,
