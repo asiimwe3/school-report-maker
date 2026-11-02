@@ -435,9 +435,18 @@ fun CloudScreen(state: AppState) {
                 CloudApi.schoolExists(CloudSync.url(s), CloudSync.key(s), tok, s.cloudSchoolId)
             }
             if (!exists) {
-                state.repo.mutate("cloud-orphan-reset", "Settings") { d -> d.copy(settings = d.settings.copy(
-                    cloudSchoolId = "", cloudInviteCode = "", cloudAccessToken = "", cloudRefreshToken = "")) }
-                say(true, "Your cloud school link is no longer valid on the server (it may have been reset). Your local data on this computer is safe — reconnect below to get a fresh school code, then tap Back Up Now to re-sync everything to the cloud.")
+                if (s.cloudInviteCode.isNotBlank()) {
+                    // Keep the SAME code so teachers who already have it keep working.
+                    say(true, "The cloud copy of your school went missing. Restoring it under the same code ${s.cloudInviteCode}…")
+                    CloudSync.republish(state.repo) { ok, m ->
+                        state.refresh()
+                        say(ok, if (ok) "School restored online. Code ${s.cloudInviteCode} works again." else "Could not restore online: $m")
+                    }
+                } else {
+                    state.repo.mutate("cloud-orphan-reset", "Settings") { d -> d.copy(settings = d.settings.copy(
+                        cloudSchoolId = "", cloudInviteCode = "", cloudAccessToken = "", cloudRefreshToken = "")) }
+                    say(true, "Your cloud school link is no longer valid on the server. Your local data is safe. Reconnect below, then tap Back Up Now.")
+                }
             }
         }
     }

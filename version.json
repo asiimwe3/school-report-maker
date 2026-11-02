@@ -1,7 +1,7 @@
 {
-  "console": "2.3.7",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.7.msi",
+  "console": "2.3.8",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.8.msi",
   "teacher": "1.18.2",
   "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.18.2.apk",
-  "notes": "Report Preview now shows EVERY student's report in the class on one page — scroll through the whole class instead of clicking one by one, and open all of them in Word with one button."
+  "notes": "Report Preview now shows EVERY student's report in the class on one page \u2014 scroll through the whole class instead of clicking one by one, and open all of them in Word with one button. If your school goes missing from the cloud the console now restores it under the SAME code."
 }

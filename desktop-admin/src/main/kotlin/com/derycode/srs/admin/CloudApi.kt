@@ -559,6 +559,39 @@ object CloudSync {
         }.start()
     }
 
+    /**
+     * Self-repair: the school this console points at vanished from the server
+     * (a reset, a cleanup). Instead of disconnecting and handing out a NEW code
+     * (which strands every teacher who already has the old one), sign in again
+     * with a fresh device account, recreate the school under the SAME code, and
+     * push the full backup so a scan works again straight away.
+     */
+    fun republish(repo: SchoolRepository, onResult: ((Boolean, String) -> Unit)? = null) {
+        val st = repo.data.settings
+        val code = st.cloudInviteCode.trim().uppercase()
+        if (code.isBlank()) { onResult?.invoke(false, "No school code to restore."); return }
+        Thread {
+            val base = url(st); val k = key(st)
+            val acc = CloudApi.deviceSignUp(base, k)
+            if (!acc.ok) { onResult?.invoke(false, acc.error); return@Thread }
+            val d = repo.data
+            val (sid, err) = CloudApi.createSchool(
+                base, k, acc.accessToken, d.school.name, d.school.address, d.school.address,
+                d.school.headTeacher, d.settings.licencePlan.ifBlank { "Trial" }, d.settings.licenceRef,
+                d.students.size, code
+            )
+            if (sid.isBlank()) { onResult?.invoke(false, err); return@Thread }
+            repo.mutate("cloud-republished", "settings") { cur ->
+                cur.copy(settings = cur.settings.copy(
+                    cloudUrl = base, cloudKey = k, cloudEmail = acc.email,
+                    cloudAccessToken = acc.accessToken, cloudRefreshToken = acc.refreshToken,
+                    cloudSchoolId = sid, cloudInviteCode = code, teacherCloudEnabled = true
+                ))
+            }
+            pushNow(repo, onResult)
+        }.start()
+    }
+
     fun scheduleAutoPush(repo: SchoolRepository) {
         val s = repo.data.settings
         if (s.cloudSchoolId.isBlank() || s.cloudAccessToken.isBlank()) return
