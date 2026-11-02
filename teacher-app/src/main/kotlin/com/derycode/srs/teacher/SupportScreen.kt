@@ -265,7 +265,7 @@ fun SupportScreen(state: TeacherState) {
         }
         if (docView.isNotEmpty()) {
             CardBox {
-                Text(docView.trim(), color = MUTED, fontSize = 15.sp, lineHeight = 15.sp)
+                Text(docView.trim(), color = MUTED, fontSize = 15.sp, lineHeight = 23.sp)
             }
         }
         CardBox {

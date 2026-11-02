@@ -49,7 +49,7 @@ fun MarksScreen(state: AppState) {
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(if (term != null) "Term ${term.number} (${year?.year})" else "Create an academic year first", color = Theme.MUTED, fontSize = 14.sp)
             if (d.classes.isEmpty() || d.subjects.isEmpty()) {
-                Text("Add classes and subjects first.", color = Color(0xFFF5A623), fontSize = 14.sp)
+                Text("Add classes and subjects first.", color = Theme.WARN, fontSize = 14.sp)
             }
         }
         if (d.classes.isNotEmpty()) {
@@ -145,7 +145,7 @@ fun MarksScreen(state: AppState) {
                                     value = field,
                                     onValueChange = { edits[markKey] = it },
                                     modifier = Modifier.weight(1f),
-                                    placeholder = { Text("—", color = Color(0xFF3A4763), fontSize = 13.sp) }
+                                    placeholder = { Text("—", color = Theme.MUTED, fontSize = 13.sp) }
                                 )
                             }
                         }
@@ -608,7 +608,7 @@ fun AnalyticsScreen(state: AppState) {
                         Text(name.take(18), color = Theme.MUTED, fontSize = 13.sp, modifier = Modifier.width(120.dp))
                         Box(Modifier.weight(1f).height(14.dp)) {
                             Canvas(Modifier.fillMaxSize()) {
-                                drawRoundRect(color = Color(0xFF243356), cornerRadius = CornerRadius(7.dp.toPx()))
+                                drawRoundRect(color = Theme.LINE, cornerRadius = CornerRadius(7.dp.toPx()))
                                 drawRoundRect(color = Theme.ACCENT, cornerRadius = CornerRadius(7.dp.toPx()),
                                     size = Size(size.width * (pct / 100.0).toFloat(), size.height))
                             }
@@ -647,7 +647,7 @@ fun AnalyticsScreen(state: AppState) {
                     Text("Boys $boys", color = Theme.MUTED, fontSize = 13.sp, modifier = Modifier.width(90.dp))
                     Box(Modifier.weight(1f).height(14.dp)) {
                         Canvas(Modifier.fillMaxSize()) {
-                            drawRoundRect(color = Color(0xFF243356), cornerRadius = CornerRadius(7.dp.toPx()))
+                            drawRoundRect(color = Theme.LINE, cornerRadius = CornerRadius(7.dp.toPx()))
                             drawRoundRect(color = Theme.ACCENT, cornerRadius = CornerRadius(7.dp.toPx()),
                                 size = Size(size.width * (if (results.isEmpty()) 0f else boys.toFloat() / results.size), size.height))
                         }
@@ -657,7 +657,7 @@ fun AnalyticsScreen(state: AppState) {
                     Text("Girls $girls", color = Theme.MUTED, fontSize = 13.sp, modifier = Modifier.width(90.dp))
                     Box(Modifier.weight(1f).height(14.dp)) {
                         Canvas(Modifier.fillMaxSize()) {
-                            drawRoundRect(color = Color(0xFF243356), cornerRadius = CornerRadius(7.dp.toPx()))
+                            drawRoundRect(color = Theme.LINE, cornerRadius = CornerRadius(7.dp.toPx()))
                             drawRoundRect(color = Color(0xFFFF7EB6), cornerRadius = CornerRadius(7.dp.toPx()),
                                 size = Size(size.width * (if (results.isEmpty()) 0f else girls.toFloat() / results.size), size.height))
                         }
@@ -911,7 +911,7 @@ fun TimetableScreen(state: AppState) {
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(lbl, color = if (on) Color.White else Theme.ACCENT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        Text("${perDay[i]} periods", color = if (on) Color(0xFFDFF0ED) else Theme.MUTED, fontSize = 11.sp)
+                        Text("${perDay[i]} periods", color = if (on) Color.White else Theme.MUTED, fontSize = 11.sp)
                     }
                 }
             }

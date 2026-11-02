@@ -215,7 +215,7 @@ fun StudentsScreen(state: AppState) {
                     value = bulkText,
                     onValueChange = { bulkText = it },
                     modifier = Modifier.fillMaxWidth().height(180.dp),
-                    placeholder = { Text("TRC1127\tABARUHANGA EDMON\tA\t\tMale\nTRC1154\tAINOMUGISHA RONAH\tA\t\tFemale", color = Color(0xFF5A6B8C), fontSize = 13.sp) },
+                    placeholder = { Text("TRC1127\tABARUHANGA EDMON\tA\t\tMale\nTRC1154\tAINOMUGISHA RONAH\tA\t\tFemale", color = Theme.MUTED, fontSize = 13.sp) },
                     singleLine = false,
                     shape = RoundedCornerShape(8.dp),
                     textStyle = androidx.compose.ui.text.TextStyle(color = Theme.TEXT, fontSize = 14.sp)
@@ -625,7 +625,7 @@ fun SubjectsScreen(state: AppState) {
                                 Text(sItem.name, color = Theme.INK, fontSize = 16.sp, fontWeight = FontWeight.Bold,
                                     modifier = Modifier.weight(1f), maxLines = 2)
                                 if (sItem.code.isNotBlank()) Text(sItem.code.uppercase(), color = Theme.MUTED, fontSize = 13.sp,
-                                    modifier = Modifier.background(Color(0xFFECEAE0), RoundedCornerShape(6.dp)).padding(horizontal = 7.dp, vertical = 2.dp))
+                                    modifier = Modifier.background(Theme.ACCENT_SOFT, RoundedCornerShape(6.dp)).padding(horizontal = 7.dp, vertical = 2.dp))
                             }
                             Spacer(Modifier.height(8.dp))
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -689,7 +689,7 @@ fun TeachersScreen(state: AppState) {
                     }, enabled = cloudBusy.isBlank(), shape = RoundedCornerShape(8.dp), modifier = Modifier.height(32.dp)) {
                         Text(if (cloudBusy == "sync") "Syncing…" else "Sync connected teachers", fontSize = 11.sp)
                     }
-                    if (cloudMsg.isNotEmpty()) Text(cloudMsg, color = if (cloudErr) Color(0xFFA85E48) else Theme.GOOD, fontSize = 11.sp)
+                    if (cloudMsg.isNotEmpty()) Text(cloudMsg, color = if (cloudErr) Theme.WARN else Theme.GOOD, fontSize = 11.sp)
                 }
                 Spacer(Modifier.height(6.dp))
             }
@@ -730,7 +730,7 @@ fun TeachersScreen(state: AppState) {
                                     cloudErr = !res.first
                                 }.start()
                             }, enabled = cloudBusy.isBlank() && t.active, shape = RoundedCornerShape(8.dp), modifier = Modifier.height(30.dp)) {
-                                Text(if (cloudBusy == t.id) "Disconnecting…" else "Disconnect", fontSize = 11.sp, color = Color(0xFFA85E48))
+                                Text(if (cloudBusy == t.id) "Disconnecting…" else "Disconnect", fontSize = 11.sp, color = Theme.WARN)
                             }
                         }
                     }
@@ -952,7 +952,7 @@ fun CloudStaffSection(state: AppState) {
             }
             Spacer(Modifier.height(4.dp))
             Text("Teachers who registered with your invite code. Their photo, role and contacts appear here — edit any of it at any time.", color = Theme.MUTED, fontSize = 13.sp)
-            if (msg.isNotEmpty()) { Spacer(Modifier.height(6.dp)); Text(msg, color = if (err) Color(0xFFB3261E) else Theme.GOOD, fontSize = 13.sp) }
+            if (msg.isNotEmpty()) { Spacer(Modifier.height(6.dp)); Text(msg, color = if (err) Theme.WARN else Theme.GOOD, fontSize = 13.sp) }
             Spacer(Modifier.height(10.dp))
 
             if (list.isEmpty()) {
@@ -1020,7 +1020,7 @@ fun CloudStaffSection(state: AppState) {
                                             if (ok) { editingUid = ""; load() } else say(true, m)
                                         }.start()
                                     }
-                                    Text("Disconnect", color = Color(0xFFB3261E), fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                                    Text("Disconnect", color = Theme.WARN, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
                                         modifier = Modifier.clickable {
                                             busy = true; say(false, "Disconnecting…")
                                             val st = state.data.settings

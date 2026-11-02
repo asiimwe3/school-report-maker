@@ -42,7 +42,20 @@ class MainActivity : ComponentActivity() {
         CrashReporter.sendPending(this)   // deliver any previous crash BEFORE the UI (survives startup crash-loops)
         val state = TeacherState(this)
         state.checkForUpdate()   // auto-check on every launch; only asks GitHub, never sends data
-        setContent { MaterialTheme(colorScheme = lightColorScheme(background = BG, surface = CARD, onBackground = NAVY, onSurface = NAVY, primary = BLUE), typography = AppTypography) { TeacherApp(state) } }
+        applyPhoneTheme(state.data.settings.theme)   // paint the first frame in the school's theme
+        setContent {
+            MaterialTheme(
+                colorScheme = if (DARK_THEME)
+                    darkColorScheme(background = BG, surface = CARD, surfaceVariant = CARD_ALT, onBackground = NAVY,
+                        onSurface = NAVY, onSurfaceVariant = MUTED, primary = BLUE, onPrimary = Color.White,
+                        outline = STROKE, error = RED, secondary = TEAL, tertiary = ORANGE)
+                else
+                    lightColorScheme(background = BG, surface = CARD, surfaceVariant = CARD_ALT, onBackground = NAVY,
+                        onSurface = NAVY, onSurfaceVariant = MUTED, primary = BLUE, onPrimary = Color.White,
+                        outline = STROKE, error = RED, secondary = TEAL, tertiary = ORANGE),
+                typography = AppTypography
+            ) { TeacherApp(state) }
+        }
     }
 }
 
@@ -370,24 +383,100 @@ internal val AppTypography = Typography(
     titleSmall = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold),
 )
 
-internal val BG = Color(0xFFF1F5FE)          // app background — light lavender-blue
-internal val NAVY = Color(0xFF16213E)         // primary dark text/icons on light surfaces
-internal val CARD = Color(0xFFFFFFFF)         // white cards
-internal val CARD_ALT = Color(0xFFEFF3FB)     // soft alt surface (inputs, pills)
-internal val STROKE = Color(0xFFE3E9F7)       // hairline borders
-internal val BLUE = Color(0xFF3B82F6)
-internal val PURPLE = Color(0xFF8B5CF6)
-internal val TEAL = Color(0xFF14B8A6)
-internal val ORANGE = Color(0xFFF59E0B)
-internal val GREEN = Color(0xFF22C55E)
-internal val RED = Color(0xFFEF4444)
-internal val PINK = Color(0xFFEC4899)
-internal val MUTED = Color(0xFF6C7793)
-internal val GOOD = GREEN
-internal val ACCENT = BLUE
+// ─── Theme tokens (live) ─────────────────────────────────────────────────────
+// These are mutable so the phone app restyles instantly when the head teacher
+// picks a theme on the console and the school setup reaches the phone.
+internal var BG by mutableStateOf(Color(0xFFF1F5FE))       // app background
+internal var NAVY by mutableStateOf(Color(0xFF16213E))     // primary text/icons
+internal var CARD by mutableStateOf(Color(0xFFFFFFFF))     // cards
+internal var CARD_ALT by mutableStateOf(Color(0xFFEFF3FB)) // inputs, pills
+internal var STROKE by mutableStateOf(Color(0xFFE3E9F7))   // hairlines
+internal var BLUE by mutableStateOf(Color(0xFF3B82F6))     // primary action
+internal var PURPLE by mutableStateOf(Color(0xFF8B5CF6))
+internal var TEAL by mutableStateOf(Color(0xFF14B8A6))
+internal var ORANGE by mutableStateOf(Color(0xFFF59E0B))
+internal var GREEN by mutableStateOf(Color(0xFF22C55E))
+internal var RED by mutableStateOf(Color(0xFFEF4444))
+internal var PINK by mutableStateOf(Color(0xFFEC4899))
+internal var MUTED by mutableStateOf(Color(0xFF6C7793))
+internal var GOOD by mutableStateOf(GREEN)
+internal var ACCENT by mutableStateOf(BLUE)
+/** True when the school's theme is a dark one. */
+internal var DARK_THEME by mutableStateOf(false)
 
-internal val AVATAR_PALETTE = listOf(BLUE, PINK, PURPLE, GREEN, RED, ORANGE, TEAL, Color(0xFF6366F1))
+internal val AVATAR_PALETTE: List<Color>
+    get() = listOf(BLUE, PINK, PURPLE, GREEN, RED, ORANGE, TEAL, Color(0xFF6366F1))
+
 internal fun avatarColor(seed: String) = AVATAR_PALETTE[kotlin.math.abs(seed.hashCode()) % AVATAR_PALETTE.size]
+
+/**
+ * Applies the school's chosen theme to the whole phone app.
+ * Same names as the Admin console, so one choice covers console + phone.
+ */
+internal fun applyPhoneTheme(name: String) {
+    val n = name.trim().lowercase()
+    val dark = n.contains("midnight") || n.contains("dark")
+    DARK_THEME = dark
+    when {
+        n.contains("midnight") && n.contains("gold") -> {
+            BG = Color(0xFF16130E); CARD = Color(0xFF211C15); CARD_ALT = Color(0xFF2A241B)
+            STROKE = Color(0xFF37301F); NAVY = Color(0xFFF3EDE1); MUTED = Color(0xFFA79B86)
+            BLUE = Color(0xFFC99A45); ACCENT = BLUE; TEAL = Color(0xFFDDB35E)
+            GREEN = Color(0xFF6FBF8F); RED = Color(0xFFE08A6B); ORANGE = Color(0xFFE3A44F)
+            PURPLE = Color(0xFFC0A0E8); PINK = Color(0xFFE8A0BC)
+        }
+        n.contains("midnight") || n.contains("dark") -> {
+            BG = Color(0xFF11161C); CARD = Color(0xFF1A2129); CARD_ALT = Color(0xFF232C36)
+            STROKE = Color(0xFF2B3540); NAVY = Color(0xFFE9EEF4); MUTED = Color(0xFF93A1B1)
+            BLUE = Color(0xFF3FA897); ACCENT = BLUE; TEAL = Color(0xFF4FB3A5)
+            GREEN = Color(0xFF52C79E); RED = Color(0xFFEF6E6E); ORANGE = Color(0xFFE3A44F)
+            PURPLE = Color(0xFFA78BFA); PINK = Color(0xFFF472B6)
+        }
+        n.contains("ivory") -> {
+            BG = Color(0xFFFBF8F1); CARD = Color(0xFFFFFFFF); CARD_ALT = Color(0xFFF3EEE4)
+            STROKE = Color(0xFFE4E0D6); NAVY = Color(0xFF2A2A28); MUTED = Color(0xFF7A7770)
+            BLUE = Color(0xFF8C6A2F); ACCENT = BLUE; TEAL = Color(0xFF1F8A6F)
+            GREEN = Color(0xFF2F7D5B); RED = Color(0xFFB05A3C); ORANGE = Color(0xFFC98A2E)
+            PURPLE = Color(0xFF7A5AA8); PINK = Color(0xFFB0567F)
+        }
+        n.contains("forest") -> {
+            BG = Color(0xFFEDF3EE); CARD = Color(0xFFFBFDFB); CARD_ALT = Color(0xFFE3EEE7)
+            STROKE = Color(0xFFCFDDD3); NAVY = Color(0xFF132A1D); MUTED = Color(0xFF5F7166)
+            BLUE = Color(0xFF1F7A43); ACCENT = BLUE; TEAL = Color(0xFF2A8F72)
+            GREEN = Color(0xFF1F7A43); RED = Color(0xFF9E5B3A); ORANGE = Color(0xFFB98A2E)
+            PURPLE = Color(0xFF6B5AA8); PINK = Color(0xFFA8507F)
+        }
+        n.contains("ocean") -> {
+            BG = Color(0xFFEEF3F8); CARD = Color(0xFFFFFFFF); CARD_ALT = Color(0xFFE4EDF6)
+            STROKE = Color(0xFFCFDBE7); NAVY = Color(0xFF14273A); MUTED = Color(0xFF5E7189)
+            BLUE = Color(0xFF1F6DA8); ACCENT = BLUE; TEAL = Color(0xFF2A8FA8)
+            GREEN = Color(0xFF1F8A6F); RED = Color(0xFFB0603C); ORANGE = Color(0xFFC98A2E)
+            PURPLE = Color(0xFF6B5AA8); PINK = Color(0xFFA8507F)
+        }
+        n.contains("plum") -> {
+            BG = Color(0xFFF5F0F6); CARD = Color(0xFFFFFFFF); CARD_ALT = Color(0xFFEFE6F2)
+            STROKE = Color(0xFFE0D4E4); NAVY = Color(0xFF2B1830); MUTED = Color(0xFF75657C)
+            BLUE = Color(0xFF7A3E8C); ACCENT = BLUE; TEAL = Color(0xFF2A8F8C)
+            GREEN = Color(0xFF2F7D5B); RED = Color(0xFFA8506B); ORANGE = Color(0xFFB98A2E)
+            PURPLE = Color(0xFF7A3E8C); PINK = Color(0xFFB0567F)
+        }
+        n.contains("gold") -> {
+            BG = Color(0xFFF4F0E7); CARD = Color(0xFFFBFAF7); CARD_ALT = Color(0xFFEFE8D9)
+            STROKE = Color(0xFFDED5C2); NAVY = Color(0xFF2A2318); MUTED = Color(0xFF7B6E58)
+            BLUE = Color(0xFFC59A4A); ACCENT = BLUE; TEAL = Color(0xFF1F8A8A)
+            GREEN = Color(0xFF2F7D5B); RED = Color(0xFFB05A3C); ORANGE = Color(0xFFC98A2E)
+            PURPLE = Color(0xFF7A5AA8); PINK = Color(0xFFB0567F)
+        }
+        else -> { // Editorial (cream + deep green) — the console default
+            BG = Color(0xFFF4F0E7); CARD = Color(0xFFFBFAF7); CARD_ALT = Color(0xFFEDE8DC)
+            STROKE = Color(0xFFD7DDD5); NAVY = Color(0xFF18352E); MUTED = Color(0xFF6D7D75)
+            BLUE = Color(0xFF237B71); ACCENT = BLUE; TEAL = Color(0xFF2A8F8A)
+            GREEN = Color(0xFF1F7A43); RED = Color(0xFFA8503C); ORANGE = Color(0xFFB98A2E)
+            PURPLE = Color(0xFF6B5AA8); PINK = Color(0xFFA8507F)
+        }
+    }
+    GOOD = GREEN
+}
 
 /** Display-only quick grade band for dashboard color coding (NOT the official PLE/UCE/UACE grading — reports use ResultEngine + the school's real grading scheme). */
 internal fun quickBandColor(pct: Double): Color = when {
@@ -434,6 +523,9 @@ private enum class Tab(val route: Route, val label: String, val icon: androidx.c
 
 @Composable
 fun TeacherApp(state: TeacherState) {
+    // Live theme: whenever the school setup (from the console) carries a theme,
+    // the WHOLE phone app restyles — background, cards, text, buttons, badges.
+    LaunchedEffect(state.data.settings.theme) { applyPhoneTheme(state.data.settings.theme) }
     val stack = remember { mutableStateListOf<Route>(Route.Home) }
     val current = stack.last()
     fun push(r: Route) { stack.add(r) }
@@ -484,7 +576,7 @@ fun TeacherApp(state: TeacherState) {
     Column(Modifier.fillMaxSize().background(BG)) {
         Column(Modifier.weight(1f).padding(horizontal = 14.dp)) {
             Spacer(Modifier.height(10.dp))
-            TopBar(state, current, onBack = { pop() }, onProfile = { push(Route.More) }, onMenu = { scope.launch { drawerState.open() } })
+            TopBar(state, current, onBack = { pop() }, onProfile = { push(Route.More) }, onMenu = { scope.launch { drawerState.open() } }, onBell = { push(Route.Support) })
             Spacer(Modifier.height(10.dp))
             state.updateAvailable?.let { u ->
                 UpdateBanner(u) { push(Route.More) }
@@ -501,7 +593,7 @@ fun TeacherApp(state: TeacherState) {
                     is Route.EnterMarks -> EnterMarksScreen(state, r.classId, r.subjectId, onDone = { pop() })
                     is Route.Assessments -> AssessmentsOverviewScreen(state, onOpenClass = { push(Route.ClassDetail(it)) })
                     is Route.Students -> StudentsListScreen(state, r.classId, onOpenStudent = { push(Route.StudentDetail(it)) })
-                    is Route.StudentDetail -> StudentDetailScreen(state, r.studentId)
+                    is Route.StudentDetail -> StudentDetailScreen(state, r.studentId, onEnterMarks = { clsId -> push(Route.EnterMarks(clsId)) })
                     is Route.More -> MoreScreen(state, onOpen = { push(it) })
                     is Route.Comments -> CommentsScreen(state)
                     is Route.Sync -> SyncScreen(state)
@@ -532,7 +624,7 @@ private fun DrawerItem(icon: ImageVector, label: String, selected: Boolean, onCl
 }
 
 @Composable
-private fun TopBar(state: TeacherState, route: Route, onBack: () -> Unit, onProfile: () -> Unit, onMenu: () -> Unit = {}) {
+private fun TopBar(state: TeacherState, route: Route, onBack: () -> Unit, onProfile: () -> Unit, onMenu: () -> Unit = {}, onBell: () -> Unit = {}) {
     val (title, showBack) = titleFor(state, route)
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         if (showBack) {
@@ -552,8 +644,8 @@ private fun TopBar(state: TeacherState, route: Route, onBack: () -> Unit, onProf
         }
         if (!showBack) {
             Box {
-                IconButton(onClick = {}, modifier = Modifier.size(40.dp).clip(CircleShape).background(CARD)) {
-                    Icon(Icons.Filled.Notifications, contentDescription = "Notifications", tint = NAVY)
+                IconButton(onClick = onBell, modifier = Modifier.size(40.dp).clip(CircleShape).background(CARD)) {
+                    Icon(Icons.Filled.Notifications, contentDescription = if (state.updateAvailable != null) "New update available" else "Notifications", tint = NAVY)
                 }
                 if (state.updateAvailable != null) {
                     Box(Modifier.size(9.dp).align(Alignment.TopEnd).clip(CircleShape).background(RED).border(1.5.dp, CARD, CircleShape))
@@ -625,10 +717,10 @@ private fun UpdateBanner(u: UpdateInfo, onOpen: () -> Unit) {
     ) {
         Column(Modifier.weight(1f)) {
             Text("Update ${u.teacherVersion} available", color = GREEN, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-            Text("Open More \u2192 Support to install.", color = MUTED, fontSize = 14.sp)
+            Text("Open More \u2192 Support to install.", color = Color(0xFFC9D8F2), fontSize = 14.sp)
         }
         Button(onClick = onOpen, colors = ButtonDefaults.buttonColors(containerColor = GREEN), modifier = Modifier.height(42.dp)) {
-            Text("Get it", color = NAVY, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Text("Get it", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
         }
     }
 }

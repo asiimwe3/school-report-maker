@@ -201,7 +201,7 @@ private fun DarkTextFieldSmall(value: String, onChange: (String) -> Unit, enable
         readOnly = !enabled,
         textStyle = androidx.compose.ui.text.TextStyle(color = if (enabled) NAVY else MUTED, fontSize = 17.sp),
         cursorBrush = androidx.compose.ui.graphics.SolidColor(BLUE),
-        modifier = Modifier.width(72.dp).clip(RoundedCornerShape(8.dp)).background(CARD_ALT).padding(horizontal = 8.dp, vertical = 9.dp)
+        modifier = Modifier.width(86.dp).clip(RoundedCornerShape(8.dp)).background(CARD_ALT).padding(horizontal = 8.dp, vertical = 9.dp)
     )
 }
 

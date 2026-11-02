@@ -77,7 +77,7 @@ private fun StudentRow(s: Student, pct: Double?, onClick: () -> Unit) {
         Avatar(s.firstName.take(1) + s.lastName.take(1), avatarColor(s.id), 38)
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
-            Text(s.fullName, color = NAVY, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            Text(s.fullName, color = NAVY, fontSize = 17.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
             Text(s.admissionNo, color = MUTED, fontSize = 14.sp)
         }
         if (pct != null) ScoreBadge(pct) else Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = MUTED)
@@ -97,7 +97,7 @@ private fun latestPercent(state: TeacherState, studentId: String, subjectId: Str
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-fun StudentDetailScreen(state: TeacherState, studentId: String) {
+fun StudentDetailScreen(state: TeacherState, studentId: String, onEnterMarks: (String) -> Unit = { }) {
     val d = state.data
     val s = d.students.firstOrNull { it.id == studentId }
     if (s == null) { EmptyHint("Student not found."); return }
@@ -130,7 +130,7 @@ fun StudentDetailScreen(state: TeacherState, studentId: String) {
                 Row(Modifier.fillMaxWidth()) {
                     MiniStatBig(Modifier.weight(1f), fmt1(average), "Average", GREEN)
                     MiniStatBig(Modifier.weight(1f), absences.toString(), "Absent", ORANGE)
-                    MiniStatBig(Modifier.weight(1f), "0", "Late", RED)
+                    MiniStatBig(Modifier.weight(1f), d.attendance.count { it.studentId == studentId && it.status == "LATE" }.toString(), "Late", RED)
                 }
             }
         }
@@ -174,7 +174,7 @@ fun StudentDetailScreen(state: TeacherState, studentId: String) {
         }
         item {
             Button(
-                onClick = { },
+                onClick = { cls?.let { onEnterMarks(it.id) } },
                 colors = ButtonDefaults.buttonColors(containerColor = BLUE),
                 modifier = Modifier.fillMaxWidth().height(46.dp)
             ) { Icon(Icons.Filled.Edit, contentDescription = null, modifier = Modifier.size(16.dp)); Spacer(Modifier.width(6.dp)); Text("Edit Marks") }

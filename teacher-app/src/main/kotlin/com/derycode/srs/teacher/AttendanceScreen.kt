@@ -67,25 +67,30 @@ fun AttendanceScreen(state: TeacherState) {
                 }
             }
         }
-        items(students, key = { it.id }) { s ->
-            val status = att[s.id]
-            CardBox {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Cell("${s.firstName} ${s.lastName}", NAVY, true)
-                        if (s.admissionNo.isNotBlank()) Cell(s.admissionNo, MUTED)
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        listOf("PRESENT" to "P", "ABSENT" to "A", "LATE" to "L").forEach { (st, label) ->
-                            FilterChip(selected = status == st, onClick = { state.setAttendance(s.id, classId, date, st) },
-                                label = { Text(label, fontSize = 15.sp) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    containerColor = CARD_ALT,
-                                    selectedContainerColor = when (st) {
-                                        "PRESENT" -> GREEN.copy(alpha = 0.25f)
-                                        "ABSENT" -> RED.copy(alpha = 0.25f)
-                                        else -> ORANGE.copy(alpha = 0.25f)
-                                    }))
+        item {
+            CardBox(padding = 12) {
+                var first = true
+                students.forEach { s ->
+                    val status = att[s.id]
+                    if (!first) Divider(color = STROKE)
+                    first = false
+                    Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Cell("${s.firstName} ${s.lastName}", NAVY, true)
+                            if (s.admissionNo.isNotBlank()) Cell(s.admissionNo, MUTED)
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            listOf("PRESENT" to "P", "ABSENT" to "A", "LATE" to "L").forEach { (st, label) ->
+                                FilterChip(selected = status == st, onClick = { state.setAttendance(s.id, classId, date, st) },
+                                    label = { Text(label, fontSize = 15.sp) },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        containerColor = CARD_ALT,
+                                        selectedContainerColor = when (st) {
+                                            "PRESENT" -> GREEN.copy(alpha = 0.25f)
+                                            "ABSENT" -> RED.copy(alpha = 0.25f)
+                                            else -> ORANGE.copy(alpha = 0.25f)
+                                        }))
+                            }
                         }
                     }
                 }

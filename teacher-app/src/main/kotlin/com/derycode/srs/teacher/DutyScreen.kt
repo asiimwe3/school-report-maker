@@ -2,6 +2,7 @@ package com.derycode.srs.teacher
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.PersonAdd
@@ -91,8 +92,8 @@ fun DutyScreen(state: TeacherState) {
                         (it.firstName + " " + it.lastName).contains(q, true) || it.admissionNo.contains(q, true)
                     }.take(6)
                     if (matches.isNotEmpty()) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            matches.forEach { s ->
+                        androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            items(matches) { s ->
                                 FilterChip(selected = sel == s.id, onClick = { sel = s.id },
                                     label = { Text("${s.firstName} ${s.lastName}".take(14), fontSize = 14.sp) })
                             }

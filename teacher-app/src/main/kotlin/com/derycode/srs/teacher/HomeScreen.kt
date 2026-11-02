@@ -3,6 +3,7 @@ package com.derycode.srs.teacher
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,6 +28,7 @@ import java.util.Locale
 // Home dashboard — big, bold, bright cards (light theme)
 // ─────────────────────────────────────────────────────────────────────────────
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun HomeScreen(state: TeacherState, onOpenClass: (String) -> Unit, onQuickAction: (Route) -> Unit) {
     val d = state.data
@@ -146,8 +148,8 @@ fun HomeScreen(state: TeacherState, onOpenClass: (String) -> Unit, onQuickAction
                     } else {
                         Cell("Pick who you are so you see only your classes:", MUTED)
                         Spacer(Modifier.height(10.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            d.teachers.take(4).forEach { t ->
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            d.teachers.forEach { t ->
                                 Button(onClick = { state.setMe(t.id) }, colors = ButtonDefaults.buttonColors(containerColor = BLUE)) {
                                     Text(t.name, fontSize = 15.sp, color = Color.White, fontWeight = FontWeight.Bold)
                                 }
@@ -303,7 +305,7 @@ private fun SchoolFooterBar(state: TeacherState) {
             Modifier.clip(RoundedCornerShape(20.dp)).background(if (online) GREEN else MUTED.copy(alpha = 0.18f))
                 .padding(horizontal = 12.dp, vertical = 6.dp)
         ) {
-            Text(if (online) "Online" else "Offline", color = if (online) Color.White else MUTED, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text(if (online) "Online" else "Offline", color = if (online) Color.White else NAVY, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         }
     }
 }

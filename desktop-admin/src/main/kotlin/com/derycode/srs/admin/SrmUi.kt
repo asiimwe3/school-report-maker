@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.sp
 /** Donut progress ring like the mockup's "Reporting progress" card. */
 @Composable
 internal fun Donut(percent: Int, label: String, modifier: Modifier = Modifier) {
-    val track = Color(0xFFE4E1D6)
+    val track = Theme.LINE
     val sweep = (percent.coerceIn(0, 100) / 100f) * 360f
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Box(contentAlignment = Alignment.Center) {
@@ -59,7 +59,7 @@ internal fun Donut(percent: Int, label: String, modifier: Modifier = Modifier) {
 @Composable
 internal fun MiniProgress(percent: Int, modifier: Modifier = Modifier, tint: Color = Theme.TEAL) {
     Box(
-        modifier.height(5.dp).background(Color(0xFFE9E6DA), RoundedCornerShape(3.dp))
+        modifier.height(5.dp).background(Theme.LINE, RoundedCornerShape(3.dp))
     ) {
         Box(
             Modifier.fillMaxHeight().fillMaxWidth(percent.coerceIn(0, 100) / 100f)
@@ -72,9 +72,9 @@ internal fun MiniProgress(percent: Int, modifier: Modifier = Modifier, tint: Col
 @Composable
 internal fun Pill(text: String, tone: String = "teal") {
     val (bg, fg) = when (tone) {
-        "gold" -> Theme.GOLD_SOFT to Color(0xFF7A5B1E)
-        "rust" -> Theme.RUST_SOFT to Color(0xFF7C3A28)
-        "muted" -> Color(0xFFECEAE0) to Theme.MUTED
+        "gold" -> Theme.GOLD_SOFT to Theme.TEXT
+        "rust" -> Theme.RUST_SOFT to Theme.TEXT
+        "muted" -> Theme.ACCENT_SOFT to Theme.MUTED
         else -> Theme.TEAL_SOFT to Theme.TEAL
     }
     Text(
@@ -102,7 +102,7 @@ internal fun Sparkline(values: List<Float>, modifier: Modifier = Modifier) {
             val p = Offset(i * stepX, y(v))
             if (i == 0) path.moveTo(p.x, p.y) else path.lineTo(p.x, p.y)
         }
-        drawLine(Color(0xFFE4E1D6), Offset(0f, h - 1f), Offset(w, h - 1f), 1.5f)
+        drawLine(Theme.LINE, Offset(0f, h - 1f), Offset(w, h - 1f), 1.5f)
         drawPath(path, line, style = Stroke(2.5.dp.toPx(), cap = StrokeCap.Round))
         values.forEachIndexed { i, v -> drawCircle(dot, 3.5.dp.toPx(), Offset(i * stepX, y(v))) }
     }

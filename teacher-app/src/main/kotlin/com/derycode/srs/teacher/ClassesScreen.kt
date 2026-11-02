@@ -1,6 +1,8 @@
 package com.derycode.srs.teacher
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -72,7 +75,13 @@ private fun ClassCard(state: TeacherState, c: SchoolClass, onClick: () -> Unit) 
     val subjects = state.mySubjectsFor(c.id)
     val color = when (c.level) { Level.PRIMARY -> TEAL; Level.A_LEVEL -> PURPLE; else -> BLUE }
     Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(CARD).clickable(onClick = onClick).padding(14.dp),
+        Modifier.fillMaxWidth()
+            .shadow(2.dp, RoundedCornerShape(16.dp), ambientColor = STROKE, spotColor = STROKE)
+            .clip(RoundedCornerShape(16.dp))
+            .background(CARD)
+            .border(BorderStroke(1.dp, STROKE), RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick)
+            .padding(14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(color.copy(alpha = 0.20f)), contentAlignment = Alignment.Center) {
@@ -107,11 +116,12 @@ internal fun SubjectPill(text: String) {
 internal fun FilterChipPill(text: String, selected: Boolean, onClick: () -> Unit) {
     Box(
         Modifier.clip(RoundedCornerShape(18.dp))
-            .background(if (selected) BLUE else CARD)
+            .background(if (selected) BLUE else CARD_ALT)
+            .border(BorderStroke(1.dp, if (selected) BLUE else STROKE), RoundedCornerShape(18.dp))
             .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 8.dp)
     ) {
-        Text(text, color = if (selected) Color.White else MUTED, fontSize = 16.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal)
+        Text(text, color = if (selected) Color.White else NAVY, fontSize = 16.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold)
     }
 }
 
@@ -143,8 +153,13 @@ private fun BasicTextFieldLine(value: String, onChange: (String) -> Unit, placeh
 
 @Composable
 internal fun EmptyHint(text: String) {
-    Box(Modifier.fillMaxWidth().padding(top = 40.dp), contentAlignment = Alignment.Center) {
-        Text(text, color = MUTED, fontSize = 16.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+    Column(Modifier.fillMaxWidth().padding(top = 48.dp, bottom = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(Modifier.size(56.dp).clip(CircleShape).background(BLUE.copy(alpha = 0.10f)), contentAlignment = Alignment.Center) {
+            Icon(Icons.Filled.Inbox, contentDescription = null, tint = BLUE.copy(alpha = 0.7f), modifier = Modifier.size(26.dp))
+        }
+        Spacer(Modifier.height(14.dp))
+        Text(text, color = MUTED, fontSize = 16.sp, fontWeight = FontWeight.SemiBold,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.padding(horizontal = 24.dp))
     }
 }
 
@@ -224,7 +239,10 @@ fun ClassDetailScreen(state: TeacherState, classId: String, onEnterMarks: (Strin
                         Divider(color = STROKE, modifier = Modifier.padding(vertical = 4.dp))
                         QuickRow(Icons.Filled.UploadFile, "Import Marks (Excel)") { onEnterMarks(subjectId) }
                         Divider(color = STROKE, modifier = Modifier.padding(vertical = 4.dp))
-                        QuickRow(Icons.Filled.Description, "Generate Report") { }
+                        val ctx = androidx.compose.ui.platform.LocalContext.current
+                        QuickRow(Icons.Filled.Description, "Generate Report") {
+                            android.widget.Toast.makeText(ctx, "Report cards are generated on the school console \u2014 your head teacher compiles and prints them on the PC.", android.widget.Toast.LENGTH_LONG).show()
+                        }
                     }
                 }
             }

@@ -338,7 +338,7 @@ fun PlansScreen(state: AppState) {
 fun PlanCard(name: String, price: String, per: String, features: List<String>, current: Boolean, modifier: Modifier = Modifier) {
     Column(
         modifier.background(if (current) Theme.ACCENT_SOFT else Theme.CARD, RoundedCornerShape(14.dp))
-            .border(1.dp, if (current) Theme.ACCENT else Color(0xFF1E2A47), RoundedCornerShape(14.dp)).padding(16.dp)
+            .border(1.dp, if (current) Theme.ACCENT else Theme.LINE, RoundedCornerShape(14.dp)).padding(16.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(name, color = if (current) Theme.ACCENT else Theme.MUTED, fontSize = 14.sp, fontWeight = FontWeight.Black, modifier = Modifier.weight(1f))

@@ -49,7 +49,7 @@ fun SetupWizard(state: AppState) {
                     val done = i < step
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable(enabled = done) { step = i }) {
                         Box(Modifier.size(22.dp).background(
-                            when { active -> Theme.ACCENT; done -> Theme.GOOD; else -> Color(0xFF232F4A) },
+                            when { active -> Theme.ACCENT; done -> Theme.GOOD; else -> Theme.LINE },
                             RoundedCornerShape(11.dp)
                         ), contentAlignment = Alignment.Center) {
                             Text(if (done) "✓" else "${i + 1}", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
@@ -57,7 +57,7 @@ fun SetupWizard(state: AppState) {
                         Spacer(Modifier.width(6.dp))
                         Text(label, color = if (active) Theme.TEXT else Theme.MUTED, fontSize = 12.sp, softWrap = false, fontWeight = if (active) FontWeight.Bold else FontWeight.Normal)
                     }
-                    if (i < STEPS.lastIndex) { Spacer(Modifier.width(6.dp)); Box(Modifier.width(28.dp).height(2.dp).background(Color(0xFF232F4A))) ; Spacer(Modifier.width(6.dp)) }
+                    if (i < STEPS.lastIndex) { Spacer(Modifier.width(6.dp)); Box(Modifier.width(28.dp).height(2.dp).background(Theme.LINE)) ; Spacer(Modifier.width(6.dp)) }
                 }
             }
             Spacer(Modifier.height(20.dp))
@@ -160,7 +160,7 @@ private fun StepAccount(state: AppState, next: () -> Unit) {
         Text("Cloud backups + teacher phone login. Requires internet — once, now.", color = Theme.MUTED, fontSize = 12.sp)
         Spacer(Modifier.height(16.dp))
         if (linked) {
-            Box(Modifier.fillMaxWidth().background(Color(0xFF12321F), RoundedCornerShape(10.dp)).padding(16.dp)) {
+            Box(Modifier.fillMaxWidth().background(Theme.ACCENT_SOFT, RoundedCornerShape(10.dp)).padding(16.dp)) {
                 Column {
                     Text("✓ Online account created", color = Theme.GOOD, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     Spacer(Modifier.height(6.dp))
@@ -328,7 +328,7 @@ private fun StepDone(state: AppState) {
             state.unlocked = true
             // initial cloud backup if account exists
             if (s.cloudSchoolId.isNotBlank()) CloudSync.pushNow(state.repo)
-        }, shape = RoundedCornerShape(10.dp), colors = ButtonDefaults.buttonColors(containerColor = Theme.GOOD, contentColor = Color(0xFF06281A)), modifier = Modifier.height(48.dp).width(240.dp)) { Text("Open Dashboard", fontSize = 15.sp, fontWeight = FontWeight.Bold) }
+        }, shape = RoundedCornerShape(10.dp), colors = ButtonDefaults.buttonColors(containerColor = Theme.GOOD, contentColor = Color.White), modifier = Modifier.height(48.dp).width(240.dp)) { Text("Open Dashboard", fontSize = 15.sp, fontWeight = FontWeight.Bold) }
     }
 }
 
@@ -405,7 +405,7 @@ fun CloudScreen(state: AppState) {
         Spacer(Modifier.height(16.dp))
 
         // Status card
-        Box(Modifier.fillMaxWidth().background(Theme.CARD, RoundedCornerShape(12.dp)).border(1.dp, Color(0xFF22304E), RoundedCornerShape(12.dp)).padding(18.dp)) {
+        Box(Modifier.fillMaxWidth().background(Theme.CARD, RoundedCornerShape(12.dp)).border(1.dp, Theme.LINE, RoundedCornerShape(12.dp)).padding(18.dp)) {
             Column {
                 if (s.cloudSchoolId.isNotBlank()) {
                     Text("● Connected as ${s.cloudEmail}", color = Theme.GOOD, fontSize = 13.sp, fontWeight = FontWeight.Bold)
@@ -479,7 +479,7 @@ fun CloudScreen(state: AppState) {
                 say(imported == 0, if (imported > 0) "✓ Imported $imported teacher submission(s). $summary" else "Nothing imported.")
                 state.refresh()
             }.start()
-        }, enabled = s.cloudSchoolId.isNotBlank() && !busy, shape = RoundedCornerShape(10.dp), colors = ButtonDefaults.buttonColors(containerColor = Theme.GOOD, contentColor = Color(0xFF06281A)), modifier = Modifier.height(42.dp)) { Text("Pull Teacher Submissions", fontSize = 13.sp) }
+        }, enabled = s.cloudSchoolId.isNotBlank() && !busy, shape = RoundedCornerShape(10.dp), colors = ButtonDefaults.buttonColors(containerColor = Theme.GOOD, contentColor = Color.White), modifier = Modifier.height(42.dp)) { Text("Pull Teacher Submissions", fontSize = 13.sp) }
         Spacer(Modifier.height(18.dp))
 
         // ── Personal teacher codes (v2.2.18) ─────────────────────────────────
@@ -490,7 +490,7 @@ fun CloudScreen(state: AppState) {
             Text("Personal Teacher Codes", color = Theme.TEXT, fontSize = 15.sp, fontWeight = FontWeight.Bold)
             Text("Generate a separate one-time code for each teacher — it works once, then dies.", color = Theme.MUTED, fontSize = 11.sp)
             Spacer(Modifier.height(8.dp))
-            Box(Modifier.fillMaxWidth().background(Theme.CARD, RoundedCornerShape(12.dp)).border(1.dp, Color(0xFF22304E), RoundedCornerShape(12.dp)).padding(18.dp)) {
+            Box(Modifier.fillMaxWidth().background(Theme.CARD, RoundedCornerShape(12.dp)).border(1.dp, Theme.LINE, RoundedCornerShape(12.dp)).padding(18.dp)) {
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         TextField(invName, { invName = it }, Modifier.width(240.dp), "Teacher name")

@@ -49,45 +49,125 @@ import java.nio.file.Path
 // ─────────────────────────────────────────────────────────────────────────────
 
 internal object Theme {
-    // Core tokens (old names kept — every existing screen restyles automatically)
+    // ── Full-app palette tokens ──────────────────────────────────────────────
+    // Every screen paints from these tokens, so switching theme restyles the
+    // WHOLE console: page background, cards, sidebar, text, lines and accents.
     var NAVY by mutableStateOf(Color(0xFFF4F0E7))        // page background (cream)
     var CARD by mutableStateOf(Color(0xFFFBFAF7))        // card surface (paper)
-    var ACCENT by mutableStateOf(Color(0xFF237B71))     // primary action (teal)
+    var ACCENT by mutableStateOf(Color(0xFF237B71))      // primary action
     var ACCENT_SOFT by mutableStateOf(Color(0xFFDFF0ED))
-    var TEXT by mutableStateOf(Color(0xFF18352E))       // ink
+    var TEXT by mutableStateOf(Color(0xFF18352E))        // ink
     var MUTED by mutableStateOf(Color(0xFF6D7D75))
     var GOOD by mutableStateOf(Color(0xFF237B71))
     var WARN by mutableStateOf(Color(0xFFA85E48))
-    // New tokens
     var INK by mutableStateOf(Color(0xFF18352E))
-    // Base (immutable) highlight colors — Theme.GOLD aliases the themed HIGHLIGHT
     val GOLD_BASE = Color(0xFFC59A4A)
     val RUST_BASE = Color(0xFFA85E48)
     val TEAL_BASE = Color(0xFF237B71)
     var HIGHLIGHT by mutableStateOf(GOLD_BASE)
-    var DEEP by mutableStateOf(Color(0xFF112C26))       // sidebar
+    var DEEP by mutableStateOf(Color(0xFF112C26))        // sidebar
     val GOLD get() = HIGHLIGHT
-    var GOLD_SOFT by mutableStateOf(Color(0xFFEFE2C3))   // follows HIGHLIGHT via apply()
+    var GOLD_SOFT by mutableStateOf(Color(0xFFEFE2C3))
     var TEAL by mutableStateOf(Color(0xFF237B71))
     var TEAL_SOFT by mutableStateOf(Color(0xFFDFF0ED))
     var RUST by mutableStateOf(Color(0xFFA85E48))
     var RUST_SOFT by mutableStateOf(Color(0xFFF4DFD8))
     var LINE by mutableStateOf(Color(0xFFD7DDD5))
+    /** True while a dark palette is active — used where a screen needs to know. */
+    var DARK by mutableStateOf(false)
 
-    val THEMES = listOf("Editorial", "Editorial Gold", "Editorial Teal", "Editorial Rust")
+    /** One complete look for the whole app. */
+    data class Palette(
+        val bg: Color, val card: Color, val text: Color, val muted: Color, val line: Color,
+        val sidebar: Color, val accent: Color, val accentSoft: Color,
+        val highlight: Color, val highlightSoft: Color,
+        val good: Color, val warn: Color, val dark: Boolean = false
+    )
+
+    private val PALETTES = linkedMapOf(
+        "Editorial" to Palette(
+            bg = Color(0xFFF4F0E7), card = Color(0xFFFBFAF7), text = Color(0xFF18352E),
+            muted = Color(0xFF6D7D75), line = Color(0xFFD7DDD5), sidebar = Color(0xFF112C26),
+            accent = Color(0xFF237B71), accentSoft = Color(0xFFDFF0ED),
+            highlight = Color(0xFFC59A4A), highlightSoft = Color(0xFFEFE2C3),
+            good = Color(0xFF237B71), warn = Color(0xFFA85E48)
+        ),
+        "Ivory" to Palette(
+            bg = Color(0xFFFBF8F1), card = Color(0xFFFFFFFF), text = Color(0xFF2A2A28),
+            muted = Color(0xFF7A7770), line = Color(0xFFE4E0D6), sidebar = Color(0xFF2E2E2B),
+            accent = Color(0xFF8C6A2F), accentSoft = Color(0xFFF3E9D5),
+            highlight = Color(0xFFB08A3E), highlightSoft = Color(0xFFEFE1C4),
+            good = Color(0xFF2F7D5B), warn = Color(0xFFB05A3C)
+        ),
+        "Forest" to Palette(
+            bg = Color(0xFFEDF3EE), card = Color(0xFFFBFDFB), text = Color(0xFF132A1D),
+            muted = Color(0xFF5F7166), line = Color(0xFFCFDDD3), sidebar = Color(0xFF0C2317),
+            accent = Color(0xFF1F7A43), accentSoft = Color(0xFFD9EBDD),
+            highlight = Color(0xFFB9A145), highlightSoft = Color(0xFFEDE6C9),
+            good = Color(0xFF1F7A43), warn = Color(0xFF9E5B3A)
+        ),
+        "Ocean" to Palette(
+            bg = Color(0xFFEEF3F8), card = Color(0xFFFFFFFF), text = Color(0xFF14273A),
+            muted = Color(0xFF5E7189), line = Color(0xFFCFDBE7), sidebar = Color(0xFF0C1E30),
+            accent = Color(0xFF1F6DA8), accentSoft = Color(0xFFDCEAF6),
+            highlight = Color(0xFF3E8FB8), highlightSoft = Color(0xFFDCEDF5),
+            good = Color(0xFF1F8A6F), warn = Color(0xFFB0603C)
+        ),
+        "Plum" to Palette(
+            bg = Color(0xFFF5F0F6), card = Color(0xFFFFFFFF), text = Color(0xFF2B1830),
+            muted = Color(0xFF75657C), line = Color(0xFFE0D4E4), sidebar = Color(0xFF241029),
+            accent = Color(0xFF7A3E8C), accentSoft = Color(0xFFF0E1F4),
+            highlight = Color(0xFFB06FC0), highlightSoft = Color(0xFFF1E2F5),
+            good = Color(0xFF2F7D5B), warn = Color(0xFFA85E48)
+        ),
+        "Midnight" to Palette(
+            bg = Color(0xFF11161C), card = Color(0xFF1A2129), text = Color(0xFFE9EEF4),
+            muted = Color(0xFF93A1B1), line = Color(0xFF2B3540), sidebar = Color(0xFF0B0F14),
+            accent = Color(0xFF3FA897), accentSoft = Color(0xFF1D3330),
+            highlight = Color(0xFFDFB25A), highlightSoft = Color(0xFF2C2718),
+            good = Color(0xFF52C79E), warn = Color(0xFFE08A6B), dark = true
+        ),
+        "Midnight Gold" to Palette(
+            bg = Color(0xFF16130E), card = Color(0xFF211C15), text = Color(0xFFF3EDE1),
+            muted = Color(0xFFA79B86), line = Color(0xFF37301F), sidebar = Color(0xFF0E0C08),
+            accent = Color(0xFFC99A45), accentSoft = Color(0xFF352A16),
+            highlight = Color(0xFFDDB35E), highlightSoft = Color(0xFF352A16),
+            good = Color(0xFF6FBF8F), warn = Color(0xFFE08A6B), dark = true
+        )
+    )
+
+    val THEMES: List<String> get() = PALETTES.keys.toList()
+
+    /** Small swatch used in Settings so a theme can be seen before applying it. */
+    fun previewBg(name: String): Color = PALETTES[name]?.bg ?: NAVY
+    fun previewAccent(name: String): Color = PALETTES[name]?.accent ?: ACCENT
 
     fun apply(name: String) {
-        val variant = name.lowercase().removePrefix("editorial").trim()
-        ACCENT = when (variant) { "gold" -> GOLD; "rust" -> RUST; else -> TEAL }
-        GOOD = TEAL
-        WARN = RUST
-        ACCENT_SOFT = when (variant) { "gold" -> GOLD_SOFT; "rust" -> RUST_SOFT; else -> TEAL_SOFT }
-        // Bold theming: the crest, the selected sidebar item and highlight buttons follow the
-        // chosen theme too, so switching Editorial Gold / Teal / Rust visibly restyles the whole
-        // admin console instead of only accent buttons.
-        HIGHLIGHT = when (variant) { "teal" -> TEAL_BASE; "rust" -> RUST_BASE; else -> GOLD_BASE }
+        val key = PALETTES.keys.firstOrNull { it.equals(name.trim(), true) }
+            ?: if (name.contains("midnight", true)) "Midnight" else "Editorial"   // legacy "Dark" keeps the current look
+        val p = PALETTES.getValue(key)
+        NAVY = p.bg
+        CARD = p.card
+        TEXT = p.text
+        INK = p.text
+        MUTED = p.muted
+        LINE = p.line
+        DEEP = p.sidebar
+        ACCENT = p.accent
+        ACCENT_SOFT = p.accentSoft
+        HIGHLIGHT = p.highlight
+        GOLD_SOFT = p.highlightSoft
+        GOOD = p.good
+        WARN = p.warn
+        TEAL = p.accent
+        TEAL_SOFT = p.accentSoft
+        RUST = p.warn
+        RUST_SOFT = p.dark
+            .let { if (it) Color(0xFF3A241C) else Color(0xFFF4DFD8) }
+        DARK = p.dark
     }
 }
+
 
 internal val LocalSchoolLevel = androidx.compose.runtime.compositionLocalOf { Level.PRIMARY }
 
@@ -467,7 +547,7 @@ fun TextField(value: String, onValueChange: (String) -> Unit, modifier: Modifier
     OutlinedTextField(
         value = value, onValueChange = onValueChange,
         modifier = modifier,
-        placeholder = { Text(placeholder, color = Color(0xFF5A6B8C), fontSize = 16.sp) },
+        placeholder = { Text(placeholder, color = Theme.MUTED, fontSize = 16.sp) },
         singleLine = true,
         shape = RoundedCornerShape(8.dp),
         textStyle = androidx.compose.ui.text.TextStyle(color = Theme.TEXT, fontSize = 17.sp)
@@ -624,7 +704,7 @@ fun SetupScreen(state: AppState) {
                         val logoBytes = remember(school.logoPath) {
                             school.logoPath?.let { p -> try { java.nio.file.Files.readAllBytes(java.nio.file.Path.of(p)) } catch (_: Exception) { null } }
                         }
-                        Box(Modifier.size(52.dp).background(Color(0xFF1B2A4A), RoundedCornerShape(8.dp)).border(1.dp, Color(0xFF2C3B5E), RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
+                        Box(Modifier.size(52.dp).background(Theme.ACCENT_SOFT, RoundedCornerShape(8.dp)).border(1.dp, Theme.LINE, RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
                             if (logoBytes != null) {
                                 Image(BitmapPainter(Image.makeFromEncoded(logoBytes).toComposeImageBitmap()), contentDescription = "School logo", modifier = Modifier.size(48.dp))
                             } else Text("No\nlogo", color = Theme.MUTED, fontSize = 10.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
@@ -642,7 +722,7 @@ fun SetupScreen(state: AppState) {
                         val stampBytes = remember(school.stampPath) {
                             school.stampPath?.let { p -> try { java.nio.file.Files.readAllBytes(java.nio.file.Path.of(p)) } catch (_: Exception) { null } }
                         }
-                        Box(Modifier.size(52.dp).background(Color(0xFF1B2A4A), RoundedCornerShape(8.dp)).border(1.dp, Color(0xFF2C3B5E), RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
+                        Box(Modifier.size(52.dp).background(Theme.ACCENT_SOFT, RoundedCornerShape(8.dp)).border(1.dp, Theme.LINE, RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
                             if (stampBytes != null) {
                                 Image(BitmapPainter(Image.makeFromEncoded(stampBytes).toComposeImageBitmap()), contentDescription = "School stamp", modifier = Modifier.size(48.dp))
                             } else Text("No\nstamp", color = Theme.MUTED, fontSize = 10.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
@@ -853,11 +933,11 @@ fun DashboardScreen(state: AppState) {
             Text(
                 "Term ${term?.number ?: 1} reporting window is open. $incomplete class markbook" +
                     (if (incomplete == 1) "" else "s") + " still need marks before report cards can be generated.",
-                color = Color(0xFF7A5B1E), fontSize = 12.sp, fontWeight = FontWeight.Medium,
+                color = Theme.TEXT, fontSize = 12.sp, fontWeight = FontWeight.Medium,
                 modifier = Modifier.weight(1f)
             )
             Text(
-                "Dismiss", color = Color(0xFF7A5B1E), fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                "Dismiss", color = Theme.TEXT, fontSize = 11.sp, fontWeight = FontWeight.Bold,
                 modifier = Modifier.clickable { dismissed = true }.padding(horizontal = 4.dp)
             )
         }
@@ -973,7 +1053,7 @@ fun DashboardScreen(state: AppState) {
         if (perClass.isEmpty()) {
             Text("No classes yet — create classes and enroll students to see reporting readiness here.", color = Theme.MUTED, fontSize = 12.sp)
         } else {
-            Row(Modifier.fillMaxWidth().background(Color(0xFFEFEDE3), RoundedCornerShape(8.dp)).padding(horizontal = 12.dp, vertical = 8.dp)) {
+            Row(Modifier.fillMaxWidth().background(Theme.ACCENT_SOFT, RoundedCornerShape(8.dp)).padding(horizontal = 12.dp, vertical = 8.dp)) {
                 Text("Class & stream", color = Theme.MUTED, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1.2f))
                 Text("Teacher", color = Theme.MUTED, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(0.8f))
                 Text("Marks entered", color = Theme.MUTED, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
@@ -990,7 +1070,7 @@ fun DashboardScreen(state: AppState) {
                 }
                 Row(
                     Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 9.dp)
-                        .background(if (i % 2 == 1) Color(0xFFFAF8F1) else Color.Transparent, RoundedCornerShape(6.dp)),
+                        .background(if (i % 2 == 1) Theme.ACCENT_SOFT.copy(alpha = 0.35f) else Color.Transparent, RoundedCornerShape(6.dp)),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(Modifier.weight(1.2f)) {
@@ -1049,7 +1129,7 @@ fun PinLockScreen(state: AppState) {
                 shape = RoundedCornerShape(10.dp),
                 visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
                 keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
-                placeholder = { Text("Enter PIN", color = Color(0xFF5A6B8C), fontSize = 13.sp) },
+                placeholder = { Text("Enter PIN", color = Theme.MUTED, fontSize = 13.sp) },
                 textStyle = androidx.compose.ui.text.TextStyle(color = Theme.TEXT, fontSize = 16.sp),
                 isError = err
             )

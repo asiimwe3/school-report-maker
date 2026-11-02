@@ -1,8 +1,8 @@
 {
-  "console": "2.2.35",
-  "teacher": "1.14.0",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.35.msi",
-  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.14.0.apk",
-  "releaseNotes": "Admin console 2.2.35: Templates rebuilt clean \u2014 designs auto-named after your school, rename and colour editing per card, real school branding on every preview. Teacher app 1.14.0 (unchanged).",
-  "released": "2026-10-13"
+  "console": "2.2.36",
+  "teacher": "1.14.1",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.2.36.msi",
+  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.14.1.apk",
+  "releaseNotes": "Themes now change the WHOLE app. 7 complete looks \u2014 Editorial, Ivory, Forest, Ocean, Plum, Midnight and Midnight Gold. Switching a theme restyles the page background, cards, sidebar, text, lines, charts and buttons on the console, and the teacher app follows the school's theme automatically. Also: cleaner filter chips on white cards, tidier attendance list, bigger mark boxes, safer cloud marks send, dead buttons now respond.",
+  "released": "2026-11-02"
 }

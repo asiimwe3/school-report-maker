@@ -1,6 +1,7 @@
 package com.derycode.srs.admin
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.border
@@ -19,6 +20,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -87,7 +89,7 @@ fun TemplatesScreen(state: AppState) {
                 Text("Colour", color = Theme.MUTED, fontSize = 13.sp)
                 TemplateColors.forEach { c ->
                     Box(Modifier.size(24.dp).background(hexToColor(c), androidx.compose.foundation.shape.CircleShape)
-                        .border(if (accent == c) 2.dp else 1.dp, if (accent == c) Theme.TEXT else Color(0xFFB9BEC9),
+                        .border(if (accent == c) 2.dp else 1.dp, if (accent == c) Theme.TEXT else Theme.LINE,
                             androidx.compose.foundation.shape.CircleShape)
                         .clickable { accent = c })
                 }
@@ -212,7 +214,7 @@ private fun TemplateCard(state: AppState, t: ReportTemplate) {
                 Text("Colour", color = Theme.MUTED, fontSize = 12.sp)
                 TemplateColors.forEach { c ->
                     Box(Modifier.size(20.dp).background(hexToColor(c), androidx.compose.foundation.shape.CircleShape)
-                        .border(if (t.accentColor == c) 2.dp else 1.dp, if (t.accentColor == c) Theme.TEXT else Color(0xFFB9BEC9),
+                        .border(if (t.accentColor == c) 2.dp else 1.dp, if (t.accentColor == c) Theme.TEXT else Theme.LINE,
                             androidx.compose.foundation.shape.CircleShape)
                         .clickable {
                             state.repo.mutate("TEMPLATE_COLOR_CHANGED", "ReportTemplate", t.id, new = c) { dd ->
@@ -447,8 +449,35 @@ fun SettingsScreen(state: AppState) {
             }
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text("Theme:", color = Theme.MUTED, fontSize = 14.sp, modifier = Modifier.width(90.dp))
-                Theme.THEMES.forEach { t ->
-                    FilterChip(selected = theme == t, onClick = { theme = t; Theme.apply(t) }, label = { Text(t, fontSize = 12.sp) })
+                Row(
+                    Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Theme.THEMES.forEach { t ->
+                        FilterChip(
+                            selected = theme == t,
+                            onClick = {
+                                theme = t
+                                Theme.apply(t)
+                                state.repo.mutate("THEME_CHANGED", "AppSettings", "theme", new = t) { dd ->
+                                    dd.copy(settings = dd.settings.copy(theme = t))
+                                }
+                                state.refresh()
+                            },
+                            label = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        Modifier.size(12.dp).clip(RoundedCornerShape(6.dp))
+                                            .background(Theme.previewBg(t))
+                                            .border(2.dp, Theme.previewAccent(t), RoundedCornerShape(6.dp))
+                                    )
+                                    Spacer(Modifier.width(6.dp))
+                                    Text(t, fontSize = 12.sp)
+                                }
+                            }
+                        )
+                    }
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -528,7 +557,7 @@ fun AuditScreen(state: AppState) {
                             Text(if (e.oldValue.isNotEmpty()) "\"${e.oldValue}\" → \"${e.newValue}\"" else e.newValue,
                                 color = Theme.MUTED, fontSize = 13.sp)
                         }
-                        HorizontalDivider(color = Color(0xFF1B2540))
+                        HorizontalDivider(color = Theme.LINE)
                     }
                 }
             }
@@ -838,7 +867,7 @@ fun CalendarScreen(state: AppState) {
                                 Column(
                                     Modifier.fillMaxSize()
                                         .background(if (isToday) Theme.ACCENT.copy(alpha = 0.18f) else Theme.ACCENT_SOFT.copy(alpha = 0.25f), RoundedCornerShape(8.dp))
-                                        .border(1.dp, if (isToday) Theme.ACCENT else Color(0xFF1E2A47), RoundedCornerShape(8.dp))
+                                        .border(1.dp, if (isToday) Theme.ACCENT else Theme.LINE, RoundedCornerShape(8.dp))
                                         .clickable { date = cellDate; showAdd = true }
                                         .padding(6.dp)
                                 ) {

@@ -239,6 +239,7 @@ class TeacherCloud(private val context: Context) {
     fun pushMarks(token: String, schoolId: String, teacherName: String, payload: String): CloudResult {
         val uid = account.uid
         if (uid.isBlank()) return CloudResult(false, msg = "Account error — sign in again")
+        if (payload.isBlank() || payload == "[]") return CloudResult(false, msg = "Nothing to send — enter some marks first")
         val b = "{\"school_id\":\"$schoolId\",\"teacher_uid\":\"$uid\",\"teacher_name\":\"${esc(teacherName)}\",\"payload\":$payload}"
         val (code, body) = http("POST", "/rest/v1/srs_teacher_marks", token, b)
         return if (code in 200..299) CloudResult(true, token = token, msg = "Marks sent ✓ — the head teacher taps 'Pull Teacher Marks' on the console to import them")

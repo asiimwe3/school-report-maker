@@ -122,7 +122,11 @@ fun CloudScreen(state: TeacherState) {
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     listOf("Teacher" to "TEACHER", "Head Teacher" to "HEAD_TEACHER", "Admin" to "SCHOOL_ADMIN", "Data Entry" to "DATA_ENTRY").forEach { (label, value) ->
                         FilterChip(selected = myRole == value, onClick = { myRole = value }, label = { Text(label, fontSize = 12.sp) },
-                            colors = FilterChipDefaults.filterChipColors(containerColor = if (myRole == value) BLUE else Color.White))
+                            colors = FilterChipDefaults.filterChipColors(
+                                containerColor = CARD_ALT,
+                                labelColor = NAVY,
+                                selectedContainerColor = BLUE,
+                                selectedLabelColor = Color.White))
                     }
                 }
                 Spacer(Modifier.height(12.dp))
@@ -211,7 +215,11 @@ fun CloudScreen(state: TeacherState) {
                         FilterChip(selected = pickedClasses.contains(c.id), onClick = {
                             if (pickedClasses.contains(c.id)) pickedClasses.remove(c.id) else pickedClasses.add(c.id)
                         }, label = { Text(nm, fontSize = 12.sp) },
-                            colors = FilterChipDefaults.filterChipColors(containerColor = if (pickedClasses.contains(c.id)) BLUE else Color.White))
+                            colors = FilterChipDefaults.filterChipColors(
+                                containerColor = CARD_ALT,
+                                labelColor = NAVY,
+                                selectedContainerColor = BLUE,
+                                selectedLabelColor = Color.White))
                     }
                 }
                 Spacer(Modifier.height(10.dp))
@@ -221,7 +229,11 @@ fun CloudScreen(state: TeacherState) {
                         FilterChip(selected = pickedSubjects.contains(sb.id), onClick = {
                             if (pickedSubjects.contains(sb.id)) pickedSubjects.remove(sb.id) else pickedSubjects.add(sb.id)
                         }, label = { Text(sb.name, fontSize = 12.sp) },
-                            colors = FilterChipDefaults.filterChipColors(containerColor = if (pickedSubjects.contains(sb.id)) BLUE else Color.White))
+                            colors = FilterChipDefaults.filterChipColors(
+                                containerColor = CARD_ALT,
+                                labelColor = NAVY,
+                                selectedContainerColor = BLUE,
+                                selectedLabelColor = Color.White))
                     }
                 }
                 Spacer(Modifier.height(14.dp))

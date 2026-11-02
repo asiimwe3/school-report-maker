@@ -3,6 +3,8 @@ package com.derycode.srs.teacher
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Schedule
@@ -36,8 +38,8 @@ fun TimetableScreen(state: TeacherState) {
     LazyColumn(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item {
             CardBox {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    DAYS.forEachIndexed { i, lbl ->
+                androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    itemsIndexed(DAYS) { i, lbl ->
                         val dv = i + 1
                         FilterChipPill(lbl, selected = day == dv) { day = dv }
                     }
