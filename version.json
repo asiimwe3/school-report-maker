@@ -1,8 +1,7 @@
 {
-  "console": "2.3.3",
-  "teacher": "1.18.0",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.3.msi",
-  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.18.0.apk",
-  "releaseNotes": "Teacher app 1.18.0: five new screens and a real theme picker. Term Insight shows class averages, grade spread and the strongest and weakest subject. Ranked Results lists positions computed from your own marks. Calendar shows term dates plus exams, holidays and meetings. My Profile shows your post, classes and load. Themes gives seven palettes with a live preview, including Midnight for night marking - your choice stays on your phone, or follow the school's console theme.",
-  "released": "2026-11-02"
+  "console": "2.3.4",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.4.msi",
+  "teacher": "1.18.1",
+  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.18.1.apk",
+  "notes": "Scan once and the school loads"
 }

@@ -276,6 +276,29 @@ class TeacherState(context: Context) {
         }.start()
     }
 
+    /**
+     * Takes over the school setup pulled by a single scan: school, classes,
+     * streams, subjects, staff, timetable, calendar, grading and the learners.
+     * Marks already on this phone for the SAME student/subject/term are kept.
+     */
+    fun adoptSchoolSetup(incoming: SchoolData, code: String) {
+        val keepMarks = data.marks.filter { local ->
+            incoming.marks.none { it.studentId == local.studentId && it.subjectId == local.subjectId && it.termId == local.termId && it.componentId == local.componentId }
+        }
+        data = incoming.copy(marks = incoming.marks + keepMarks)
+        save()
+        codeFile.writeText(code.trim().uppercase())
+        schoolCode = code.trim().uppercase()
+    }
+
+    /** The invite code this phone joined with — kept so sending marks never asks again. */
+    var schoolCode by mutableStateOf(
+        java.io.File(context.filesDir, "school-code.txt").takeIf { it.exists() }?.readText()?.trim().orEmpty()
+    )
+        private set
+
+    private val codeFile = java.io.File(context.filesDir, "school-code.txt")
+
     fun refresh() { data = data }
 
     fun save() {

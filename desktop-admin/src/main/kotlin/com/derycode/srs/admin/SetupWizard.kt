@@ -504,8 +504,22 @@ fun CloudScreen(state: AppState) {
                     Spacer(Modifier.height(6.dp))
                     Text("Last cloud backup: ${s.cloudLastBackup.ifBlank { "never" }}", color = Theme.MUTED, fontSize = 12.sp)
                 } else {
-                    Text("● Offline mode — no cloud account", color = Theme.WARN, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                    Text("Complete the account section below to enable cloud backup and teacher login.", color = Theme.MUTED, fontSize = 11.sp)
+                    Text("● Cloud is off", color = Theme.WARN, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    Text("Teachers cannot join until this is on. One tap — no email, no password.", color = Theme.MUTED, fontSize = 11.sp)
+                    Spacer(Modifier.height(10.dp))
+                    Button({
+                        busy = true; say(false, "Turning on cloud… creating the school account and publishing your setup")
+                        CloudSync.turnOn(state.repo) { ok, m ->
+                            busy = false
+                            say(!ok, m)
+                            if (ok) state.refresh()
+                        }
+                    }, enabled = !busy, shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Theme.ACCENT), modifier = Modifier.height(44.dp)) {
+                        Text(if (busy) "Turning on…" else "Turn on cloud \u2014 one tap", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text("After this you get a school code. Teachers scan it and their phone fills with your classes, learners, subjects and timetable.", color = Theme.MUTED, fontSize = 11.sp)
                 }
             }
         }

@@ -74,8 +74,8 @@ class TeacherCloud(private val context: Context) {
     private fun http(method: String, path: String, token: String? = null, body: String?): Pair<Int, String> = try {
         val conn = URL(CloudCfg.URL + path).openConnection() as HttpURLConnection
         conn.requestMethod = method
-        conn.connectTimeout = 20000
-        conn.readTimeout = 30000
+        conn.connectTimeout = 12000
+        conn.readTimeout = 45000   // a big school setup can take a while on 3G; everything else is small
         conn.setRequestProperty("apikey", CloudCfg.KEY)
         conn.setRequestProperty("Content-Type", "application/json")
         if (token != null) conn.setRequestProperty("Authorization", "Bearer $token")
@@ -279,6 +279,59 @@ class TeacherCloud(private val context: Context) {
             }
         }
     } catch (_: Exception) { emptyList() }
+
+    /** Everything the phone needs after a scan: the school and its full setup. */
+    data class JoinResult(
+        val ok: Boolean,
+        val msg: String,
+        val schoolName: String = "",
+        val code: String = "",
+        val data: com.derycode.srs.core.model.SchoolData? = null,
+        val updatedAt: String = "",
+        val bytes: Int = 0
+    )
+
+    /**
+     * ONE-SCAN JOIN (v1.18.1).
+     *
+     * The old flow asked the teacher to create an account before they could see
+     * anything, and the school lookup it used was blocked by row-level security,
+     * so a scan often ended with an empty app. This makes a single public call
+     * (rpc/srs_join_by_code) that answers with the school and its published
+     * setup in one response — no account, no second request, nothing to sign in.
+     */
+    fun joinByCode(code: String): JoinResult = try {
+        val clean = code.uppercase().filter { it.isLetterOrDigit() }
+        if (clean.length < 4) JoinResult(false, "That code is too short — scan the code on the console or type all of it")
+        else {
+            val (httpCode, body) = http("POST", "/rest/v1/rpc/srs_join_by_code", null, "{\"_code\":\"$clean\"}")
+            when {
+                httpCode == 0 -> JoinResult(false, "No internet. Move to where there is network and try the code again.")
+                httpCode in 400..499 -> {
+                    val msg = member(body, "message")
+                    JoinResult(false, msg.ifBlank { "That code was not recognised (${httpCode})" })
+                }
+                httpCode !in 200..299 -> JoinResult(false, "Cloud error (${httpCode}). Try again in a moment.")
+                else -> {
+                    val root = Json.parseToJsonElement(body) as? JsonObject
+                        ?: return JoinResult(false, "Unexpected reply from the cloud — try again")
+                    val school = root["school"] as? JsonObject
+                    val name = (school?.get("name") as? JsonPrimitive)?.content.orEmpty()
+                    val payload = (root["payload"] as? JsonPrimitive)?.content.orEmpty()
+                    val updated = (root["updated_at"] as? JsonPrimitive)?.content.orEmpty()
+                    val bytes = (root["payload_bytes"] as? JsonPrimitive)?.content?.toIntOrNull() ?: payload.length
+                    if (payload.isBlank()) {
+                        JoinResult(false, "Found $name but it has not published its setup yet. Ask the head teacher to open Cloud & Online on the console and tap Back Up Now.", name, clean)
+                    } else {
+                        val data = rosterJson.decodeFromString<com.derycode.srs.core.model.SchoolData>(payload)
+                        JoinResult(true, "Connected to $name", name, clean, data, updated, bytes)
+                    }
+                }
+            }
+        }
+    } catch (e: Exception) {
+        JoinResult(false, "Could not read the school setup: ${e.message?.take(90) ?: "unknown error"}")
+    }
 
     /** Push the teacher's marks bundle to the school console. */
     fun pushMarks(token: String, schoolId: String, teacherName: String, payload: String): CloudResult {

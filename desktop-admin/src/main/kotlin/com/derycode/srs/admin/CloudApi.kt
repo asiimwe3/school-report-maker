@@ -28,7 +28,14 @@ object CloudApi {
     const val DEFAULT_KEY = "sb_publishable_AqC-q3-23JiE6VyyCGvNCA_FZ1ZmAd_"
 
 
-    data class AuthResult(val ok: Boolean, val error: String = "", val accessToken: String = "", val refreshToken: String = "")
+    data class AuthResult(
+        val ok: Boolean,
+        val error: String = "",
+        val accessToken: String = "",
+        val refreshToken: String = "",
+        val email: String = "",
+        val password: String = ""
+    )
 
     // HttpURLConnection instead of java.net.http.HttpClient — works on Java 8 too,
     // so cloud sync never crashes on school PCs with an old Java installed (fix for
@@ -98,6 +105,33 @@ object CloudApi {
 
     /** True if this school id still exists server-side. Used to detect an orphaned local cloud link
      *  (e.g. the school was deleted/reset on the server after the console had already connected to it). */
+    /**
+     * One-tap school account.
+     *
+     * The head teacher used to have to invent an email and remember a password
+     * before any backup or teacher code existed — the usual place the setup
+     * stalled. This creates the account for the school with a generated
+     * identity that is stored on the console, so "Turn on cloud" is a single
+     * click and the account never needs to be remembered by a human.
+     */
+    fun deviceSignUp(url: String, key: String): AuthResult {
+        val rnd = java.security.SecureRandom()
+        val alphabet = "abcdefghjkmnpqrstuvwxyz23456789"
+        val tag = (1..10).map { alphabet[rnd.nextInt(alphabet.length)] }.joinToString("")
+        val pwd = (1..4).joinToString("-") { (1..6).map { alphabet[rnd.nextInt(alphabet.length)] }.joinToString("") }
+        val email = "school-$tag@srs.derycode.online"
+        val body = "{\"email\":\"$email\",\"password\":\"$pwd\"}"
+        val r = http("POST", "$url/auth/v1/signup", key, null, body)
+        if (r.first !in 200..299) {
+            val m = extractString(r.second, "msg").ifBlank { extractString(r.second, "message") }
+            return AuthResult(false, if (m.isBlank()) "Could not reach the cloud (${r.first}). Check the internet and try again." else m)
+        }
+        val token = extractString(r.second, "access_token")
+        val refresh = extractString(r.second, "refresh_token")
+        if (token.isBlank()) return AuthResult(false, "The cloud created the account but no session came back. Try 'Turn on cloud' again.")
+        return AuthResult(true, "", token, refresh, email, pwd)
+    }
+
     fun schoolExists(url: String, key: String, token: String, schoolId: String): Boolean {
         val r = http("GET", "$url/rest/v1/srs_schools?id=eq.$schoolId&select=id", key, token, null)
         if (r.first !in 200..299) return true // network/auth hiccup — don't wrongly disconnect the user
@@ -375,6 +409,72 @@ object CloudSync {
         if (!r.ok) return first
         repo.mutate("cloud-refresh", "settings") { d -> d.copy(settings = d.settings.copy(cloudAccessToken = r.accessToken, cloudRefreshToken = r.refreshToken)) }
         return call(r.accessToken)
+    }
+
+    /**
+     * "Turn on cloud" — one click, no email or password to invent.
+     *
+     * 1. signs the console in with a generated school account (or reuses an
+     *    existing one), 2. registers the school row, 3. publishes the first
+     *    backup, so the phone can join with the invite code straight away.
+     */
+    fun turnOn(repo: SchoolRepository, onResult: ((Boolean, String) -> Unit)? = null) {
+        val st = repo.data.settings
+        if (st.cloudSchoolId.isNotBlank() && st.cloudAccessToken.isNotBlank()) { pushNow(repo, onResult); return }
+        val d = repo.data
+        val baseCode = (d.school.name.uppercase().filter { it.isLetterOrDigit() }.take(4).padEnd(4, 'X'))
+        val rnd = java.security.SecureRandom()
+        val code = baseCode + (1..4).map { "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[rnd.nextInt(32)] }.joinToString("")
+
+        Thread {
+            val base = url(st)
+            val k = key(st)
+
+            // Reuse a session if the console already has one (e.g. after a restore).
+            var token = st.cloudAccessToken
+            var email = st.cloudEmail
+            if (token.isBlank() || email.isBlank() || !email.endsWith("@srs.derycode.online")) {
+                val acc = CloudApi.deviceSignUp(base, k)
+                if (!acc.ok) { onResult?.invoke(false, acc.error); return@Thread }
+                token = acc.accessToken
+                email = acc.email
+                repo.mutate("cloud-signup", "settings") { cur ->
+                    cur.copy(settings = cur.settings.copy(
+                        cloudUrl = base, cloudKey = k, cloudEmail = acc.email,
+                        cloudAccessToken = acc.accessToken, cloudRefreshToken = acc.refreshToken
+                    ))
+                }
+            }
+
+            val (sid, serr) = CloudApi.createSchool(
+                base, k, token, d.school.name, d.school.address, d.school.address,
+                d.school.headTeacher, d.settings.licencePlan.ifBlank { "Trial" }, d.settings.licenceRef,
+                d.students.size, code
+            )
+            if (sid.isBlank()) {
+                val hint = if (serr.contains("duplicate") || serr.contains("23505"))
+                    "This console already has a school in the cloud. Use 'Restore From Cloud' or open Support."
+                else serr
+                onResult?.invoke(false, hint); return@Thread
+            }
+
+            repo.mutate("cloud-created", "settings") { cur ->
+                cur.copy(settings = cur.settings.copy(
+                    cloudUrl = base, cloudKey = k, cloudEmail = email, cloudAccessToken = token,
+                    cloudSchoolId = sid, cloudInviteCode = code, teacherCloudEnabled = true
+                ))
+            }
+
+            // Publish immediately so a teacher scanning the code sees the school.
+            val payload = Json.encodeToString(com.derycode.srs.core.model.SchoolData.serializer(), repo.data)
+            val pushed = CloudApi.pushBackup(base, k, token, sid, payload)
+            if (pushed.first) markPushed(repo, payload.length)
+            onResult?.invoke(
+                true,
+                if (pushed.first) "Cloud is on. School code $code is ready for teachers."
+                else "Cloud is on and the school is registered, but the first backup failed: ${pushed.second}"
+            )
+        }.start()
     }
 
     fun scheduleAutoPush(repo: SchoolRepository) {

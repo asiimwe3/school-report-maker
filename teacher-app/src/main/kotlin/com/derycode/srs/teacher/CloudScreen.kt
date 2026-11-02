@@ -20,6 +20,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -56,11 +57,15 @@ fun CloudScreen(state: TeacherState, onScan: () -> Unit = {}) {
     var roster by remember { mutableStateOf<List<TeacherCloud.RosterEntry>>(emptyList()) }
     var rosterBusy by remember { mutableStateOf(false) }
     var rosterMsg by remember { mutableStateOf("") }
+    var joined by remember { mutableStateOf<TeacherCloud.JoinResult?>(null) }
+    var autoConnect by remember { mutableStateOf(false) }
     // A code just came back from the QR scanner — drop it into the field ready to go.
     LaunchedEffect(state.scannedInvite) {
         if (state.scannedInvite.isNotBlank()) {
             inviteCode = state.scannedInvite
             state.scannedInvite = ""
+            // Scan = connect. The join runs right after the helpers are declared below.
+            autoConnect = true
         }
     }
 
@@ -84,6 +89,24 @@ fun CloudScreen(state: TeacherState, onScan: () -> Unit = {}) {
 
     fun report(ok: Boolean, text: String) { msgGood = ok; msg = text }
     fun run(block: suspend () -> Unit) { if (!busy) { busy = true; scope.launch(Dispatchers.IO) { block(); busy = false } } }
+
+    // A code that came from the scanner connects immediately — no extra button.
+    LaunchedEffect(autoConnect) {
+        if (autoConnect && inviteCode.length >= 4) {
+            autoConnect = false
+            val code = inviteCode
+            run {
+                val r = state.cloud.joinByCode(code)
+                withContext(Dispatchers.Main) {
+                    if (r.ok && r.data != null) {
+                        state.adoptSchoolSetup(r.data, code)
+                        joined = r
+                        report(true, "School on this phone: ${r.schoolName}")
+                    } else report(false, r.msg)
+                }
+            }
+        }
+    }
 
     fun loadSchools() = run {
         val t = state.cloud.freshToken()
@@ -111,65 +134,113 @@ fun CloudScreen(state: TeacherState, onScan: () -> Unit = {}) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Filled.School, contentDescription = null, tint = BLUE, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(8.dp))
-                    Cell("Join your school", MUTED, true)
+                    Cell("Get your school on this phone", MUTED, true)
                 }
                 Spacer(Modifier.height(4.dp))
-                Cell("Scan the school's QR code once — or type the code your head teacher gave you. Either way it registers you with the school and downloads your classes, students and subjects.", MUTED)
+                Cell("Scan the school's code once. Your phone fills with the school setup — classes, streams, learners, subjects, staff, timetable and term dates. No account needed.", MUTED)
                 Spacer(Modifier.height(12.dp))
                 Button(
                     onClick = onScan,
-                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = BLUE)
                 ) {
                     Icon(Icons.Filled.QrCodeScanner, contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(8.dp))
                     Text("Scan the school code", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
-                Spacer(Modifier.height(6.dp))
-                Cell("No camera? Type the code below instead.", MUTED)
                 Spacer(Modifier.height(8.dp))
-                OutlinedTextField(inviteCode, { inviteCode = it }, label = { Text("School code (from the QR)") },
-                    singleLine = true, modifier = Modifier.fillMaxWidth())
+                Cell("No camera? Type the code instead.", MUTED)
                 Spacer(Modifier.height(6.dp))
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    OutlinedButton(
-                        onClick = {
-                            val code = inviteCode.trim().uppercase()
-                            if (code.isBlank()) rosterMsg = "Scan or type the school code first"
-                            else {
-                                rosterBusy = true; rosterMsg = ""
-                                scope.launch(Dispatchers.IO) {
-                                    val r = state.cloud.fetchRoster(code)
-                                    withContext(Dispatchers.Main) {
-                                        roster = r
-                                        rosterBusy = false
-                                        rosterMsg = if (r.isEmpty())
-                                            "No staff list published yet — type your name below."
-                                        else "Tap your name:"
-                                    }
-                                }
+                OutlinedTextField(
+                    inviteCode, { inviteCode = it.uppercase() },
+                    label = { Text("School code") }, singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(8.dp))
+                Button(
+                    onClick = {
+                        val code = inviteCode.trim().uppercase()
+                        if (code.length < 4) { report(false, "Type the whole school code first"); return@Button }
+                        run {
+                            val r = state.cloud.joinByCode(code)
+                            withContext(Dispatchers.Main) {
+                                if (r.ok && r.data != null) {
+                                    state.adoptSchoolSetup(r.data, code)
+                                    joined = r
+                                    report(true, "School on this phone: ${r.schoolName}")
+                                } else report(false, r.msg)
                             }
-                        },
-                        enabled = !rosterBusy, shape = RoundedCornerShape(10.dp)
-                    ) { Text(if (rosterBusy) "Looking up…" else "Find my name") }
-                    if (rosterMsg.isNotBlank()) Text(rosterMsg, color = MUTED, fontSize = 12.sp)
+                        }
+                    },
+                    enabled = !busy,
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = TEAL)
+                ) { Text(if (busy) "Downloading the school…" else "Connect & download school", fontSize = 15.sp, fontWeight = FontWeight.Bold) }
+                if (msg.isNotBlank()) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(msg, color = if (msgGood) GREEN else RED, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                 }
-                if (roster.isNotEmpty()) {
+
+                // ── What actually arrived ──
+                val d = state.data
+                if (d.classes.isNotEmpty() || d.students.isNotEmpty()) {
+                    Spacer(Modifier.height(12.dp))
+                    Divider(color = STROKE)
+                    Spacer(Modifier.height(8.dp))
+                    Text("On this phone now", color = NAVY, fontSize = 15.sp, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(6.dp))
-                    roster.chunked(2).forEach { pair ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf(
+                            Triple("Classes", d.classes.count { it.active }.toString(), BLUE),
+                            Triple("Learners", d.students.size.toString(), TEAL),
+                            Triple("Subjects", d.subjects.count { it.active }.toString(), PURPLE),
+                            Triple("Staff", d.teachers.count { it.active }.toString(), ORANGE)
+                        ).forEach { c ->
+                            Column(
+                                Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).background(c.third.copy(alpha = 0.12f))
+                                    .padding(vertical = 9.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(c.second, color = c.third, fontSize = 18.sp, fontWeight = FontWeight.Black)
+                                Text(c.first, color = MUTED, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                            }
+                        }
+                    }
+                    Text(
+                        "${d.school.name}" + (if (d.timetable.isNotEmpty()) " \u00B7 timetable ready" else "") +
+                            (if (d.academicYears.isNotEmpty()) " \u00B7 term dates ready" else ""),
+                        color = MUTED, fontSize = 12.sp
+                    )
+                }
+
+                // ── Who are you? Picked from the staff list we just downloaded ──
+                if (state.data.teachers.isNotEmpty()) {
+                    Spacer(Modifier.height(12.dp))
+                    Text("Tap your name", color = NAVY, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                    Text("So marks and comments are saved under you.", color = MUTED, fontSize = 12.sp)
+                    Spacer(Modifier.height(6.dp))
+                    state.data.teachers.filter { it.active }.chunked(2).forEach { pair ->
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(vertical = 2.dp)) {
-                            pair.forEach { r ->
+                            pair.forEach { t ->
                                 FilterChip(
-                                    selected = fullName.equals(r.name, ignoreCase = true),
-                                    onClick = { fullName = r.name },
-                                    label = { Text(if (r.title.isBlank()) r.name else "${r.name} · ${r.title}", fontSize = 12.sp) },
+                                    selected = state.meId == t.id,
+                                    onClick = { state.setMe(t.id); fullName = t.name },
+                                    label = { Text(t.name, fontSize = 12.sp) },
                                     colors = FilterChipDefaults.filterChipColors(
                                         containerColor = CARD_ALT, labelColor = NAVY,
-                                        selectedContainerColor = BLUE, selectedLabelColor = Color.White))
+                                        selectedContainerColor = BLUE, selectedLabelColor = Color.White
+                                    )
+                                )
                             }
                         }
                     }
                 }
+                Spacer(Modifier.height(10.dp))
+                Divider(color = STROKE)
+                Spacer(Modifier.height(8.dp))
+                Text("Optional: an account to send marks back", color = NAVY, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                Text("You can see and enter marks without this. Create an account only when you want to send them to the head teacher.", color = MUTED, fontSize = 12.sp)
                 Spacer(Modifier.height(8.dp))
                 OutlinedTextField(fullName, { fullName = it }, label = { Text("Your full name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 Spacer(Modifier.height(8.dp))
