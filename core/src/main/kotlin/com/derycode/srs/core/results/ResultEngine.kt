@@ -19,13 +19,6 @@ import kotlin.math.roundToInt
  */
 object ResultEngine {
 
-    /**
-     * Column codes that belong to the continuous-assessment side of a weighted
-     * scheme. A1/A2/A3 are the school's own assessment columns (each out of 20);
-     * everything else that is coded differently is the examination.
-     */
-    private val CA_CODES = setOf("CA", "A1", "A2", "A3")
-
     // ── Subject totals ───────────────────────────────────────────────────────
 
     /**
@@ -38,8 +31,17 @@ object ResultEngine {
         components: List<AssessmentComponent>,
         caWeight: Int,
         examWeight: Int,
-        weighted: Boolean
+        weighted: Boolean,
+        a2Weight: Int = AssessmentWeighting.A2_DEFAULT_WEIGHT,
+        a3Weight: Int = AssessmentWeighting.A3_DEFAULT_WEIGHT,
+        a2a3Enabled: Boolean = true
     ): Pair<Double, Boolean> {   // (percentage, incomplete)
+        // O-Level: final = A2 × 20% + A3 × 80%. One rule, used by every screen and report.
+        val rules = AssessmentWeighting.rules(components, a2Weight, a3Weight, a2a3Enabled)
+        if (rules.isNotEmpty() && marks.any { m -> rules.any { it.component.id == m.componentId } }) {
+            val s = AssessmentWeighting.score(marks, rules)
+            return (s.final ?: s.partial ?: 0.0) to s.incomplete
+        }
         val usable = marks.filter { it.type == MarkType.VALUE }
         val incomplete = marks.any { it.type == MarkType.ABS || it.type == MarkType.MISSING }
         if (usable.isEmpty()) return 0.0 to true
@@ -49,8 +51,8 @@ object ResultEngine {
 
         return if (weighted) {
             // Weighted scheme: CA components share caWeight, exam components share examWeight.
-            val caMarks = usable.filter { componentById[it.componentId]?.code in CA_CODES }
-            val examMarks = usable.filter { componentById[it.componentId]?.code?.let { c -> c !in CA_CODES } ?: true }
+            val caMarks = usable.filter { componentById[it.componentId]?.code == "CA" }
+            val examMarks = usable.filter { componentById[it.componentId]?.code != "CA" }
             val caPart = if (caMarks.isEmpty()) 0.0 else caMarks.map(::pct).average() * caWeight / 100.0
             val examPart = if (examMarks.isEmpty()) 0.0 else examMarks.map(::pct).average() * examWeight / 100.0
             (caPart + examPart) to incomplete
@@ -69,7 +71,10 @@ object ResultEngine {
     data class SubjectBreakdown(
         val formative: Double = -1.0,
         val exam: Double = -1.0,
-        val assessments: List<Double> = emptyList()
+        val assessments: List<Double> = emptyList(),
+        /** A2 × 20% + A3 × 80%; null when either mark is still missing. */
+        val final: Double? = null,
+        val incomplete: Boolean = false
     )
 
     fun subjectBreakdown(
@@ -77,22 +82,33 @@ object ResultEngine {
         components: List<AssessmentComponent>,
         caWeight: Int,
         examWeight: Int,
-        weighted: Boolean
+        weighted: Boolean,
+        a2Weight: Int = AssessmentWeighting.A2_DEFAULT_WEIGHT,
+        a3Weight: Int = AssessmentWeighting.A3_DEFAULT_WEIGHT,
+        a2a3Enabled: Boolean = true
     ): SubjectBreakdown {
+        val rules = AssessmentWeighting.rules(components, a2Weight, a3Weight, a2a3Enabled)
+        if (rules.isNotEmpty() && marks.any { m -> rules.any { it.component.id == m.componentId } }) {
+            val s = AssessmentWeighting.score(marks, rules)
+            return SubjectBreakdown(
+                formative = s.byCode[AssessmentWeighting.A2] ?: -1.0,
+                exam = s.byCode[AssessmentWeighting.A3] ?: -1.0,
+                assessments = rules.mapNotNull { s.byCode[it.code] },
+                final = s.final,
+                incomplete = s.incomplete
+            )
+        }
         val usable = marks.filter { it.type == MarkType.VALUE }
         if (usable.isEmpty()) return SubjectBreakdown()
         val byId = components.associateBy { it.id }
         fun pct(m: Mark): Double = if (m.maxScore <= 0) 0.0 else (m.score / m.maxScore) * 100.0
 
-        val caMarks = usable.filter { byId[it.componentId]?.code in CA_CODES }
-        val examMarks = usable.filter { byId[it.componentId]?.code?.let { c -> c !in CA_CODES } ?: true }
+        val caMarks = usable.filter { byId[it.componentId]?.code == "CA" }
+        val examMarks = usable.filter { byId[it.componentId]?.code != "CA" }
 
         // A1/A2/A3: the first three assessment columns the school actually uses,
         // in the order the components are defined (falling back to CA entries).
-        val coded = components.filter { it.code in setOf("A1", "A2", "A3") }
-            .sortedBy { it.code }
-            .filter { c -> usable.any { it.componentId == c.id } }
-        val assessmentOrder = (coded.ifEmpty { components.filter { c -> usable.any { it.componentId == c.id } } })
+        val assessmentOrder = components.filter { c -> usable.any { it.componentId == c.id } }
             .take(3)
             .mapNotNull { c -> usable.firstOrNull { it.componentId == c.id }?.let(::pct) }
 
@@ -133,9 +149,13 @@ object ResultEngine {
         val subjectResults = principalSubjectIds.mapNotNull { subjectId ->
             val sm = studentMarks.filter { it.subjectId == subjectId }
             val (pct, incomplete) = subjectPercentage(
-                sm, data.components, scheme.caWeightPercent, scheme.examWeightPercent, weighted
+                sm, data.components, scheme.caWeightPercent, scheme.examWeightPercent, weighted,
+                data.settings.a2WeightPercent, data.settings.a3WeightPercent, data.settings.a2a3Weighting
             )
-            val bd = subjectBreakdown(sm, data.components, scheme.caWeightPercent, scheme.examWeightPercent, weighted)
+            val bd = subjectBreakdown(
+                sm, data.components, scheme.caWeightPercent, scheme.examWeightPercent, weighted,
+                data.settings.a2WeightPercent, data.settings.a3WeightPercent, data.settings.a2a3Weighting
+            )
             SubjectResult(
                 subjectId = subjectId,
                 total = sm.filter { it.type == MarkType.VALUE }.sumOf { it.score },

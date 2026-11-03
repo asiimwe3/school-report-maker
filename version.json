@@ -1,12 +1,12 @@
 {
-  "console": "2.3.27",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.27.msi",
-  "teacher": "1.20.4",
-  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.4.apk",
-  "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.4.apk",
+  "console": "2.3.28",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.28.msi",
+  "teacher": "1.20.6",
+  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.6.apk",
+  "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.6.apk",
   "teacherDesktop": "1.0.0",
   "teacherDesktopDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMakerTeacher-1.0.0.msi",
   "released": "2026-11-03",
-  "notes": "2.3.27 / teacher 1.20.4. The blue Standard card from the school template is now the default report design: shield header, SUMMARY REPORT term box, passport photo, A1-A3 with the 20/80 split, average grade, comment boxes, term dates, signatures and stamp. Students are shown as class lists: a numbered section per class in the console, and a numbered class register on the phone. The teacher app now also runs on a laptop: the same marks entry, attendance and timetable, installed with its own setup file, handing the console the same bundle files as a phone.",
-  "consoleVersion": "2.3.27"
+  "notes": "Console 2.3.28 and teacher app 1.20.6. The O-Level final score is now A2 (20%) + A3 (80%).\n- Marks grid shows A2 and A3, then the weighted Final and the Grade, updating as you type\n- Final = A2 x 20% + A3 x 80%, never the two marks added together\n- Half a card stays incomplete: a dash instead of a false zero and no grade until both marks are in\n- Marks outside 0-100 are refused; the raw A2 and A3 marks are stored separately and the final is always worked out from them\n- Old marks keep their own assessment and are never relabelled; schools without A2/A3 carry on as before\n- The teacher app shows each learner's A2, A3, final and grade on one line while entering marks",
+  "consoleVersion": "2.3.28"
 }

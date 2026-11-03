@@ -94,6 +94,14 @@ class TeacherState(private val context: Context) {
     var meId by mutableStateOf<String?>(if (meFile.exists() && meFile.readText().isNotBlank()) meFile.readText().trim() else null)
         private set
 
+    /**
+     * What this teacher told us when they joined (name, role, the classes and
+     * subjects they picked). Kept on the phone so a later "pull school setup"
+     * from the console cannot quietly remove them from staff and remove access.
+     */
+    var myJoin: JoinProfile? = JoinProfile.read(context.filesDir)
+        private set
+
     fun setMe(id: String?) {
         meId = id
         if (id == null) meFile.delete() else meFile.writeText(id)
@@ -295,11 +303,61 @@ class TeacherState(private val context: Context) {
      * is carried across, so a second school's information can never show up here.
      * The old school is archived to a file first, so nothing a teacher typed is lost.
      */
+    /**
+     * Joining with the school code puts this teacher on staff straight away: their
+     * record, role and classes exist locally before anything else runs, so every
+     * screen works immediately. No waiting for the head teacher to assign a role.
+     */
+    fun joinAsStaff(
+        name: String,
+        roleName: String = "TEACHER",
+        phone: String = "",
+        cloudUid: String = "",
+        classIds: List<String> = emptyList(),
+        subjectIds: List<String> = emptyList(),
+        photoPath: String? = null
+    ): String? {
+        val role = runCatching { Role.valueOf(roleName.trim().uppercase()) }.getOrDefault(Role.TEACHER)
+        val joined = com.derycode.srs.core.model.TeacherJoin.apply(
+            data, name, role, phone = phone, cloudUid = cloudUid,
+            classIds = classIds, subjectIds = subjectIds, photoPath = photoPath
+        )
+        data = joined.data
+        save()
+        val profile = JoinProfile(
+            name = joined.data.teachers.first { it.id == joined.teacherId }.name,
+            role = role.name, phone = phone, cloudUid = cloudUid,
+            classIds = classIds,
+            classNames = classIds.mapNotNull { id -> joined.data.classes.firstOrNull { it.id == id }?.name },
+            subjectIds = subjectIds,
+            subjectNames = subjectIds.mapNotNull { id -> joined.data.subjects.firstOrNull { it.id == id }?.name }
+        )
+        myJoin = profile
+        JoinProfile.write(context.filesDir, profile)
+        setMe(joined.teacherId)
+        return joined.teacherId
+    }
+
     fun adoptSchoolSetup(incoming: SchoolData, code: String) {
         val previous = data
         val switching = previous.students.isNotEmpty() && !SchoolIsolation.sameSchool(incoming, previous)
         if (switching) archivePreviousSchool(previous)
         data = SchoolIsolation.adopt(incoming, previous)
+        // The console's setup replaces the staff list. Put this teacher back on it
+        // straight away, or a pull would take their classes and access away.
+        myJoin?.let { p ->
+            val ids = p.classIds.filter { cid -> data.classes.any { it.id == cid } }
+                .ifEmpty { p.classNames.mapNotNull { n -> data.classes.firstOrNull { it.name.equals(n, true) }?.id } }
+            val subIds = p.subjectIds.filter { sid -> data.subjects.any { it.id == sid } }
+                .ifEmpty { p.subjectNames.mapNotNull { n -> data.subjects.firstOrNull { it.name.equals(n, true) }?.id } }
+            val role = runCatching { Role.valueOf(p.role) }.getOrDefault(Role.TEACHER)
+            val rejoined = com.derycode.srs.core.model.TeacherJoin.apply(
+                data, p.name, role, phone = p.phone, cloudUid = p.cloudUid,
+                classIds = ids, subjectIds = subIds
+            )
+            data = rejoined.data
+            setMe(rejoined.teacherId)
+        }
         save()
         codeFile.writeText(code.trim().uppercase())
         schoolCode = code.trim().uppercase()

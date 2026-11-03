@@ -20,9 +20,11 @@ import androidx.compose.ui.input.key.*
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.derycode.srs.core.model.AssessmentComponent
+import com.derycode.srs.core.model.GradingScheme
 import com.derycode.srs.core.model.Level
 import com.derycode.srs.core.model.Mark
 import com.derycode.srs.core.model.MarkType
@@ -30,23 +32,25 @@ import com.derycode.srs.core.model.SchoolClass
 import com.derycode.srs.core.model.Student
 import com.derycode.srs.core.model.Subject
 import com.derycode.srs.core.report.DocxReport
-import com.derycode.srs.core.results.ResultEngine
+import com.derycode.srs.core.results.AssessmentWeighting
 
 /**
  * The class marksheet, ruled like the paper the school already prints:
  *
  *     No. | NAME | A1 | A2 | A3 | X/20 | X/80 | X/100
  *
- * A whole class on one screen, names in the register order, Enter dropping to the
- * next learner in the same column, Tab crossing to the next assessment. The two
- * totals are worked out as you type, so a teacher never adds figures by hand.
+ * A2 is typed and carries 20%, A3 is typed and carries 80%. X/20, X/80 and X/100 are
+ * worked out as the teacher types, using the same rule as the console and the phone, so
+ * nobody adds figures by hand. (A1 prints on the school's form and shows here when the
+ * school keeps an A1 column; it does not enter the final score.) Enter drops down the
+ * same column, Tab crosses to the next one.
  */
 @Composable
 fun MarksScreen(state: TeacherStore) {
     val classes = state.myClasses
     var classId by remember { mutableStateOf(classes.firstOrNull()?.id ?: "") }
     LaunchedEffect(classes.map { it.id }) {
-        if (classId.isBlank() || classes.none { it.id == classId }) classId = classes.firstOrNull()?.id ?: ""
+        if (classes.none { it.id == classId }) classId = classes.firstOrNull()?.id ?: ""
     }
     val cls: SchoolClass? = state.data.classes.firstOrNull { it.id == classId }
     val subjects = if (classId.isBlank()) emptyList() else state.mySubjectsFor(classId)
@@ -56,113 +60,86 @@ fun MarksScreen(state: TeacherStore) {
     }
     val subject: Subject? = state.data.subjects.firstOrNull { it.id == subjectId }
 
-    // ── the three assessment columns and the exam column, from the school's own data
+    // ── the columns this school actually has, in paper order
     val level = cls?.level ?: Level.O_LEVEL
     val forLevel = state.data.components.filter { it.active && (it.levels.isEmpty() || level in it.levels) }
-    val assessments: List<AssessmentComponent> = forLevel
-        .filter { it.code.uppercase() in setOf("A1", "A2", "A3") }
-        .sortedBy { it.code }
-        .ifEmpty { forLevel.filter { it.code.uppercase() != "EOT" }.take(3) }
-    val exam: AssessmentComponent? =
-        forLevel.firstOrNull { it.code.uppercase() in setOf("EOT", "EXAM", "PAPER") } ?: forLevel.lastOrNull()
+    fun component(code: String) = forLevel.firstOrNull { it.code.equals(code, ignoreCase = true) }
+    val typed: List<AssessmentComponent> = listOfNotNull(component("A1"), component("A2"), component("A3"))
 
-    val assessMax = if (level == Level.PRIMARY) 100 else 20
-    var examMax by remember(level) { mutableStateOf(if (level == Level.PRIMARY) 100 else 80) }
-    val totalMax = assessMax + examMax
+    val weighted = state.data.settings.a2a3Weighting
+    val rules = AssessmentWeighting.rules(
+        forLevel, state.data.settings.a2WeightPercent, state.data.settings.a3WeightPercent, weighted
+    )
+    // the column headings must say what the engine actually uses
+    val w2 = rules.firstOrNull { it.code.equals("A2", true) }?.weightPercent ?: state.data.settings.a2WeightPercent
+    val w3 = rules.firstOrNull { it.code.equals("A3", true) }?.weightPercent ?: state.data.settings.a3WeightPercent
+    val totalWeight = w2 + w3
+    val maxScore = AssessmentWeighting.MAX_MARK.toInt()
+    val scheme: GradingScheme? = state.data.gradingSchemes.firstOrNull { it.level == level }
+        ?: state.data.gradingSchemes.firstOrNull()
 
     val students: List<Student> =
         if (classId.isBlank()) emptyList() else state.studentsIn(classId).sortedBy { it.fullName.lowercase() }
 
-    // one edit map for the whole sheet, keyed "studentId|componentId"
     var edits by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
     var error by remember { mutableStateOf("") }
     var saved by remember { mutableStateOf("") }
     var printed by remember { mutableStateOf("") }
     val focus = remember { mutableStateMapOf<String, FocusRequester>() }
 
-    val columns = assessments + listOfNotNull(exam)
-
     fun key(sid: String, cid: String) = "$sid|$cid"
     fun raw(sid: String, cid: String) = edits[key(sid, cid)] ?: ""
-    fun number(sid: String, cid: String): Double? = raw(sid, cid).trim().toDoubleOrNull()
-    fun maxOf(column: Int): Int = if (column < assessments.size) assessMax else examMax
 
-    // ── the school's own percentages, for learners whose figures are complete
-    fun percentage(st: Student): Double? {
-        val marks = columns.mapIndexedNotNull { i, c ->
-            val n = number(st.id, c.id) ?: return@mapIndexedNotNull null
-            Mark(
-                id = "tmp", studentId = st.id, subjectId = subjectId, termId = state.currentTermId,
-                componentId = c.id, score = n, type = MarkType.VALUE, maxScore = maxOf(i)
-            )
-        }
-        if (marks.size < columns.size) return null
-        val scheme = state.data.gradingSchemes.firstOrNull { it.level == level }
-            ?: state.data.gradingSchemes.firstOrNull() ?: return marks.map { it.score / it.maxScore * 100 }.average()
-        val weighted = scheme.aggregateRule == com.derycode.srs.core.model.AggregateRule.UCE_INDICATOR
-        return ResultEngine.subjectPercentage(
-            marks, state.data.components, scheme.caWeightPercent, scheme.examWeightPercent, weighted
-        ).first
+    /** The marks as the engine will see them, so the figures on screen are the figures saved. */
+    fun marksOf(st: Student): List<Mark> = typed.mapNotNull { c ->
+        val v = raw(st.id, c.id).trim().toDoubleOrNull() ?: return@mapNotNull null
+        Mark(
+            id = "tmp", studentId = st.id, subjectId = subjectId, termId = state.currentTermId,
+            componentId = c.id, score = v, type = MarkType.VALUE, maxScore = maxScore
+        )
     }
 
-    fun gradeOf(pct: Double?): String {
-        if (pct == null) return ""
-        val scheme = state.data.gradingSchemes.firstOrNull { it.level == level }
-            ?: state.data.gradingSchemes.firstOrNull() ?: return ""
-        return try {
-            com.derycode.srs.core.grading.GradingEngine.grade(scheme, pct)
-        } catch (_: Exception) { "" }
+    fun scoreOf(st: Student) = AssessmentWeighting.score(marksOf(st), rules)
+
+    /** X/20 and X/80: what each assessment adds to the total. */
+    fun contribution(st: Student, code: String, weight: Int): Double? {
+        val c = typed.firstOrNull { it.code.equals(code, ignoreCase = true) } ?: return null
+        val m = marksOf(st).firstOrNull { it.componentId == c.id } ?: return null
+        return AssessmentWeighting.round1(AssessmentWeighting.percent(m) / 100.0 * weight)
     }
 
-    // reload whenever the sheet changes: class, subject, term
-    LaunchedEffect(classId, subjectId, state.currentTermId, columns.map { it.id }) {
+    // load the sheet whenever class, subject or term changes
+    LaunchedEffect(classId, subjectId, state.currentTermId, typed.map { it.id }) {
         val term = state.currentTermId
         val loaded = mutableMapOf<String, String>()
         students.forEach { st ->
-            columns.forEachIndexed { i, c ->
-                val m = state.markFor(st.id, subjectId, term, c.id) ?: return@forEachIndexed
-                val shown = when (m.type) {
+            typed.forEach { c ->
+                val m = state.markFor(st.id, subjectId, term, c.id) ?: return@forEach
+                loaded[key(st.id, c.id)] = when (m.type) {
                     MarkType.ABS, MarkType.MISSING -> "ABS"
                     MarkType.EXEMPT -> "EXEMPT"
                     MarkType.NA -> "NA"
                     else -> if (m.score % 1.0 == 0.0) m.score.toInt().toString() else m.score.toString()
                 }
-                loaded[key(st.id, c.id)] = shown
             }
         }
         edits = loaded
         saved = ""; error = ""; printed = ""
     }
 
-    /** A1..A3: the running average, out of [assessMax]. Two figures are already a usable average. */
-    fun formativeOf(st: Student): Double? {
-        val present = assessments.mapNotNull { number(st.id, it.id) }
-        return if (present.size >= 2) present.average() else null
-    }
-
-    fun examOf(st: Student): Double? = exam?.let { number(st.id, it.id) }
-
-    /** X/100 on the paper: the assessments out of 20 plus the exam out of 80. */
-    fun totalOf(st: Student): Double? {
-        val f = formativeOf(st) ?: return null
-        val e = examOf(st) ?: return null
-        return f + e
-    }
-
     fun save() {
-        if (classId.isBlank() || subjectId.isBlank() || columns.isEmpty()) return
+        if (classId.isBlank() || subjectId.isBlank() || typed.isEmpty()) return
         var n = 0
         var firstProblem = ""
         students.forEach { st ->
-            columns.forEachIndexed { i, c ->
+            typed.forEach { c ->
                 val text = raw(st.id, c.id).trim()
                 val existing = state.markFor(st.id, subjectId, state.currentTermId, c.id)
                 if (text.isEmpty()) {
                     if (existing != null) state.removeMark(st.id, subjectId, state.currentTermId, c.id)
-                    return@forEachIndexed
+                    return@forEach
                 }
-                val upper = text.uppercase()
-                val type = when (upper) {
+                val type = when (text.uppercase()) {
                     "ABS", "A" -> MarkType.ABS
                     "EXEMPT", "EX" -> MarkType.EXEMPT
                     "NA", "-" -> MarkType.NA
@@ -170,18 +147,20 @@ fun MarksScreen(state: TeacherStore) {
                 }
                 val score: Double
                 if (type == MarkType.VALUE) {
-                    val bad = ResultEngine.validateMark(text, maxOf(i), allowBlank = false)
-                    if (bad != null) {
-                        if (firstProblem.isBlank()) firstProblem = "${st.fullName}: $bad"
-                        return@forEachIndexed
+                    val v = AssessmentWeighting.sanitize(text)
+                    if (v == null) {
+                        if (firstProblem.isBlank()) {
+                            firstProblem = "${st.fullName}: ${c.code} must be a mark from 0 to $maxScore"
+                        }
+                        return@forEach
                     }
-                    score = text.toDouble()
+                    score = v
                 } else score = 0.0
                 state.upsertMark(
                     Mark(
                         id = "m-${st.id}-$subjectId-${state.currentTermId}-${c.id}",
                         studentId = st.id, subjectId = subjectId, termId = state.currentTermId,
-                        componentId = c.id, score = score, type = type, maxScore = maxOf(i),
+                        componentId = c.id, score = score, type = type, maxScore = maxScore,
                         enteredBy = state.meId
                     )
                 )
@@ -196,33 +175,28 @@ fun MarksScreen(state: TeacherStore) {
         }
     }
 
-    fun headers(): List<String> = listOf("No.", "NAME") +
-        assessments.map { it.code.uppercase() } +
-        listOf("X/$assessMax", "X/$examMax", "X/$totalMax")
+    fun headers(): List<String> =
+        listOf("No.", "NAME") + typed.map { it.code.uppercase() } + listOf("X/$w2", "X/$w3", "X/$totalWeight")
 
     fun printSheet() {
-        val target = FilePicker.saveDocx(
-            "${state.data.school.name.ifBlank { "school" }} marksheet ${cls?.name ?: ""} ${subject?.name ?: ""}".trim()
-                .replace(Regex("[^A-Za-z0-9 ]"), "").replace("  ", " ") + ".docx"
-        ) ?: return
+        val suggested = (state.data.school.name.ifBlank { "school" } + " marksheet " + (cls?.name ?: "") + " " +
+            (subject?.name ?: ""))
+            .replace(Regex("[^A-Za-z0-9 ]"), "").replace(Regex(" +"), " ").trim() + ".docx"
+        val target = FilePicker.saveDocx(suggested) ?: return
         try {
-            val rows = students.map { st ->
-                val cells = columns.mapIndexed { i, c -> raw(st.id, c.id).trim() }
-                st.fullName to cells
-            }
+            val names = students.map { it.fullName }
             // the paper rules 33 lines; keep them so the sheet can be written on
-            val lines = rows.map { it.first } + List((33 - rows.size).coerceAtLeast(0)) { "" }
-            val filled = headers()
+            val lines = names + List((33 - names.size).coerceAtLeast(0)) { "" }
             DocxReport.writeMarkSheet(
                 out = target,
                 data = state.data,
                 classLabel = cls?.name ?: "—",
                 subjectName = subject?.name ?: "",
                 termLabel = state.currentTermLabel,
-                headers = filled,
+                headers = headers(),
                 names = lines
             )
-            printed = "Printed sheet saved to ${target.fileName}"
+            printed = "Sheet saved to ${target.fileName}"
             FilePicker.revealInFolder(target)
         } catch (e: Exception) {
             error = "Could not write the sheet: ${e.message}"
@@ -233,67 +207,77 @@ fun MarksScreen(state: TeacherStore) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             H1("Enter marks", "${cls?.name ?: "no class"} · ${subject?.name ?: "no subject"} · ${state.currentTermLabel}")
             Spacer(Modifier.weight(1f))
-            if (state.me != null) Pill(state.me!!.name)
+            state.me?.let { Pill(it.name) }
         }
         Spacer(Modifier.height(12.dp))
 
         if (classes.isEmpty()) {
-            Card { Text("No classes yet. Open the school file from your admin first.", color = T.RUST, fontSize = 13.sp) }
+            Card {
+                Text("No classes yet. Open the school file from your admin first.", color = T.RUST, fontSize = 13.sp)
+            }
+            return@Column
+        }
+        if (typed.isEmpty()) {
+            Card {
+                Text(
+                    "This school has no A2/A3 assessment columns yet. Open the school file from your admin again, " +
+                        "or add them in the admin console.",
+                    color = T.RUST, fontSize = 13.sp
+                )
+            }
             return@Column
         }
 
-        // ── pickers: one line each, scrolling sideways when a teacher has many classes
         Card(Modifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Label("CLASS")
                 Spacer(Modifier.width(10.dp))
-                Row(Modifier.weight(1f).horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    classes.forEach { c -> Chip(c.name, c.id == classId) { classId = c.id } }
-                }
+                Row(
+                    Modifier.weight(1f).horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) { classes.forEach { c -> PickChip(c.name, c.id == classId) { classId = c.id } } }
             }
             Spacer(Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Label("SUBJECT")
                 Spacer(Modifier.width(10.dp))
-                Row(Modifier.weight(1f).horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    subjects.forEach { s -> Chip(s.name, s.id == subjectId) { subjectId = s.id } }
-                }
+                Row(
+                    Modifier.weight(1f).horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) { subjects.forEach { s -> PickChip(s.name, s.id == subjectId) { subjectId = s.id } } }
             }
             Spacer(Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Label("EXAM OUT OF")
+                Label("FINAL SCORE")
                 Spacer(Modifier.width(10.dp))
-                Chip("80", examMax == 80) { examMax = 80 }
-                Spacer(Modifier.width(6.dp))
-                Chip("100", examMax == 100) { examMax = 100 }
-                Spacer(Modifier.width(16.dp))
                 Text(
-                    assessments.joinToString(" · ") { "${it.code} = ${it.name}" } +
-                        (exam?.let { "  |  exam = ${it.name}" } ?: ""),
-                    color = T.MUTED, fontSize = 11.sp
+                    if (weighted) "A2 × $w2% + A3 × $w3%" else "not weighted",
+                    color = T.INK, fontSize = 12.sp, fontWeight = FontWeight.Bold
                 )
+                Spacer(Modifier.width(14.dp))
+                Text(typed.joinToString("  ·  ") { "${it.code} = ${it.name}" }, color = T.MUTED, fontSize = 11.sp)
             }
         }
         Spacer(Modifier.height(12.dp))
 
-        // ── the sheet
         Card(Modifier.fillMaxWidth().weight(1f)) {
             Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth()) {
-                HCell("No.", 40.dp)
-                HCell("NAME", null, Modifier.weight(1f))
-                assessments.forEach { HCell(it.code.uppercase(), 66.dp) }
-                HCell("X/$assessMax", 62.dp, muted = true)
-                HCell("X/$examMax", 66.dp)
-                HCell("X/$totalMax", 66.dp, muted = true)
-                Spacer(Modifier.width(46.dp))
+                HeadCell("No.", 40.dp)
+                HeadCell("NAME", null, Modifier.weight(1f))
+                typed.forEach { HeadCell(it.code.uppercase(), 66.dp) }
+                HeadCell("X/$w2", 62.dp, muted = true)
+                HeadCell("X/$w3", 66.dp, muted = true)
+                HeadCell("X/$totalWeight", 66.dp, muted = true)
+                HeadCell("GRADE", 52.dp, muted = true)
             }
             Spacer(Modifier.height(4.dp))
 
             LazyColumn(Modifier.weight(1f)) {
                 itemsIndexed(students, key = { _, st -> st.id }) { index, st ->
-                    val formative = formativeOf(st)
-                    val total = totalOf(st)
-
+                    val score = scoreOf(st)
+                    val x20 = contribution(st, "A2", w2)
+                    val x80 = contribution(st, "A3", w3)
+                    val total = score.final
                     Row(
                         Modifier.fillMaxWidth()
                             .background(
@@ -304,56 +288,38 @@ fun MarksScreen(state: TeacherStore) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text("${index + 1}.", color = T.MUTED, fontSize = 11.sp, modifier = Modifier.width(40.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text(st.fullName, color = T.INK, fontSize = 13.sp, maxLines = 1)
-                        }
-                        assessments.forEachIndexed { i, c ->
+                        Text(st.fullName, color = T.INK, fontSize = 13.sp, maxLines = 1, modifier = Modifier.weight(1f))
+                        typed.forEachIndexed { i, c ->
                             MarkCell(
                                 value = raw(st.id, c.id),
-                                max = assessMax,
-                                focusKey = key(st.id, c.id),
-                                focus = focus,
+                                focusRequester = focus.getOrPut(key(st.id, c.id)) { FocusRequester() },
                                 onChange = { new -> edits = edits + (key(st.id, c.id) to new.take(6)); error = "" },
                                 onEnter = {
                                     val next = students.getOrNull(index + 1)
-                                    if (next != null) focus.getOrPut(key(next.id, c.id)) { FocusRequester() }.requestFocus()
-                                    else save()
+                                    if (next != null) {
+                                        focus.getOrPut(key(next.id, c.id)) { FocusRequester() }.requestFocus()
+                                    } else save()
                                 },
                                 onTab = {
-                                    val nextColumn = columns.getOrNull(i + 1)
+                                    val nextColumn = typed.getOrNull(i + 1)
                                     if (nextColumn != null) {
                                         focus.getOrPut(key(st.id, nextColumn.id)) { FocusRequester() }.requestFocus()
                                     } else {
                                         val next = students.getOrNull(index + 1)
-                                        if (next != null) focus.getOrPut(key(next.id, columns.first().id)) { FocusRequester() }.requestFocus()
+                                        if (next != null) {
+                                            focus.getOrPut(key(next.id, typed.first().id)) { FocusRequester() }.requestFocus()
+                                        }
                                     }
                                 }
                             )
                         }
-                        Cell(if (formative == null) "—" else fmt(formative), 62.dp, bold = formative != null, muted = formative == null)
-                        exam?.let { c ->
-                            MarkCell(
-                                value = raw(st.id, c.id),
-                                max = examMax,
-                                focusKey = key(st.id, c.id),
-                                focus = focus,
-                                onChange = { new -> edits = edits + (key(st.id, c.id) to new.take(6)); error = "" },
-                                onEnter = {
-                                    val next = students.getOrNull(index + 1)
-                                    if (next != null) focus.getOrPut(key(next.id, c.id)) { FocusRequester() }.requestFocus()
-                                    else save()
-                                },
-                                onTab = {
-                                    val next = students.getOrNull(index + 1)
-                                    if (next != null) focus.getOrPut(key(next.id, assessments.firstOrNull()?.id ?: "")) { FocusRequester() }.requestFocus()
-                                }
-                            )
-                        }
-                        Cell(if (total == null) "—" else fmt(total), 66.dp, bold = total != null, muted = total == null)
+                        FigCell(show(x20), 62.dp, muted = x20 == null)
+                        FigCell(show(x80), 66.dp, muted = x80 == null)
+                        FigCell(AssessmentWeighting.display(score), 66.dp, muted = total == null)
                         Text(
-                            gradeOf(percentage(st)),
+                            if (total == null) "" else score.grade(scheme),
                             color = T.TEAL, fontSize = 11.sp, fontWeight = FontWeight.Bold,
-                            modifier = Modifier.width(46.dp), textAlign = TextAlign.End
+                            modifier = Modifier.width(52.dp), textAlign = TextAlign.Center
                         )
                     }
                 }
@@ -362,23 +328,17 @@ fun MarksScreen(state: TeacherStore) {
 
         Spacer(Modifier.height(10.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
-            val done = students.count { st -> totalOf(st) != null }
-            Stat("$done/${students.size}", "complete", Modifier.width(120.dp))
+            val done = students.count { scoreOf(it).final != null }
+            Stat("$done/${students.size}", "complete", Modifier.width(118.dp))
             Spacer(Modifier.width(10.dp))
-            val averages = students.mapNotNull { st -> totalOf(st) }
-            val classAvg = if (averages.isEmpty()) null else averages.average()
-            Stat(
-                when {
-                    classAvg == null -> "—"
-                    classAvg % 1.0 == 0.0 -> classAvg.toInt().toString()
-                    else -> String.format("%.1f", classAvg)
-                },
-                "class average", Modifier.width(140.dp)
-            )
+            val finals = students.mapNotNull { scoreOf(it).final }
+            Stat(show(if (finals.isEmpty()) null else finals.average()), "class average", Modifier.width(138.dp))
             Spacer(Modifier.weight(1f))
-            if (error.isNotBlank()) Text(error, color = T.RUST, fontSize = 12.sp)
-            else if (saved.isNotBlank()) Text(saved, color = T.OK, fontSize = 12.sp)
-            else if (printed.isNotBlank()) Text(printed, color = T.MUTED, fontSize = 12.sp)
+            when {
+                error.isNotBlank() -> Text(error, color = T.RUST, fontSize = 12.sp)
+                saved.isNotBlank() -> Text(saved, color = T.OK, fontSize = 12.sp)
+                printed.isNotBlank() -> Text(printed, color = T.MUTED, fontSize = 12.sp)
+            }
             Spacer(Modifier.width(12.dp))
             Btn("Print this sheet", { printSheet() }, kind = Kind.GHOST)
             Spacer(Modifier.width(8.dp))
@@ -386,49 +346,48 @@ fun MarksScreen(state: TeacherStore) {
         }
         Spacer(Modifier.height(4.dp))
         Text(
-            "Type a mark and press Enter to drop to the next learner, Tab to cross to the next column. " +
-                "A1 to A3 are out of $assessMax, the exam out of $examMax. ABS, EXEMPT and NA are accepted.",
+            "Type a mark, press Enter to drop to the next learner, Tab to cross to the next column. " +
+                "A2 counts $w2%, A3 counts $w3%, and X/$w2, X/$w3 and X/$totalWeight are worked out for you. " +
+                "Marks run 0 to $maxScore; ABS, EXEMPT and NA are also accepted.",
             color = T.MUTED, fontSize = 11.sp
         )
     }
 }
 
 @Composable
-private fun HCell(text: String, width: androidx.compose.ui.unit.Dp?, modifier: Modifier = Modifier, muted: Boolean = false) {
+private fun HeadCell(text: String, width: Dp?, modifier: Modifier = Modifier, muted: Boolean = false) {
+    val m = if (width != null) modifier.width(width) else modifier
     Text(
         text,
         color = if (muted) T.MUTED else T.INK,
         fontSize = 11.sp,
         fontWeight = FontWeight.Bold,
         textAlign = if (width != null) TextAlign.Center else TextAlign.Start,
-        modifier = (if (width != null) modifier.width(width) else modifier).padding(bottom = 2.dp)
+        modifier = m.padding(bottom = 2.dp)
     )
 }
 
 @Composable
-private fun Cell(text: String, width: androidx.compose.ui.unit.Dp, bold: Boolean, muted: Boolean) {
+private fun FigCell(text: String, width: Dp, muted: Boolean) {
     Text(
         text,
         color = if (muted) T.MUTED else T.INK,
         fontSize = 13.sp,
-        fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal,
+        fontWeight = if (muted) FontWeight.Normal else FontWeight.Bold,
         textAlign = TextAlign.Center,
         modifier = Modifier.width(width)
     )
 }
 
-/** One ruled score box: digits only, Enter down the column, Tab across. */
+/** One ruled score box: Enter down the column, Tab across. */
 @Composable
 private fun MarkCell(
     value: String,
-    max: Int,
-    focusKey: String,
-    focus: MutableMap<String, FocusRequester>,
+    focusRequester: FocusRequester,
     onChange: (String) -> Unit,
     onEnter: () -> Unit,
     onTab: () -> Unit
 ) {
-    val fr = focus.getOrPut(focusKey) { FocusRequester() }
     Box(
         Modifier.width(66.dp)
             .height(28.dp)
@@ -443,7 +402,7 @@ private fun MarkCell(
             singleLine = true,
             textStyle = TextStyle(color = T.INK, fontSize = 13.sp, textAlign = TextAlign.Center),
             modifier = Modifier.fillMaxWidth()
-                .focusRequester(fr)
+                .focusRequester(focusRequester)
                 .onPreviewKeyEvent { e ->
                     if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
                     when (e.key) {
@@ -456,11 +415,15 @@ private fun MarkCell(
     }
 }
 
-private fun fmt(v: Double): String =
-    if (v % 1.0 == 0.0) v.toInt().toString() else String.format("%.1f", v)
+/** "16" for a whole figure, "13.3" otherwise, "—" when nothing is there yet. */
+private fun show(v: Double?): String = when {
+    v == null -> "—"
+    v % 1.0 == 0.0 -> v.toInt().toString()
+    else -> String.format(java.util.Locale.US, "%.1f", v)
+}
 
 @Composable
-internal fun Chip(text: String, selected: Boolean, onClick: () -> Unit) {
+internal fun PickChip(text: String, selected: Boolean, onClick: () -> Unit) {
     Box(
         Modifier
             .background(if (selected) T.TEAL else T.CARD, RoundedCornerShape(50))
@@ -468,9 +431,11 @@ internal fun Chip(text: String, selected: Boolean, onClick: () -> Unit) {
             .clickableNoRipple(onClick)
             .padding(horizontal = 13.dp, vertical = 7.dp)
     ) {
-        Text(text, color = if (selected) Color.White else T.INK, fontSize = 12.sp,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal)
+        Text(
+            text,
+            color = if (selected) Color.White else T.INK,
+            fontSize = 12.sp,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+        )
     }
 }
-
-internal fun label(name: String) = name

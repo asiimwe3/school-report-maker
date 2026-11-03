@@ -82,7 +82,13 @@ fun EnterMarksScreen(state: TeacherState, classId: String, initialSubjectId: Str
                 Spacer(Modifier.height(10.dp))
                 FieldLabel("Assessment Type")
                 ChipRow {
-                    components.forEach { c -> FilterChipPill(c.name, selected = componentId == c.id) { componentId = c.id } }
+                    components.sortedByDescending { it.weightPercent }
+                        .forEach { c ->
+                            FilterChipPill(
+                                if (c.weightPercent > 0) c.code + " (" + c.weightPercent + "%)" else c.name,
+                                selected = componentId == c.id
+                            ) { componentId = c.id }
+                        }
                 }
                 Spacer(Modifier.height(10.dp))
                 FieldLabel("Term")
@@ -135,9 +141,34 @@ fun EnterMarksScreen(state: TeacherState, classId: String, initialSubjectId: Str
                         Row(Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
                             Avatar(s.firstName.take(1) + s.lastName.take(1), avatarColor(s.id), 30)
                             Spacer(Modifier.width(8.dp))
+                            // A2 (20%) and A3 (80%) → weighted final + grade, live.
+                            val rowMarks = components.filter { it.code.equals("A2", true) || it.code.equals("A3", true) }
+                                .mapNotNull { c ->
+                                    val k = "${s.id}|$subjectId|$termId|${c.id}"
+                                    val txt = edits[k] ?: d.marks.firstOrNull {
+                                        it.studentId == s.id && it.subjectId == subjectId && it.termId == termId && it.componentId == c.id
+                                    }?.takeIf { it.type == MarkType.VALUE }?.let { fmt1(it.score) } ?: ""
+                                    val v = com.derycode.srs.core.results.AssessmentWeighting.sanitize(txt) ?: return@mapNotNull null
+                                    Mark(id = "row-${s.id}-${c.id}", studentId = s.id, subjectId = subjectId, termId = termId,
+                                        componentId = c.id, score = v, maxScore = 100)
+                                }
+                            val rowScore = com.derycode.srs.core.results.AssessmentWeighting.forMarks(
+                                rowMarks, components, d.settings.a2a3Weighting
+                            )
+                            val rowScheme = d.gradingSchemes.firstOrNull {
+                                it.level == (d.classes.firstOrNull { c -> c.id == classId }?.level) && it.active
+                            }
                             Column(Modifier.weight(1f)) {
                                 Cell(s.fullName, bold = true)
                                 Cell(s.admissionNo, MUTED)
+                                if (rowScore.weighted) {
+                                    val line = if (rowScore.final != null)
+                                        "A2 " + fmt1(rowScore.byCode["A2"] ?: 0.0) + " \u00B7 A3 " + fmt1(rowScore.byCode["A3"] ?: 0.0) +
+                                            " \u2192 " + com.derycode.srs.core.results.AssessmentWeighting.display(rowScore) + " (" + rowScore.grade(rowScheme) + ")"
+                                    else "A2 " + (rowScore.byCode["A2"]?.let { fmt1(it) } ?: "\u2014") +
+                                            " \u00B7 A3 " + (rowScore.byCode["A3"]?.let { fmt1(it) } ?: "\u2014") + " \u2192 incomplete"
+                                    Cell(line, if (rowScore.final != null) GREEN else MUTED)
+                                }
                             }
                             DarkTextFieldSmall(field, { edits[key] = it }, enabled = !locked)
                         }

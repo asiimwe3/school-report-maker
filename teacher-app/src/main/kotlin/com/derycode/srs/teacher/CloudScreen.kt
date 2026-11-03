@@ -96,7 +96,21 @@ fun CloudScreen(state: TeacherState, onScan: () -> Unit = {}) {
     fun adopt(c: String, r: TeacherCloud.JoinResult) {
         r.data?.let { state.adoptSchoolSetup(it, c) }
         joined = r
-        report(true, "School on this phone: " + r.schoolName.ifBlank { r.data?.school?.name ?: "" } + " \u00B7 code " + c)
+        // A code is all a teacher needs: put them on staff with the classes and
+        // subjects they chose so every screen works now, not when someone assigns a role.
+        val myName = state.me?.name ?: fullName.trim()
+        if (myName.isNotBlank()) {
+            state.joinAsStaff(
+                name = myName,
+                roleName = myRole,
+                phone = phone.trim(),
+                cloudUid = state.cloud.account.uid,
+                classIds = pickedClasses.toList(),
+                subjectIds = pickedSubjects.toList()
+            )
+        }
+        report(true, "You are in \u2713 \u2014 " + (state.me?.name ?: myName) +
+            " can start right away. School: " + (r.schoolName.ifBlank { r.data?.school?.name ?: "" }) + " \u00B7 code " + c)
     }
 
     /**
@@ -377,6 +391,14 @@ fun CloudScreen(state: TeacherState, onScan: () -> Unit = {}) {
                         if (payload.isBlank()) { mode = "main"; report(false, "Registered with ${target.name} ✓ — now tap 'Pull school setup' below ($err)"); return@run }
                         val res = state.importCloudConfig(payload)
                         if (!res.first) { mode = "main"; report(false, "Registered ✓ but the setup could not be imported: ${res.second} — tap 'Pull school setup' below"); return@run }
+                        // 3b. on staff the moment the account exists: the school's whole
+                        // set-up is already here, so nothing has to be assigned first
+                        state.joinAsStaff(
+                            name = fullName.trim(),
+                            roleName = myRole,
+                            phone = phone.trim(),
+                            cloudUid = state.cloud.account.uid
+                        )
                         // 4. step 2: pick classes & subjects
                         msg = ""
                         mode = "pick"
@@ -451,6 +473,14 @@ fun CloudScreen(state: TeacherState, onScan: () -> Unit = {}) {
                         val subjNames = pickedSubjects.mapNotNull { id -> state.data.subjects.firstOrNull { it.id == id } }.joinToString(", ") { it.name }
                         val r = state.cloud.updateMyProfile(t.token, pendingSchoolId, fullName, myRole, phone.trim(), contacts.trim(), clsNames, subjNames, "")
                         if (!r.ok) { report(false, r.msg); return@run }
+                        state.joinAsStaff(
+                            name = state.me?.name ?: fullName.trim(),
+                            roleName = myRole,
+                            phone = phone.trim(),
+                            cloudUid = state.cloud.account.uid,
+                            classIds = pickedClasses.toList(),
+                            subjectIds = pickedSubjects.toList()
+                        )
                         mode = "main"
                         report(true, "You are all set ✓ — your account stays active until the head teacher disconnects you. Send your marks any time from below.")
                     }
@@ -458,7 +488,19 @@ fun CloudScreen(state: TeacherState, onScan: () -> Unit = {}) {
                     Text(if (busy) "Saving…" else "Save & finish", color = Color.White, fontWeight = FontWeight.Bold)
                 }
                 Spacer(Modifier.height(4.dp))
-                TextButton(onClick = { mode = "main" }) { Text("Skip for now — I'll choose later", color = MUTED, fontSize = 14.sp) }
+                TextButton(onClick = {
+                    // skipping the picker must not leave them half set up: they keep
+                    // full access to the school, and can narrow it any time
+                    if (state.me == null && fullName.isNotBlank()) {
+                        state.joinAsStaff(
+                            name = fullName.trim(),
+                            roleName = myRole,
+                            phone = phone.trim(),
+                            cloudUid = state.cloud.account.uid
+                        )
+                    }
+                    mode = "main"
+                }) { Text("Skip for now — I'll choose later", color = MUTED, fontSize = 14.sp) }
             }
             if (msg.isNotEmpty()) {
                 CardBox { Cell(msg, if (msgGood) GOOD else ORANGE) }
@@ -542,10 +584,19 @@ fun CloudScreen(state: TeacherState, onScan: () -> Unit = {}) {
                 run {
                     val t = state.cloud.freshToken()
                     if (!t.ok) { report(false, t.msg); return@run }
-                    val r = state.cloud.registerTeacher(t.token, inviteCode, state.me?.name ?: fullName.ifBlank { "Teacher" }, myRole, phone.trim(), contacts.trim(), "", "", photoB64)
+                    val myName = state.me?.name ?: fullName.ifBlank { "Teacher" }
+                    val r = state.cloud.registerTeacher(t.token, inviteCode, myName, myRole, phone.trim(), contacts.trim(), "", "", photoB64)
                     if (!r.ok) { report(false, r.msg); return@run }
                     schools = state.cloud.linkedSchools(t.token)
-                    report(true, "Joined ✓ — pull the school's setup below.")
+                    state.joinAsStaff(
+                        name = myName,
+                        roleName = myRole,
+                        phone = phone.trim(),
+                        cloudUid = state.cloud.account.uid,
+                        classIds = pickedClasses.toList(),
+                        subjectIds = pickedSubjects.toList()
+                    )
+                    report(true, "Joined \u2713 \u2014 on staff as " + (state.me?.name ?: myName) + ". Pull the school's setup below to get classes and learners.")
                 }
             }, enabled = !busy && inviteCode.isNotBlank(), colors = ButtonDefaults.buttonColors(containerColor = BLUE)) {
                 Text(if (busy) "Please wait…" else "Join school", color = Color.White)

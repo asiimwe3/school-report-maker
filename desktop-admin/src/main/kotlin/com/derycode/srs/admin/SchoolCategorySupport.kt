@@ -93,3 +93,10 @@ fun SchoolCategoryPrompt(state: AppState) {
         }
     }
 }
+
+/**
+ * A marks-grid column heading. The two weighted O-Level assessments say what they
+ * are worth, so nobody has to remember that A2 counts 20% and A3 counts 80%.
+ */
+fun componentHeader(c: com.derycode.srs.core.model.AssessmentComponent): String =
+    if (c.weightPercent > 0) "${c.code} (${c.weightPercent}%)" else c.code
