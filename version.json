@@ -1,7 +1,7 @@
 {
   "console": "2.3.10",
   "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.10.msi",
-  "teacher": "1.18.2",
-  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.18.2.apk",
+  "teacher": "1.18.3",
+  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.18.3.apk",
   "notes": "Console 2.3.10: if this console was installed before the cloud moved, it now shows \"This console is on an older cloud\" and moves your school to the current cloud in one tap, keeping your code. Teacher list no longer fails on a missing column."
 }

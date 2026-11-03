@@ -3,6 +3,7 @@ package com.derycode.srs.teacher
 import android.content.Context
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.JsonObjectBuilder
@@ -300,37 +301,62 @@ class TeacherCloud(private val context: Context) {
      * (rpc/srs_join_by_code) that answers with the school and its published
      * setup in one response — no account, no second request, nothing to sign in.
      */
-    fun joinByCode(code: String): JoinResult = try {
+    /**
+     * One scan, one school. Waits for a school that is mid-upload (the console
+     * pushes the setup a second after creating the school), and never leaks a
+     * raw JSON error: a school with no setup yet is a sentence, not a crash.
+     */
+    fun joinByCode(code: String): JoinResult {
         val clean = code.uppercase().filter { it.isLetterOrDigit() }
-        if (clean.length < 4) JoinResult(false, "That code is too short — scan the code on the console or type all of it")
-        else {
+        if (clean.length < 4) return JoinResult(false, "That code is too short — scan the code on the console or type all of it")
+        var last: JoinResult? = null
+        repeat(3) { attempt ->
+            if (attempt > 0) Thread.sleep(2500)
+            last = when (val one = joinOnce(clean)) {
+                null -> JoinResult(false, "No internet. Move to where there is network and try the code again.")
+                else -> one
+            }
+            // Found the school but its setup is still uploading -> worth another try.
+            val stillUploading = !last!!.ok && last!!.schoolName.isNotBlank() && last!!.data == null
+            if (last!!.ok || !stillUploading) return last!!
+        }
+        return last!!
+    }
+
+    private fun joinOnce(clean: String): JoinResult? {
+        return try {
             val (httpCode, body) = http("POST", "/rest/v1/rpc/srs_join_by_code", null, "{\"_code\":\"$clean\"}")
             when {
-                httpCode == 0 -> JoinResult(false, "No internet. Move to where there is network and try the code again.")
+                httpCode == 0 -> null
                 httpCode in 400..499 -> {
                     val msg = member(body, "message")
-                    JoinResult(false, msg.ifBlank { "That code was not recognised (${httpCode})" })
+                    JoinResult(false, msg.ifBlank { "That code was not recognised ($httpCode)" })
                 }
-                httpCode !in 200..299 -> JoinResult(false, "Cloud error (${httpCode}). Try again in a moment.")
+                httpCode !in 200..299 -> JoinResult(false, "Cloud error ($httpCode). Try again in a moment.")
                 else -> {
                     val root = Json.parseToJsonElement(body) as? JsonObject
                         ?: return JoinResult(false, "Unexpected reply from the cloud — try again")
                     val school = root["school"] as? JsonObject
-                    val name = (school?.get("name") as? JsonPrimitive)?.content.orEmpty()
-                    val payload = (root["payload"] as? JsonPrimitive)?.content.orEmpty()
-                    val updated = (root["updated_at"] as? JsonPrimitive)?.content.orEmpty()
-                    val bytes = (root["payload_bytes"] as? JsonPrimitive)?.content?.toIntOrNull() ?: payload.length
+                    fun text(key: String): String {
+                        val el = root[key] ?: return ""
+                        if (el is JsonNull) return ""
+                        return (el as? JsonPrimitive)?.content.orEmpty().let { if (it == "null") "" else it }
+                    }
+                    val name = ((school?.get("name") as? JsonPrimitive)?.content).orEmpty()
+                    val payload = text("payload")
+                    val updated = text("updated_at")
+                    val bytes = text("payload_bytes").toIntOrNull() ?: payload.length
                     if (payload.isBlank()) {
-                        JoinResult(false, "Found $name but it has not published its setup yet. Ask the head teacher to open Cloud & Online on the console and tap Back Up Now.", name, clean)
+                        JoinResult(false, "Found $name, but its setup is not uploaded yet. Ask the head teacher to open Cloud & Online on the console and tap Back Up Now.", name, clean)
                     } else {
                         val data = rosterJson.decodeFromString<com.derycode.srs.core.model.SchoolData>(payload)
                         JoinResult(true, "Connected to $name", name, clean, data, updated, bytes)
                     }
                 }
             }
+        } catch (e: Exception) {
+            JoinResult(false, "Could not read the school setup: ${e.message?.take(90) ?: "unknown error"}")
         }
-    } catch (e: Exception) {
-        JoinResult(false, "Could not read the school setup: ${e.message?.take(90) ?: "unknown error"}")
     }
 
     /** Push the teacher's marks bundle to the school console. */
