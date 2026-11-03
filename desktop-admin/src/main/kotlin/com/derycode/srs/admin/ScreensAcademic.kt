@@ -16,6 +16,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -964,6 +965,7 @@ fun TimetableScreen(state: AppState) {
     var bulkText by remember { mutableStateOf("") }
     var codeText by remember { mutableStateOf("") }
     var bulkMsg by remember { mutableStateOf("") }
+    var sheetMsg by remember { mutableStateOf("") }
 
     val cls = d.classes.firstOrNull { it.id == pClass }
     val dayPeriods = d.timetable.filter { it.day == day }.sortedWith(compareBy({ it.start }, { it.end }))
@@ -1078,6 +1080,64 @@ fun TimetableScreen(state: AppState) {
                 Spacer(Modifier.height(10.dp))
                 Text("Times use 24h HH:mm · ${d.timetable.size} period(s) across ${d.timetable.map { it.day }.distinct().size} day(s) this week.", color = Theme.MUTED, fontSize = 13.sp)
             }
+        }
+
+        // ── The printed sheet itself: import the picture once, teachers see it ──
+        CardBox {
+            Text("Timetable picture", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(4.dp))
+            Text("Import a photo of the printed timetable once. Every teacher's phone then shows the same sheet after they pull school setup — nothing to retype.", color = Theme.MUTED, fontSize = 13.sp)
+            Spacer(Modifier.height(10.dp))
+            val sheet = d.timetableSheet
+            if (sheet == null || sheet.imageBase64.isBlank()) {
+                Text("No picture imported yet.", color = Theme.MUTED, fontSize = 13.sp)
+            } else {
+                Text("Imported ${sheet.fileName} on ${sheet.importedAt.ifBlank { "—" }}", color = Theme.GOOD, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.height(8.dp))
+                val bytes = remember(sheet.imageBase64) { TimetableSheetTool.decodeBase64(sheet.imageBase64) }
+                if (bytes != null) {
+                    val bmp = remember(bytes) {
+                        try {
+                            org.jetbrains.skia.Image.makeFromEncoded(bytes).toComposeImageBitmap()
+                        } catch (_: Exception) { null }
+                    }
+                    if (bmp != null) {
+                        androidx.compose.foundation.Image(
+                            bitmap = bmp,
+                            contentDescription = "Imported timetable sheet",
+                            modifier = Modifier.fillMaxWidth(0.85f).border(1.dp, Theme.LINE, RoundedCornerShape(10.dp))
+                        )
+                    } else Text("The picture is saved but could not be shown here.", color = Theme.WARN, fontSize = 13.sp)
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Btn(if (sheet == null) "Import timetable picture…" else "Replace picture…") {
+                    val chooser = javax.swing.JFileChooser()
+                    chooser.dialogTitle = "Choose a photo of the printed timetable"
+                    chooser.setFileFilter(javax.swing.filechooser.FileNameExtensionFilter("Images (JPG, PNG)", "jpg", "jpeg", "png", "webp"))
+                    if (chooser.showOpenDialog(null) == javax.swing.JFileChooser.APPROVE_OPTION) {
+                        val (imported, msg) = TimetableSheetTool.import(chooser.selectedFile)
+                        if (imported != null) {
+                            state.repo.mutate("TIMETABLE_PICTURE_IMPORTED", "TimetableSheet", imported.fileName) { dd ->
+                                dd.copy(timetableSheet = imported)
+                            }
+                            state.refresh()
+                        }
+                        sheetMsg = msg
+                    }
+                }
+                if (sheet != null) {
+                    Btn("Remove picture", primary = false) {
+                        state.repo.mutate("TIMETABLE_PICTURE_REMOVED", "TimetableSheet", sheet.fileName) { dd ->
+                            dd.copy(timetableSheet = null)
+                        }
+                        sheetMsg = "Picture removed — teachers will stop seeing it after their next setup pull."
+                        state.refresh()
+                    }
+                }
+            }
+            if (sheetMsg.isNotBlank()) { Spacer(Modifier.height(8.dp)); Text(sheetMsg, color = Theme.GOOD, fontSize = 13.sp) }
         }
 
         // ── Bulk entry: paste one whole day from the printed timetable ────────

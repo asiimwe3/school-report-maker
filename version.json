@@ -1,7 +1,7 @@
 {
-  "console": "2.3.12",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.12.msi",
-  "teacher": "1.19.1",
-  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.19.1.apk",
-  "notes": "Timetable: paste a whole day from the printed timetable in one go — time slots down the page, classes across. Teacher codes like '8' become real teachers automatically, and a Teacher load panel shows who teaches which class and subject."
+  "console": "2.3.13",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.13.msi",
+  "teacher": "1.19.2",
+  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.19.2.apk",
+  "notes": "Timetable picture: import a photo of the printed timetable on the console once, and every teacher sees that same sheet on their phone (tap to zoom, pinch to read a cell) after pulling school setup. No retyping."
 }

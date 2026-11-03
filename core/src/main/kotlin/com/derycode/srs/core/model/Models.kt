@@ -528,6 +528,19 @@ data class CalendarEvent(
 // Root database (Section 31–32) — everything in one JSON file, atomic writes
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * A picture of the school's printed timetable, imported once by the admin.
+ * Phones show the sheet exactly as it prints — no transcription, no wrong periods.
+ * Stored as a downscaled JPEG (base64) so it travels inside the school setup.
+ */
+@Serializable
+data class TimetableSheet(
+    val fileName: String = "",
+    val imageBase64: String = "",
+    val importedAt: String = "",
+    val note: String = ""
+)
+
 @Serializable
 data class SchoolData(
     val schemaVersion: Int = 2,
@@ -545,6 +558,7 @@ data class SchoolData(
     val teachers: List<Teacher> = emptyList(),
     val assignments: List<TeacherAssignment> = emptyList(),
     val timetable: List<TimetablePeriod> = emptyList(),
+    val timetableSheet: TimetableSheet? = null,
     val subjects: List<Subject> = emptyList(),
     val components: List<AssessmentComponent> = emptyList(),
     val marks: List<Mark> = emptyList(),

@@ -17,6 +17,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.Image
+import android.util.Base64
+import android.graphics.BitmapFactory
 
 // ─────────────────────────────────────────────────────────────────────────────
 // My Timetable — the weekly periods set by the admin (cloud pull / setup import)
@@ -36,6 +46,62 @@ fun TimetableScreen(state: TeacherState) {
     }
 
     LazyColumn(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        // ── the school's printed timetable, as imported by the admin ────────
+        val sheet = d.timetableSheet
+        if (sheet != null && sheet.imageBase64.isNotBlank()) {
+            item {
+                var zoomOpen by remember { mutableStateOf(false) }
+                var scale by remember { mutableStateOf(1f) }
+                var offsetX by remember { mutableStateOf(0f) }
+                var offsetY by remember { mutableStateOf(0f) }
+                val bmp = remember(sheet.imageBase64) {
+                    try {
+                        val bytes = Base64.decode(sheet.imageBase64, Base64.DEFAULT)
+                        BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+                    } catch (_: Exception) { null }
+                }
+                CardBox {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Filled.Schedule, contentDescription = null, tint = BLUE, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Cell("School timetable sheet", NAVY, true)
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Cell("Imported by the school" + (if (sheet.importedAt.isNotBlank()) " on " + sheet.importedAt else "") + " — tap to zoom and pinch to read any cell.", MUTED)
+                    Spacer(Modifier.height(10.dp))
+                    if (bmp != null) {
+                        Box(
+                            Modifier.fillMaxWidth().heightIn(max = 420.dp).clip(RoundedCornerShape(10.dp))
+                                .background(Color.White).pointerInput(Unit) { detectTapGestures { zoomOpen = true } }
+                        ) {
+                            Image(bitmap = bmp, contentDescription = "Timetable sheet", contentScale = ContentScale.FillWidth, modifier = Modifier.fillMaxWidth())
+                        }
+                    } else {
+                        Cell("The picture could not be opened on this phone — ask the admin to import it again.", ORANGE)
+                    }
+                }
+                if (zoomOpen && bmp != null) {
+                    Dialog(onDismissRequest = { zoomOpen = false }) {
+                        Box(Modifier.fillMaxSize().background(Color.Black)) {
+                            Image(
+                                bitmap = bmp, contentDescription = "Timetable sheet", contentScale = ContentScale.Fit,
+                                modifier = Modifier.fillMaxSize()
+                                    .pointerInput(Unit) {
+                                        detectTransformGestures { _, pan, zoom, _ ->
+                                            scale = (scale * zoom).coerceIn(1f, 6f)
+                                            offsetX += pan.x; offsetY += pan.y
+                                        }
+                                    }
+                                    .graphicsLayer(scaleX = scale, scaleY = scale, translationX = offsetX, translationY = offsetY)
+                            )
+                            Text("Tap outside to close", color = Color.White, fontSize = 12.sp,
+                                modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp))
+                            Box(Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { zoomOpen = false } })
+                        }
+                    }
+                }
+            }
+        }
         item {
             CardBox {
                 androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
