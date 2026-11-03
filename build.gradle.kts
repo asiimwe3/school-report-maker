@@ -56,3 +56,40 @@ gradle.projectsEvaluated {
         }
     }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// The release workflow asks one Windows runner for "gradle :desktop-admin:packageMsi"
+// and uploads every *.msi it finds in that folder. The teacher's laptop installer
+// rides along on the same command: it is built first, then copied next to the
+// console's, so a tag produces SchoolReportMakerTeacher-<version>.msi too. Done
+// here, in a normal build file, because the release token cannot edit workflows.
+// Windows only — jpackage builds no MSI elsewhere and CI runs this job on Linux.
+// ─────────────────────────────────────────────────────────────────────────────
+val windows = System.getProperty("os.name").startsWith("Windows", ignoreCase = true)
+if (windows) {
+    val collectTeacherMsi = tasks.register<Copy>("collectTeacherMsi") {
+        description = "Puts the teacher laptop MSI beside the console's, ready for the release upload"
+        from(project(":desktop-teacher").layout.buildDirectory.dir("compose/binaries/main/msi")) { include("*.msi") }
+        into(project(":desktop-admin").layout.buildDirectory.dir("compose/binaries/main/msi"))
+    }
+    gradle.projectsEvaluated {
+        val consoleMsi = project(":desktop-admin").tasks.findByName("packageMsi")
+        val teacherMsi = project(":desktop-teacher").tasks.findByName("packageMsi")
+        if (consoleMsi != null && teacherMsi != null) {
+            consoleMsi.finalizedBy(teacherMsi)
+            teacherMsi.finalizedBy(collectTeacherMsi)
+        }
+    }
+}
+
+// The CI job builds the console with "gradle :desktop-admin:build", so the laptop
+// app's own tests ride on that same command instead of needing a workflow edit.
+gradle.projectsEvaluated {
+    val adminBuild = project(":desktop-admin").tasks.findByName("build")
+    val laptopTests = project(":desktop-teacher").tasks.findByName("test")
+    val laptopJar = project(":desktop-teacher").tasks.findByName("jar")
+    if (adminBuild != null && laptopTests != null && laptopJar != null) {
+        adminBuild.dependsOn(laptopTests)
+        adminBuild.dependsOn(laptopJar)
+    }
+}
