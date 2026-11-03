@@ -1,7 +1,7 @@
 {
-  "console": "2.3.10",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.10.msi",
+  "console": "2.3.11",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.11.msi",
   "teacher": "1.18.3",
   "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.18.3.apk",
-  "notes": "Console 2.3.10: if this console was installed before the cloud moved, it now shows \"This console is on an older cloud\" and moves your school to the current cloud in one tap, keeping your code. Teacher list no longer fails on a missing column."
+  "notes": "Reports screen now shows the real report card inline: actual marks, grades, division and comments for each learner, page through the class, print that card, or open the whole class on one page."
 }

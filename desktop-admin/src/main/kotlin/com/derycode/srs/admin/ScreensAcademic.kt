@@ -352,6 +352,7 @@ fun ReportsScreen(state: AppState) {
     val d = state.data
     var classId by remember(state.level) { mutableStateOf(d.classes.firstOrNull { it.active && it.level == state.level }?.id ?: "") }
     var layout by remember(classId) { mutableStateOf(templateFor(d, d.classes.firstOrNull { it.id == classId })?.layout ?: TemplateLayout.CLASSIC) }
+    var previewIndex by remember(classId) { mutableStateOf(0) }
     val year = d.academicYears.firstOrNull { it.currentTermId != null } ?: d.academicYears.firstOrNull()
     val term = year?.terms?.firstOrNull { it.id == year.currentTermId } ?: year?.terms?.firstOrNull()
     val cls = d.classes.firstOrNull { it.id == classId }
@@ -376,6 +377,73 @@ fun ReportsScreen(state: AppState) {
             if (results.isEmpty()) {
                 Text("No students enrolled in this class for ${year?.year}.", color = Theme.MUTED, fontSize = 14.sp)
             } else {
+                // ── The real report card, right here ─────────────────────────
+                // Same renderer the print output uses, fed by this class's real
+                // marks, so what you see is what a parent will receive.
+                val idx = previewIndex.coerceIn(0, (results.size - 1).coerceAtLeast(0))
+                val shown = results.getOrNull(idx)
+                val shownStudent = shown?.let { r -> d.students.firstOrNull { it.id == r.studentId } }
+                CardBox {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("Report card preview", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            Text("Real data from this class: marks, grades, aggregate and comments exactly as they print.",
+                                color = Theme.MUTED, fontSize = 13.sp)
+                        }
+                        if (results.size > 1) {
+                            Btn("<", primary = false) { previewIndex = (idx - 1 + results.size) % results.size }
+                            Spacer(Modifier.width(6.dp))
+                            Text("${idx + 1} / ${results.size}", color = Theme.MUTED, fontSize = 13.sp)
+                            Spacer(Modifier.width(6.dp))
+                            Btn(">", primary = false) { previewIndex = (idx + 1) % results.size }
+                        }
+                    }
+                    if (shown != null) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(shownStudent?.fullName ?: shown.studentId, color = Theme.ACCENT, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                        Text(
+                            listOfNotNull(
+                                shown.division?.let { "Division $it" },
+                                shown.uceResult?.let { "UCE $it" },
+                                shown.uacePoints?.let { "$it points" },
+                                "Average ${"%.1f".format(shown.averagePercent)}%"
+                            ).joinToString("  ·  "),
+                            color = Theme.MUTED, fontSize = 13.sp
+                        )
+                        Spacer(Modifier.height(10.dp))
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Box(
+                            Modifier.weight(1f).background(Color(0xFFEFEFEF), RoundedCornerShape(10.dp)).padding(10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            ReportPaper(
+                                d = d,
+                                template = templateFor(d, cls)?.copy(layout = layout) ?: ReportTemplate(
+                                    id = "inline", name = "Inline", layout = layout
+                                ),
+                                cls = cls,
+                                term = year?.let { y -> y to (term) },
+                                student = shownStudent,
+                                result = shown,
+                                widthDp = 470
+                            )
+                        }
+                        Column(Modifier.width(220.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Btn("Print this card (Word)") {
+                                val outDir = dataDir.resolve("reports")
+                                Files.createDirectories(outDir)
+                                shown?.let { r ->
+                                    val f = outDir.resolve("student-${r.studentId}-report.docx")
+                                    DocxReport.writeStudentReport(f, d, r, layout, templateFor(d, cls)?.accentColor)
+                                    try { Desktop.getDesktop().open(f.toFile()) } catch (_: Exception) { }
+                                }
+                            }
+                            Btn("Preview whole class", primary = false) { state.screen = "preview" }
+                            Text("Preview opens every card in the class on one scrolling page.", color = Theme.MUTED, fontSize = 12.sp)
+                        }
+                    }
+                }
                 CardBox {
                     Text("Batch — whole class (${results.size} students)", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(6.dp))
