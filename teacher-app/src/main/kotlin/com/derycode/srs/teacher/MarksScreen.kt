@@ -73,7 +73,7 @@ fun EnterMarksScreen(state: TeacherState, classId: String, initialSubjectId: Str
         item {
             CardBox {
                 FieldLabel("Subject")
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                ChipRow {
                     subjects.forEach { s -> FilterChipPill(s.name, selected = subjectId == s.id) {
                         subjectId = s.id
                         maxMarks = (s.maxMarks).toString()
@@ -81,12 +81,12 @@ fun EnterMarksScreen(state: TeacherState, classId: String, initialSubjectId: Str
                 }
                 Spacer(Modifier.height(10.dp))
                 FieldLabel("Assessment Type")
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                ChipRow {
                     components.forEach { c -> FilterChipPill(c.name, selected = componentId == c.id) { componentId = c.id } }
                 }
                 Spacer(Modifier.height(10.dp))
                 FieldLabel("Term")
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                ChipRow {
                     terms.forEach { t -> FilterChipPill("Term ${t.number}", selected = termId == t.id) { termId = t.id } }
                 }
                 Spacer(Modifier.height(10.dp))
