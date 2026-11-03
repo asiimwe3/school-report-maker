@@ -263,8 +263,19 @@ object CloudApi {
 
     /** All connected teachers of the school, with their registered profile. */
     fun listCloudTeachers(url: String, key: String, token: String, schoolId: String): Pair<List<CloudTeacher>, String> {
-        val r = http("GET", "$url/rest/v1/srs_teacher_schools?school_id=eq.$schoolId&select=teacher_uid,teacher_name,role,phone,contacts,classes,subjects,photo,added_at&order=added_at.asc", key, token, null)
-        if (r.first !in 200..299) return Pair(emptyList(), "Could not load the teacher list (${r.first}): ${r.second.take(120)}")
+        fun fetch(select: String): Pair<Int, String> = http("GET",
+            "$url/rest/v1/srs_teacher_schools?school_id=eq.$schoolId&select=$select&order=added_at.asc", key, token, null)
+
+        // Try the full column set first, then fall back to the columns every
+        // version of the table has. An older cloud backend (different project,
+        // older SQL) can be missing `phone`/`photo`; a missing column must never
+        // turn the whole screen into a red error.
+        var r = fetch("teacher_uid,teacher_name,role,phone,contacts,classes,subjects,photo,added_at")
+        if (r.first == 400) r = fetch("teacher_uid,teacher_name,role,added_at")
+        if (r.first !in 200..299) {
+            val hint = if (r.second.contains("does not exist")) " — this console is linked to an older cloud backend" else ""
+            return Pair(emptyList(), "Could not load the teacher list (${r.first})$hint: ${r.second.take(110)}")
+        }
         val out = ArrayList<CloudTeacher>()
         try {
             val root = Json.parseToJsonElement(r.second)
@@ -278,7 +289,7 @@ object CloudApi {
                 }
             }
         } catch (_: Exception) { }
-        return Pair(out as List<CloudTeacher>, "ok")
+        return Pair(out, "ok")
     }
 
     /** Admin edits a connected teacher's info (name, role, phone, contacts, classes, subjects). */
@@ -657,6 +668,57 @@ object CloudSync {
      */
     fun republish(repo: SchoolRepository, onResult: ((Boolean, String) -> Unit)? = null) {
         republishNow(repo, onResult)
+    }
+
+    /** True when this console is still pointed at an older cloud backend. */
+    fun onOldCloud(settings: com.derycode.srs.core.model.AppSettings): Boolean {
+        val u = settings.cloudUrl.trim().trimEnd('/')
+        return u.isNotBlank() && !u.equals(CloudApi.DEFAULT_URL.trimEnd('/'), ignoreCase = true)
+    }
+
+    /**
+     * Moves this school onto the current cloud, keeping the SAME teacher code,
+     * and publishes everything. Used when a console installed earlier still
+     * points at an older Supabase project: teachers scan a code the new cloud
+     * knows nothing about, so their phones say "not found".
+     */
+    fun moveToCurrentCloud(repo: SchoolRepository, onResult: ((Boolean, String) -> Unit)? = null) {
+        val st = repo.data.settings
+        val base = CloudApi.DEFAULT_URL
+        val k = CloudApi.DEFAULT_KEY
+        val saved = st.cloudInviteCode.trim().uppercase()
+        val code = if (saved.isNotBlank()) saved else run {
+            val letters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+            val rnd = java.security.SecureRandom()
+            repo.data.school.name.uppercase().filter { it.isLetterOrDigit() }.take(4).padEnd(4, 'X') +
+                (1..4).map { letters[rnd.nextInt(letters.length)] }.joinToString("")
+        }
+        guardedThread(onResult) {
+            val acc = CloudApi.deviceSignUp(base, k)
+            if (!acc.ok) { onResult?.invoke(false, "Could not create the cloud account: " + acc.error); return@guardedThread }
+            val d = repo.data
+            val (sid, err) = CloudApi.createSchool(
+                base, k, acc.accessToken, d.school.name, d.school.district, d.school.address,
+                d.school.headTeacher, d.settings.licencePlan.ifBlank { "Trial" }, d.settings.licenceRef,
+                d.students.size, code
+            )
+            if (sid.isBlank()) {
+                val hint = if (err.contains("duplicate") || err.contains("23505"))
+                    "The code $code is already used on the current cloud by another school. Tap Regenerate code to get a fresh one, then try again."
+                else err
+                onResult?.invoke(false, hint); return@guardedThread
+            }
+            repo.mutate("cloud-moved", "settings") { cur ->
+                cur.copy(settings = cur.settings.copy(
+                    cloudUrl = base, cloudKey = k, cloudEmail = acc.email,
+                    cloudAccessToken = acc.accessToken, cloudRefreshToken = acc.refreshToken,
+                    cloudSchoolId = sid, cloudInviteCode = code, teacherCloudEnabled = true
+                ))
+            }
+            pushNow(repo) { ok, m ->
+                onResult?.invoke(ok, if (ok) "Moved to the current cloud. Teachers keep code $code — scan it now and the school downloads." else "School created but the upload failed: $m")
+            }
+        }
     }
 
     fun scheduleAutoPush(repo: SchoolRepository) {

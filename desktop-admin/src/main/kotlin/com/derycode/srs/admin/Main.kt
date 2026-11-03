@@ -578,6 +578,19 @@ private fun TopBar(state: AppState) {
             }
             Spacer(Modifier.width(12.dp))
         }
+        // ── Old cloud backend: teachers cannot reach this console's codes ──
+        if (state.data.settings.cloudSchoolId.isNotBlank() && CloudSync.onOldCloud(state.data.settings)) {
+            Row(
+                Modifier.background(Theme.WARN.copy(alpha = 0.16f), RoundedCornerShape(12.dp))
+                    .border(1.dp, Theme.WARN.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                    .clickable { state.screen = "cloud" }
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Old cloud — tap to move", color = Theme.WARN, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
+            Spacer(Modifier.width(10.dp))
+        }
         // ── School level switch. A secondary school only offers O-Level (S1–S4)
         //    and A-Level (S5–S6); a primary school only offers Primary. ──
         val scopeLevels = state.scope.levels

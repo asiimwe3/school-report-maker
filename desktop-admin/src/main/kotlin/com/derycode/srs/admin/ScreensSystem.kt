@@ -400,6 +400,9 @@ fun PreviewScreen(state: AppState) {
 
 @Composable
 fun SettingsScreen(state: AppState) {
+    var moveBusy by remember { mutableStateOf(false) }
+    var moveMsg by remember { mutableStateOf("") }
+
     val s = state.data.settings
     var lang by remember(s) { mutableStateOf(s.language) }
     var theme by remember(s) { mutableStateOf(s.theme) }
@@ -452,6 +455,33 @@ fun SettingsScreen(state: AppState) {
                 }
             }
             if (pinMsg.isNotBlank()) Text(pinMsg, color = if (pinMsg.contains("✓")) Theme.GOOD else Theme.WARN, fontSize = 13.sp)
+        }
+        // ── Old cloud backend notice ──────────────────────────────────────────
+        // A console installed before the cloud moved still points at the older
+        // Supabase project. Teachers' phones ask the CURRENT cloud, so a code
+        // from the old one comes back "not found". One tap fixes it and keeps
+        // the same code, so no teacher needs to learn a new one.
+        if (CloudSync.onOldCloud(s)) {
+            CardBox {
+                Text("This console is on an older cloud", color = Theme.WARN, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(4.dp))
+                Text("Teacher phones now connect to the current cloud, so a code published here reads as \"not found\" on a phone. Moving takes one tap, keeps your school code and uploads all your data.", color = Theme.MUTED, fontSize = 13.sp)
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Btn(if (moveBusy) "Moving…" else "Move to the current cloud") {
+                        if (!moveBusy) {
+                            moveBusy = true; moveMsg = "Moving your school to the current cloud…"
+                            CloudSync.moveToCurrentCloud(state.repo) { ok, m ->
+                                moveBusy = false; moveMsg = m; if (ok) state.refresh()
+                            }
+                        }
+                    }
+                }
+                if (moveMsg.isNotBlank()) {
+                    Spacer(Modifier.height(6.dp))
+                    Text(moveMsg, color = if (moveMsg.startsWith("Moved")) Theme.GOOD else Theme.WARN, fontSize = 13.sp)
+                }
+            }
         }
         // ── Connect Teachers (v2.2.3) ──
         var askNewCode by remember { mutableStateOf(false) }
