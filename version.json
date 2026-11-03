@@ -1,12 +1,12 @@
 {
   "console": "2.3.27",
   "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.27.msi",
-  "teacher": "1.20.4",
-  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.4.apk",
-  "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.4.apk",
+  "teacher": "1.20.5",
+  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.5.apk",
+  "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.5.apk",
   "teacherDesktop": "1.0.0",
   "teacherDesktopDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMakerTeacher-1.0.0.msi",
   "released": "2026-11-03",
-  "notes": "2.3.27 / teacher 1.20.4. The blue Standard card from the school template is now the default report design: shield header, SUMMARY REPORT term box, passport photo, A1-A3 with the 20/80 split, average grade, comment boxes, term dates, signatures and stamp. Students are shown as class lists: a numbered section per class in the console, and a numbered class register on the phone. The teacher app now also runs on a laptop: the same marks entry, attendance and timetable, installed with its own setup file, handing the console the same bundle files as a phone.",
+  "notes": "Teacher app 1.20.5. Joining a school with the code now puts you on staff immediately: your name, role and classes are created as you scan, so marks entry, the class register, reports and duty work at once. No waiting for a role to be assigned. Pulling the school setup no longer removes you from staff. The teacher app also runs on a laptop: the same marks entry, attendance and timetable, installed with its own setup file, handing the console the same bundle files as a phone.",
   "consoleVersion": "2.3.27"
 }
