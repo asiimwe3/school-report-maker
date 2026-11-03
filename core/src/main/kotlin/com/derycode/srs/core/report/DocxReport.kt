@@ -333,10 +333,45 @@ object DocxReport {
                     if (r.remark.isBlank()) "" else r.remark)
             }
         doc.p("Subject Performance", bold = true, size = 20, color = accent, spacingAfter = 20)
-        doc.table(
-            listOf("Subject") + compList.map { compCode(it.id) } + listOf("Total", "%", "Grade", "Description", "Pos", "Remark"),
-            subjectRows.ifEmpty { listOf(listOf("No marks recorded")) }
-        )
+        if (layout == TemplateLayout.SUMMARY) {
+            // School summary card: formative assessments, the 20/80 split, the
+            // teacher's comment on each subject and their initials.
+            fun initials(name: String) = name.split(' ', '.', '-')
+                .filter { it.isNotBlank() }.map { it.first().uppercaseChar() }.take(3).joinToString("")
+            val summaryRows = result.subjectResults.map { r ->
+                val s = data.subjects.firstOrNull { it.id == r.subjectId }
+                val a = r.assessments
+                fun cell(v: Double) = if (v < 0) "" else num(v)
+                val comment = data.comments.firstOrNull {
+                    it.studentId == student.id && it.termId == result.termId &&
+                        it.subjectId == r.subjectId && it.type == com.derycode.srs.core.model.CommentType.SUBJECT
+                }?.text.orEmpty()
+                val initialsOf = data.teachers.firstOrNull { t ->
+                    data.assignments.any { asg -> asg.teacherId == t.id && asg.subjectId == r.subjectId && asg.classId == cls?.id }
+                }?.let { initials(it.name) }.orEmpty()
+                listOf(
+                    s?.name?.uppercase() ?: r.subjectId,
+                    a.getOrElse(0) { -1.0 }.let(::cell),
+                    a.getOrElse(1) { -1.0 }.let(::cell),
+                    a.getOrElse(2) { -1.0 }.let(::cell),
+                    cell(r.formativePercent),
+                    cell(r.examPercent),
+                    fmt(r.percentage),
+                    r.grade,
+                    comment,
+                    initialsOf
+                )
+            } + listOf(listOf("AVERAGE SCORE", "", "", "", "", "", fmt(result.averagePercent), "", "", ""))
+            doc.table(
+                listOf("Subject", "A1", "A2", "A3", "Frmtv 20%", "Exam 80%", "Total 100%", "Grade", "Teacher comment", "Init."),
+                summaryRows
+            )
+        } else {
+            doc.table(
+                listOf("Subject") + compList.map { compCode(it.id) } + listOf("Total", "%", "Grade", "Description", "Pos", "Remark"),
+                subjectRows.ifEmpty { listOf(listOf("No marks recorded")) }
+            )
+        }
 
         // ── overall summary ──
         val overall = buildString {
@@ -419,6 +454,13 @@ object DocxReport {
 
         val head = data.teachers.firstOrNull { it.role == com.derycode.srs.core.model.Role.HEAD_TEACHER }
         val classTeacher = cls?.classTeacherId?.let { id -> data.teachers.firstOrNull { it.id == id } }
+        if (layout == TemplateLayout.SUMMARY) {
+            doc.p("Fees and Term Dates", bold = true, size = 20, color = accent, spacingAfter = 20)
+            doc.table(
+                listOf("Current term closing date", "Next term opening date"),
+                listOf(listOf(term?.second?.endDate ?: "", term?.second?.nextTermBegins ?: ""))
+            )
+        }
         doc.p("Class Teacher: ${classTeacher?.name ?: "____________________"}          Head Teacher: ${head?.name ?: "____________________"}",
             size = 18, spacingAfter = 80)
         doc.p("Sign: ______________________          Sign: ______________________", size = 18, spacingAfter = 40)

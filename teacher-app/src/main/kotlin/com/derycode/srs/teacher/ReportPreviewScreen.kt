@@ -200,14 +200,47 @@ private fun ReportCard(
             Head("REMARK", 78.dp)
             Head("POS", 34.dp)
         }
+        // Summary-style schools get the A1/A2/A3 + 20/80 split on each subject,
+        // because that is what their printed card shows.
+        val summaryStyle = result.subjectResults.any { it.formativePercent >= 0 || it.assessments.isNotEmpty() }
+        if (summaryStyle) {
+            Row(Modifier.fillMaxWidth().background(Color(0xFFF2F4F8)).padding(vertical = 5.dp, horizontal = 6.dp)) {
+                Head("SUBJECT", 1f)
+                Head("A1", 30.dp); Head("A2", 30.dp); Head("A3", 30.dp)
+                Head("20%", 34.dp); Head("80%", 34.dp); Head("TOTAL", 42.dp); Head("GR", 26.dp)
+            }
+        }
         result.subjectResults.forEach { sr ->
             val name = d.subjects.firstOrNull { it.id == sr.subjectId }?.name ?: sr.subjectId
-            Row(Modifier.fillMaxWidth().padding(vertical = 5.dp, horizontal = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(name, color = Color(0xFF222222), fontSize = 12.sp, maxLines = 1, modifier = Modifier.weight(1f))
-                Text("${sr.total.toInt()}", color = Color(0xFF222222), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.width(48.dp))
-                Text(sr.grade, color = Color(0xFF16213E), fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(48.dp))
-                Text(sr.remark, color = Color(0xFF666666), fontSize = 11.sp, maxLines = 1, modifier = Modifier.width(78.dp))
-                Text(if (sr.positionInSubject > 0) "${sr.positionInSubject}" else "\u2014", color = Color(0xFF666666), fontSize = 12.sp, modifier = Modifier.width(34.dp))
+            if (summaryStyle) {
+                fun cell(v: Double) = if (v < 0) "" else if (v == v.toLong().toDouble()) v.toLong().toString() else "%.1f".format(v)
+                Row(Modifier.fillMaxWidth().padding(vertical = 5.dp, horizontal = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(name, color = Color(0xFF222222), fontSize = 11.sp, maxLines = 1, modifier = Modifier.weight(1f))
+                    Text(cell(sr.assessments.getOrElse(0) { -1.0 }), color = Color(0xFF222222), fontSize = 11.sp, modifier = Modifier.width(30.dp))
+                    Text(cell(sr.assessments.getOrElse(1) { -1.0 }), color = Color(0xFF222222), fontSize = 11.sp, modifier = Modifier.width(30.dp))
+                    Text(cell(sr.assessments.getOrElse(2) { -1.0 }), color = Color(0xFF222222), fontSize = 11.sp, modifier = Modifier.width(30.dp))
+                    Text(cell(sr.formativePercent), color = Color(0xFF222222), fontSize = 11.sp, modifier = Modifier.width(34.dp))
+                    Text(cell(sr.examPercent), color = Color(0xFF222222), fontSize = 11.sp, modifier = Modifier.width(34.dp))
+                    Text(cell(sr.percentage), color = Color(0xFF16213E), fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(42.dp))
+                    Text(sr.grade, color = Color(0xFF16213E), fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(26.dp))
+                }
+                // the teacher's own comment on that subject, when one exists
+                val sc = d.comments.firstOrNull {
+                    it.studentId == result.studentId && it.termId == result.termId &&
+                        it.subjectId == sr.subjectId && it.type == CommentType.SUBJECT
+                }?.text.orEmpty()
+                if (sc.isNotBlank()) {
+                    Text(sc, color = Color(0xFF777777), fontSize = 9.sp,
+                        modifier = Modifier.fillMaxWidth().padding(start = 6.dp, bottom = 4.dp))
+                }
+            } else {
+                Row(Modifier.fillMaxWidth().padding(vertical = 5.dp, horizontal = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(name, color = Color(0xFF222222), fontSize = 12.sp, maxLines = 1, modifier = Modifier.weight(1f))
+                    Text("${sr.total.toInt()}", color = Color(0xFF222222), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.width(48.dp))
+                    Text(sr.grade, color = Color(0xFF16213E), fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(48.dp))
+                    Text(sr.remark, color = Color(0xFF666666), fontSize = 11.sp, maxLines = 1, modifier = Modifier.width(78.dp))
+                    Text(if (sr.positionInSubject > 0) "${sr.positionInSubject}" else "\u2014", color = Color(0xFF666666), fontSize = 12.sp, modifier = Modifier.width(34.dp))
+                }
             }
             Box(Modifier.fillMaxWidth().height(1.dp).background(Color(0xFFEEEEEE)))
         }

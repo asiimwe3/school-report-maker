@@ -442,6 +442,18 @@ fun ReportsScreen(state: AppState) {
                                     try { Desktop.getDesktop().open(f.toFile()) } catch (_: Exception) { }
                                 }
                             }
+                            Btn("Print / save as PDF") {
+                                // The summary card prints from this HTML: open it in the
+                                // browser and press Ctrl+P (or Save as PDF).
+                                val outDir = dataDir.resolve("reports")
+                                Files.createDirectories(outDir)
+                                shown?.let { r ->
+                                    val html = com.derycode.srs.core.report.ReportEngine.studentReport(d, r, layout)
+                                    val f = outDir.resolve("card-${r.studentId}-${layout.name.lowercase()}.html")
+                                    Files.writeString(f, html)
+                                    try { Desktop.getDesktop().open(f.toFile()) } catch (_: Exception) { }
+                                }
+                            }
                             Btn("Preview whole class", primary = false) { state.screen = "preview" }
                             Text("Preview opens every card in the class on one scrolling page.", color = Theme.MUTED, fontSize = 12.sp)
                         }

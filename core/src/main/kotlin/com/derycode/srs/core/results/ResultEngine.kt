@@ -53,6 +53,52 @@ object ResultEngine {
         }
     }
 
+    /**
+     * The pieces a summary card shows for one subject: the formative (CA) part,
+     * the exam part, and up to three individual assessments (A1/A2/A3).
+     * Anything not entered comes back as -1 so the card can print a dash
+     * instead of a fake zero.
+     */
+    data class SubjectBreakdown(
+        val formative: Double = -1.0,
+        val exam: Double = -1.0,
+        val assessments: List<Double> = emptyList()
+    )
+
+    fun subjectBreakdown(
+        marks: List<Mark>,
+        components: List<AssessmentComponent>,
+        caWeight: Int,
+        examWeight: Int,
+        weighted: Boolean
+    ): SubjectBreakdown {
+        val usable = marks.filter { it.type == MarkType.VALUE }
+        if (usable.isEmpty()) return SubjectBreakdown()
+        val byId = components.associateBy { it.id }
+        fun pct(m: Mark): Double = if (m.maxScore <= 0) 0.0 else (m.score / m.maxScore) * 100.0
+
+        val caMarks = usable.filter { byId[it.componentId]?.code == "CA" }
+        val examMarks = usable.filter { byId[it.componentId]?.code != "CA" }
+
+        // A1/A2/A3: the first three assessment columns the school actually uses,
+        // in the order the components are defined (falling back to CA entries).
+        val assessmentOrder = components.filter { c -> usable.any { it.componentId == c.id } }
+            .take(3)
+            .mapNotNull { c -> usable.firstOrNull { it.componentId == c.id }?.let(::pct) }
+
+        val formative = when {
+            caMarks.isNotEmpty() -> caMarks.map(::pct).average()
+            !weighted -> -1.0
+            else -> -1.0
+        }
+        val exam = if (examMarks.isNotEmpty()) examMarks.map(::pct).average() else -1.0
+        return SubjectBreakdown(
+            formative = (formative * 10).roundToInt() / 10.0,
+            exam = (exam * 10).roundToInt() / 10.0,
+            assessments = assessmentOrder.map { (it * 10).roundToInt() / 10.0 }
+        )
+    }
+
     // ── Full term result for one student ─────────────────────────────────────
 
     /**
@@ -79,9 +125,13 @@ object ResultEngine {
             val (pct, incomplete) = subjectPercentage(
                 sm, data.components, scheme.caWeightPercent, scheme.examWeightPercent, weighted
             )
+            val bd = subjectBreakdown(sm, data.components, scheme.caWeightPercent, scheme.examWeightPercent, weighted)
             SubjectResult(
                 subjectId = subjectId,
                 total = sm.filter { it.type == MarkType.VALUE }.sumOf { it.score },
+                formativePercent = if (weighted) bd.formative else -1.0,
+                examPercent = bd.exam,
+                assessments = bd.assessments,
                 percentage = (pct * 10).roundToInt() / 10.0,
                 grade = GradingEngine.grade(scheme, pct),
                 points = GradingEngine.points(scheme, pct),

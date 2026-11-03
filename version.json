@@ -1,7 +1,7 @@
 {
-  "console": "2.3.13",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.13.msi",
-  "teacher": "1.19.2",
-  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.19.2.apk",
-  "notes": "Timetable picture: import a photo of the printed timetable on the console once, and every teacher sees that same sheet on their phone (tap to zoom, pinch to read a cell) after pulling school setup. No retyping."
+  "console": "2.3.14",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.14.msi",
+  "teacher": "1.19.3",
+  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.19.3.apk",
+  "notes": "New SUMMARY report card: A1-A3 assessments, 20% formative and 80% exam split, total, grade, per-subject teacher comment and initials, average row, both comments, fees and term dates, three signatures and the school stamp. Pick Design: Summary on Reports, preview inline, print or save as PDF. Keeps the timetable picture feature."
 }

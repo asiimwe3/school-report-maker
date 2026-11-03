@@ -17,7 +17,7 @@ enum class MarkSheetState { DRAFT, SUBMITTED, REVIEWED, APPROVED, LOCKED }
 
 enum class Role { SUPER_ADMIN, SCHOOL_ADMIN, HEAD_TEACHER, DEPUTY_HEAD, DOS, CLASS_TEACHER, TEACHER, BURSAR, LIBRARIAN, DATA_ENTRY }
 
-enum class TemplateLayout { CLASSIC, MODERN, COMPACT, PLAIN }
+enum class TemplateLayout { CLASSIC, MODERN, COMPACT, PLAIN, SUMMARY }
 
 enum class CommentType { SUBJECT, CLASS_TEACHER, HEAD_TEACHER }
 
@@ -267,6 +267,12 @@ data class DivisionBoundary(
 data class SubjectResult(
     val subjectId: String,
     val total: Double,
+    /** Formative / coursework percentage (20% part of a UCE scheme). -1 = not available. */
+    val formativePercent: Double = -1.0,
+    /** End-of-term exam percentage (80% part). -1 = not available. */
+    val examPercent: Double = -1.0,
+    /** Up to three individual assessment percentages (A1, A2, A3 on the summary card). */
+    val assessments: List<Double> = emptyList(),
     val percentage: Double,
     val grade: String,
     val points: Int,

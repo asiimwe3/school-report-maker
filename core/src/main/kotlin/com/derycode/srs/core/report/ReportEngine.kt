@@ -20,6 +20,7 @@ object ReportEngine {
         result: TermResult,
         layout: TemplateLayout = TemplateLayout.CLASSIC
     ): String {
+        if (layout == TemplateLayout.SUMMARY) return summaryReport(data, result)
         val student = data.students.firstOrNull { it.id == result.studentId }
             ?: return "<html><body><p>Student not found.</p></body></html>"
         val school: School = data.school
@@ -125,6 +126,217 @@ object ReportEngine {
             <div class="grading-key">
                 ${gradingKey(data, result)}
             </div>
+        </div>
+        <script>window.onload = () => { if (location.search.includes("print=1")) window.print(); };</script>
+        </body>
+        </html>
+        """.trimIndent()
+    }
+
+    /**
+     * The school's summary card: formative assessments (A1–A3), the 20% / 80%
+     * split, totals, per-subject teacher comment and initials, both sets of
+     * comments, fees and term dates, three signature blocks and the school stamp.
+     */
+    fun summaryReport(data: SchoolData, result: TermResult): String {
+        val student = data.students.firstOrNull { it.id == result.studentId }
+            ?: return "<html><body><p>Student not found.</p></body></html>"
+        val school = data.school
+        val termPair = data.academicYears.asSequence()
+            .flatMap { y -> y.terms.asSequence().map { t -> y to t } }
+            .firstOrNull { it.second.id == result.termId }
+        val term = termPair?.second
+        val cls = data.classes.firstOrNull { c ->
+            data.enrollments.any { e -> e.studentId == student.id && e.classId == c.id }
+        }
+
+        fun initialsOf(teacherName: String) = teacherName.split(' ', '.', '-')
+            .filter { it.isNotBlank() }.map { it.first().uppercaseChar() }.take(3).joinToString("")
+
+        fun teacherFor(subjectId: String): String {
+            val t = data.teachers.firstOrNull { te ->
+                data.assignments.any { a -> a.teacherId == te.id && a.subjectId == subjectId && a.classId == cls?.id }
+            }
+            return t?.let { initialsOf(it.name) } ?: ""
+        }
+
+        fun subjectComment(subjectId: String): String =
+            data.comments.firstOrNull {
+                it.studentId == result.studentId && it.termId == result.termId &&
+                    it.subjectId == subjectId && it.type == CommentType.SUBJECT
+            }?.text ?: ""
+
+        val subjectsInOrder = data.subjects.filter { s -> result.subjectResults.any { it.subjectId == s.id } }
+        val rows = subjectsInOrder.joinToString("") { subj ->
+            val r = result.subjectResults.first { it.subjectId == subj.id }
+            fun dash(v: Double) = if (v < 0) "" else fmt(v)
+            val a = r.assessments
+            """
+            <tr>
+              <td class="subj">${escape(subj.name.uppercase())}</td>
+              <td>${a.getOrElse(0) { -1.0 }.let { if (it < 0) "" else fmt(it) }}</td>
+              <td>${a.getOrElse(1) { -1.0 }.let { if (it < 0) "" else fmt(it) }}</td>
+              <td>${a.getOrElse(2) { -1.0 }.let { if (it < 0) "" else fmt(it) }}</td>
+              <td>${dash(r.formativePercent)}</td>
+              <td>${dash(r.examPercent)}</td>
+              <td class="total">${fmt(r.percentage)}</td>
+              <td class="grade">${r.grade}</td>
+              <td class="cmt">${escape(subjectComment(subj.id))}</td>
+              <td>${teacherFor(subj.id)}</td>
+            </tr>
+            """.trimIndent()
+        }
+
+        val overall = buildString {
+            result.aggregate?.let { append("Aggregate $it") }
+            result.division?.let { if (isNotEmpty()) append(" — "); append(it) }
+            result.uceResult?.let { if (isNotEmpty()) append(" — "); append(it) }
+            result.uacePoints?.let { if (isNotEmpty()) append(" — "); append("Points $it") }
+            if (isEmpty()) append("Average ${fmt(result.averagePercent)}%")
+        }
+
+        val classComment = data.comments
+            .filter { it.studentId == student.id && it.termId == result.termId && it.type == CommentType.CLASS_TEACHER }
+            .joinToString(" ") { it.text }
+        val headComment = data.comments
+            .filter { it.studentId == student.id && it.termId == result.termId && it.type == CommentType.HEAD_TEACHER }
+            .joinToString(" ") { it.text }
+        val head = data.teachers.firstOrNull { it.role == com.derycode.srs.core.model.Role.HEAD_TEACHER }
+        val classTeacher = cls?.classTeacherId?.let { id -> data.teachers.firstOrNull { it.id == id } }
+
+        val css = """
+            @page { size: A4 portrait; margin: 9mm; }
+            * { box-sizing: border-box; }
+            body { margin: 0; font-family: "Times New Roman", Georgia, serif; color: #111; }
+            .card { width: 100%; }
+            .head { display: flex; align-items: flex-start; gap: 10px; border-bottom: 2.5px solid #111; padding-bottom: 6px; }
+            .logo { width: 74px; height: 74px; display: flex; align-items: center; justify-content: center; font-size: 34px; }
+            .logo img { width: 70px; height: 70px; object-fit: contain; }
+            .school { flex: 1; text-align: center; }
+            .school h1 { margin: 0; font-size: 25px; letter-spacing: .6px; text-transform: uppercase; }
+            .school .type { font-size: 11px; letter-spacing: 2.4px; text-transform: uppercase; }
+            .school .motto { font-size: 10.5px; font-style: italic; color: #333; margin-top: 1px; }
+            .school .contact { font-size: 9.5px; color: #222; margin-top: 3px; line-height: 1.35; }
+            .termbox { width: 108px; text-align: center; border: 1.5px solid #111; padding: 5px 4px; font-size: 10px; }
+            .termbox b { display: block; font-size: 13px; letter-spacing: .5px; }
+            table { width: 100%; border-collapse: collapse; }
+            .info { margin-top: 8px; border: 1.5px solid #111; }
+            .info td { border: 1px solid #999; padding: 3px 6px; font-size: 10.5px; }
+            .bar { background: #111; color: #fff; font-size: 10px; letter-spacing: 1.6px; padding: 3px 8px; text-transform: uppercase; }
+            .marks { margin-top: 8px; }
+            .marks th, .marks td { border: 1px solid #444; padding: 3px 4px; font-size: 9.5px; text-align: center; }
+            .marks th { background: #111; color: #fff; font-size: 8px; letter-spacing: .4px; line-height: 1.15; }
+            .marks td.subj { text-align: left; font-weight: bold; }
+            .marks td.cmt { text-align: left; font-size: 8.6px; }
+            .marks td.total { font-weight: bold; }
+            .marks td.grade { font-weight: bold; }
+            .avgrow td { background: #f0f0f0; font-weight: bold; }
+            .two { display: flex; gap: 8px; margin-top: 8px; }
+            .box { flex: 1; border: 1.5px solid #111; }
+            .box .label { font-size: 9px; font-weight: bold; letter-spacing: 1.2px; padding: 3px 6px; border-bottom: 1px solid #999; text-transform: uppercase; }
+            .box .body { padding: 5px 6px; font-size: 9.5px; min-height: 52px; line-height: 1.4; }
+            .sigs { display: flex; gap: 8px; margin-top: 10px; }
+            .sig { flex: 1; text-align: center; font-size: 9px; }
+            .sig .line { border-bottom: 1px solid #111; height: 22px; margin-bottom: 3px; }
+            .stamp { width: 84px; height: 84px; border: 1.5px dashed #777; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #777; text-align: center; }
+            .foot { text-align: center; font-size: 9.5px; font-style: italic; margin-top: 8px; border-top: 1px solid #111; padding-top: 4px; }
+            .key { font-size: 8.5px; color: #333; margin-top: 4px; }
+        """.trimIndent()
+
+        val contact = listOfNotNull(
+            school.phone.takeIf { it.isNotBlank() }?.let { "Tel: $it" },
+            school.phone2.takeIf { it.isNotBlank() },
+            school.email.takeIf { it.isNotBlank() },
+            school.address.takeIf { it.isNotBlank() },
+            school.district.takeIf { it.isNotBlank() }
+        ).joinToString(" · ")
+
+        return """
+        <!DOCTYPE html>
+        <html lang="en">
+        <head><meta charset="UTF-8"/><title>${escape(school.name)} — ${escape(student.fullName)}</title>
+        <style>$css</style></head>
+        <body>
+        <div class="card">
+          <div class="head">
+            <div class="logo">${if (school.logoPath != null) """<img src="file://${school.logoPath}"/>""" else "🎓"}</div>
+            <div class="school">
+              <h1>${escape(school.name)}</h1>
+              <div class="type">${escape(if (school.schoolType.isBlank()) "Secondary School" else school.schoolType)}</div>
+              <div class="motto">${if (school.motto.isBlank()) "" else "“${escape(school.motto)}”"}</div>
+              <div class="contact">${escape(contact)}</div>
+            </div>
+            <div class="termbox">
+              <b>TERM ${term?.number ?: ""}</b>
+              <div>SUMMARY REPORT</div>
+              <div><b>${termPair?.first?.year ?: ""}</b></div>
+            </div>
+          </div>
+
+          <div class="bar" style="margin-top:8px">Student information</div>
+          <table class="info">
+            <tr>
+              <td><b>STUDENT NAME:</b> ${escape(student.fullName)}</td>
+              <td><b>ADMISSION NO.:</b> ${escape(student.admissionNo)}</td>
+            </tr>
+            <tr>
+              <td><b>CLASS:</b> ${escape(cls?.name ?: studentClass(data, student.id))}</td>
+              <td><b>STREAM:</b> ${escape(cls?.stream ?: "")}</td>
+            </tr>
+            <tr>
+              <td><b>RESULT:</b> ${escape(overall)}</td>
+              <td><b>POSITION:</b> ${result.classPosition} of ${data.enrollments.count { it.classId == cls?.id }.coerceAtLeast(result.classPosition)}</td>
+            </tr>
+          </table>
+
+          <table class="marks">
+            <thead>
+              <tr>
+                <th style="width:23%">SUBJECT</th><th>A1</th><th>A2</th><th>A3</th>
+                <th>FRNTV<br/>SCORE<br/>(20%)</th><th>EXAM<br/>SCORE<br/>(80%)</th>
+                <th>TOTAL<br/>SCORE<br/>(100%)</th><th>GRADE</th>
+                <th style="width:22%">TEACHER COMMENT</th><th>TEACHER<br/>INITIALS</th>
+              </tr>
+            </thead>
+            <tbody>
+              $rows
+              <tr class="avgrow">
+                <td class="subj">AVERAGE SCORE</td><td></td><td></td><td></td><td></td><td></td>
+                <td>${fmt(result.averagePercent)}</td><td></td><td></td><td></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="bar" style="margin-top:8px">Comments</div>
+          <div class="two">
+            <div class="box">
+              <div class="label">Class Teacher</div>
+              <div class="body">${if (classComment.isBlank()) "&nbsp;" else escape(classComment)}</div>
+              <div class="body" style="min-height:0;padding-top:0">Signature: ______________</div>
+            </div>
+            <div class="box">
+              <div class="label">Head Teacher Remarks</div>
+              <div class="body">${if (headComment.isBlank()) "&nbsp;" else escape(headComment)}</div>
+              <div class="body" style="min-height:0;padding-top:0">Signature: ______________</div>
+            </div>
+          </div>
+
+          <div class="bar" style="margin-top:8px">Fees and term dates</div>
+          <table class="info">
+            <tr>
+              <td><b>CURRENT TERM CLOSING DATE:</b> ${escape(term?.endDate ?: "")}</td>
+              <td><b>NEXT TERM OPENING DATE:</b> ${escape(term?.nextTermBegins ?: "")}</td>
+            </tr>
+          </table>
+
+          <div class="sigs">
+            <div class="sig"><div class="line"></div>Class Teacher<br/><b>${escape(classTeacher?.name ?: "")}</b></div>
+            <div class="sig"><div class="line"></div>Head Teacher<br/><b>${escape(head?.name ?: school.headTeacher)}</b></div>
+            <div class="stamp">SCHOOL<br/>STAMP</div>
+          </div>
+
+          <div class="foot">${escape(school.motto.ifBlank { "Together for a Brighter Future" })}</div>
+          <div class="key">${gradingKey(data, result)}</div>
         </div>
         <script>window.onload = () => { if (location.search.includes("print=1")) window.print(); };</script>
         </body>
