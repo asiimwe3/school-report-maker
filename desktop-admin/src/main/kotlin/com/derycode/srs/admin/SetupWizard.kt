@@ -148,8 +148,8 @@ private fun WizardTopSteps(step: Int, onGo: (Int) -> Unit) {
 
 /** One of the four "what this setup does" chips on the welcome screen. */
 @Composable
-private fun WelcomeCheck(label: String) {
-    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+private fun WelcomeCheck(label: String, modifier: Modifier = Modifier) {
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Box(Modifier.size(40.dp).background(Theme.ACCENT_SOFT, RoundedCornerShape(20.dp)), contentAlignment = Alignment.Center) {
             Text("\u2713", color = Theme.ACCENT, fontSize = 17.sp, fontWeight = FontWeight.Bold)
         }
@@ -210,13 +210,13 @@ private fun StepWelcome(state: AppState, next: () -> Unit) {
         }
         Spacer(Modifier.height(12.dp))
         Text("This short setup creates your school's admin console. It takes about 3 minutes and is required before the dashboard opens.",
-            color = Theme.MUTED, fontSize = 13.sp, modifier = Modifier.width(640.dp))
+            color = Theme.MUTED, fontSize = 13.sp, modifier = Modifier.widthIn(max = 640.dp))
         Spacer(Modifier.height(30.dp))
-        Row(Modifier.fillMaxWidth().width(640.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            WelcomeCheck("School Profile")
-            WelcomeCheck("Online Account")
-            WelcomeCheck("Security PIN")
-            WelcomeCheck("Licence")
+        Row(Modifier.fillMaxWidth().widthIn(max = 640.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            WelcomeCheck("School Profile", Modifier.weight(1f))
+            WelcomeCheck("Online Account", Modifier.weight(1f))
+            WelcomeCheck("Security PIN", Modifier.weight(1f))
+            WelcomeCheck("Licence", Modifier.weight(1f))
         }
         Spacer(Modifier.height(32.dp))
         Button({ next() }, shape = RoundedCornerShape(10.dp),
@@ -226,7 +226,7 @@ private fun StepWelcome(state: AppState, next: () -> Unit) {
         }
         Spacer(Modifier.height(10.dp))
         Text("Only the online account needs internet. School profile, PIN and licence can be changed later in Settings.",
-            color = Theme.MUTED, fontSize = 11.sp, modifier = Modifier.width(640.dp))
+            color = Theme.MUTED, fontSize = 11.sp, modifier = Modifier.widthIn(max = 640.dp))
     }
 }
 
@@ -402,7 +402,7 @@ private fun StepPin(state: AppState, next: () -> Unit) {
         }
         Spacer(Modifier.height(10.dp))
         if (msg.isNotEmpty()) Text(msg, color = if (err) Color(0xFFFF6B6B) else Theme.MUTED, fontSize = 12.sp)
-        Box(Modifier.width(560.dp).background(Theme.ACCENT_SOFT, RoundedCornerShape(9.dp)).padding(11.dp)) {
+        Box(Modifier.fillMaxWidth().widthIn(max = 560.dp).background(Theme.ACCENT_SOFT, RoundedCornerShape(9.dp)).padding(11.dp)) {
             Text("Use a PIN that is easy for you to remember but hard for others to guess. Avoid simple numbers like 1234 or 0000.",
                 color = Theme.MUTED, fontSize = 11.5.sp)
         }
@@ -475,11 +475,11 @@ private fun StepDone(state: AppState) {
         }
         Spacer(Modifier.height(10.dp))
         Text("Your DeryCode School Report Maker is ready to use. You can now open your dashboard and start managing your school reports.",
-            color = Theme.MUTED, fontSize = 13.sp, modifier = Modifier.width(660.dp))
+            color = Theme.MUTED, fontSize = 13.sp, modifier = Modifier.widthIn(max = 660.dp))
         Spacer(Modifier.height(22.dp))
 
         // ── School Profile Summary ───────────────────────────────────────────
-        Box(Modifier.width(520.dp).background(Theme.ACCENT_SOFT, RoundedCornerShape(14.dp)).padding(18.dp)) {
+        Box(Modifier.fillMaxWidth().widthIn(max = 520.dp).background(Theme.ACCENT_SOFT, RoundedCornerShape(14.dp)).padding(18.dp)) {
             Column {
                 Text("School Profile Summary", color = Theme.TEXT, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(10.dp))
@@ -493,7 +493,7 @@ private fun StepDone(state: AppState) {
         Spacer(Modifier.height(18.dp))
 
         // ── What is connected ────────────────────────────────────────────────
-        Column(Modifier.width(520.dp)) {
+        Column(Modifier.fillMaxWidth().widthIn(max = 520.dp)) {
             StatusRow("Online Account", if (online) "Connected" else "Offline mode", online)
             StatusRow("Security PIN", if (pinSet) "Set" else "Not set", pinSet)
             StatusRow("Licence", if (licensed) "${s.licencePlan} · Active" else "Not activated", licensed)
@@ -501,7 +501,7 @@ private fun StepDone(state: AppState) {
 
         if (online && s.cloudInviteCode.isNotBlank()) {
             Spacer(Modifier.height(18.dp))
-            Box(Modifier.width(520.dp).background(Theme.CARD, RoundedCornerShape(12.dp)).border(1.dp, Theme.LINE, RoundedCornerShape(12.dp)).padding(16.dp)) {
+            Box(Modifier.fillMaxWidth().widthIn(max = 520.dp).background(Theme.CARD, RoundedCornerShape(12.dp)).border(1.dp, Theme.LINE, RoundedCornerShape(12.dp)).padding(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text("Teacher school code", color = Theme.MUTED, fontSize = 11.sp)

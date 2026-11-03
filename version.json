@@ -1,9 +1,9 @@
 {
-  "console": "2.3.24",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.24.msi",
+  "console": "2.3.25",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.25.msi",
   "teacher": "1.20.1",
   "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.1.apk",
   "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.1.apk",
   "released": "2026-11-03",
-  "notes": "2.3.24 keeps the school account's password on the console and shows it, so a new PC can get back into your school's cloud copy. The password is never included in the cloud backup."
+  "notes": "2.3.25 rebuilds the setup wizard: a branded side rail showing every step, a welcome screen with what setup covers and how long it takes, school-kind cards, a masked PIN with a show/hide eye and a strong-PIN hint, and a final screen summarising your school, online account, PIN and licence before you open the dashboard."
 }
