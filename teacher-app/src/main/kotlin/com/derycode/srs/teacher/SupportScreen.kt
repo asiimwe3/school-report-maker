@@ -46,8 +46,8 @@ object CrashTracker {
                 f.appendText(entry)
                 // v1.13.13 — also deliver RIGHT NOW, synchronously, so a phone that
                 // crash-loops and never reaches onCreate again still gets the error out.
-                try { CrashReporter.postNow(context, entry) } catch (_: Exception) { }
-            } catch (_: Exception) { }
+                try { CrashReporter.postNow(context, entry) } catch (e: Exception) { e.printStackTrace() }
+            } catch (e: Exception) { e.printStackTrace() }
             previous?.uncaughtException(thread, throwable)
         }
     }
@@ -57,7 +57,7 @@ object CrashTracker {
         val f = File(context.filesDir, FILE)
         if (!f.exists()) f.writeText("No crashes recorded on this phone. If the app ever crashes, the error is saved here automatically.\n")
         f.appendText("\n=== NOTE ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(java.util.Date())} ===\n$text\n")
-    } catch (_: Exception) { }
+    } catch (e: Exception) { e.printStackTrace() }
 
     fun logFile(context: Context): File = File(context.filesDir, FILE)
     fun hasCrash(context: Context): Boolean = logFile(context).length() > 0
@@ -95,7 +95,7 @@ object CrashReporter {
             conn.setRequestProperty("Content-Type", "application/json")
             conn.outputStream.use { it.write(payload(context, entry).toByteArray()) }
             conn.disconnect()
-        } catch (_: Exception) { }
+        } catch (e: Exception) { e.printStackTrace() }
     }
 
     /** Post the crash log if there is an unsent one. No-op (0ms) on healthy phones. */
@@ -119,12 +119,12 @@ object CrashReporter {
                     conn.outputStream.use { it.write(body.toByteArray()) }
                     if (conn.responseCode == 200) marker.writeText(log.length().toString())
                     conn.disconnect()
-                } catch (_: Exception) { }
+                } catch (e: Exception) { e.printStackTrace() }
             }
             t.isDaemon = false
             t.start()
             t.join(3000)   // only reached when an unsent crash log exists
-        } catch (_: Exception) { }
+        } catch (e: Exception) { e.printStackTrace() }
     }
 }
 

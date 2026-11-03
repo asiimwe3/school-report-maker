@@ -257,7 +257,7 @@ fun FeesScreen(state: AppState) {
                     val f = dataDir.resolve("reports").resolve("defaulters-${feeCategory.name.lowercase()}-${label.replace(" ", "")}-term${term?.number}.docx")
                     DocxReport.writeDefaulterList(f, d, label, "${feeCategory.label} · Term ${term?.number} ${year?.year ?: ""}",
                         cur, rows, listOf(expected.toLong().toString(), totalPaid.toLong().toString(), outstanding.toLong().toString()))
-                    try { java.awt.Desktop.getDesktop().open(f.toFile()) } catch (_: Exception) { }
+                    try { java.awt.Desktop.getDesktop().open(f.toFile()) } catch (e: Exception) { e.printStackTrace() }
                 })
             }
         }

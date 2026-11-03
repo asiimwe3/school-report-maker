@@ -10,7 +10,12 @@ package com.derycode.srs.core.support
  *   ST Starter 100 · SD Standard 300 · GR Growth 800 · SC School 2000 · MB Multi-Branch unlimited
  */
 object LicenseKeys {
-    const val SECRET = "DeryCode-SRS-2026"
+    // Built at runtime so the value is not a greppable literal in the APK/dex.
+    // NOTE: this is obfuscation, not security — see docs/SECURITY-NOTES.md for the
+    // signed-licence upgrade path that removes the shared secret entirely.
+    val SECRET: String = buildString {
+        append("Dery"); append('C'); append("ode-SRS-"); append(2026)
+    }
 
     data class Plan(val code: String, val name: String, val studentLimit: Int)
 

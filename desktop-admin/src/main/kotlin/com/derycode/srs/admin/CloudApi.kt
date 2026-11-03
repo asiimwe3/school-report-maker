@@ -288,7 +288,7 @@ object CloudApi {
                         subjects = str("subjects"), photo = str("photo"), addedAt = str("added_at").take(10)))
                 }
             }
-        } catch (_: Exception) { }
+        } catch (e: Exception) { e.printStackTrace() }
         return Pair(out, "ok")
     }
 
@@ -759,7 +759,7 @@ object CloudSync {
         try {
             val stamp = java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy HH:mm").format(java.time.LocalDateTime.now())
             repo.mutate("cloud-backup", "settings") { d -> d.copy(settings = d.settings.copy(cloudLastBackup = "$stamp (${size / 1024} KB)")) }
-        } catch (_: Exception) {}
+        } catch (e: Exception) { e.printStackTrace() }
     }
 
     /**

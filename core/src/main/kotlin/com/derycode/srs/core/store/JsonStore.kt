@@ -239,7 +239,7 @@ class SchoolRepository(
         } catch (e: Exception) {
             try {
                 Files.move(file, file.resolveSibling("school-data-corrupt-${System.currentTimeMillis()}.json"), StandardCopyOption.REPLACE_EXISTING)
-            } catch (_: Exception) { }
+            } catch (e: Exception) { e.printStackTrace() }
             newestUsableBackup() ?: SchoolData()
         }
         private set
@@ -248,7 +248,7 @@ class SchoolRepository(
         val dir = file.toAbsolutePath().parent.resolve("backups").toFile()
         val backups = dir.listFiles { f -> f.name.startsWith("backup-") }?.sortedByDescending { it.name } ?: return null
         for (b in backups) {
-            try { return store.load(b.toPath()) } catch (_: Exception) { }
+            try { return store.load(b.toPath()) } catch (e: Exception) { e.printStackTrace() }
         }
         return null
     }
@@ -309,7 +309,7 @@ class SchoolRepository(
                 java.nio.file.Files.walk(dir).sorted(java.util.Comparator.reverseOrder())
                     .forEach { java.nio.file.Files.deleteIfExists(it) }
             }
-        } catch (_: Exception) { }
+        } catch (e: Exception) { e.printStackTrace() }
         data = store.load(file)
         seedIfNeeded(defaultSubjects, defaultComponents)
     }

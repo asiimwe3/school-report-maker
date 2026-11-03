@@ -262,14 +262,14 @@ class TeacherState(private val context: Context) {
     private fun quarantineCorrupt() = try {
         val stamp = System.currentTimeMillis()
         Files.move(file, file.resolveSibling("school-data-corrupt-$stamp.json"), StandardCopyOption.REPLACE_EXISTING)
-    } catch (_: Exception) { }
+    } catch (e: Exception) { e.printStackTrace() }
 
     /** Try the rotating backups, newest first; null if none is readable. */
     private fun loadNewestUsableBackup(): SchoolData? {
         val dir = file.resolveSibling("backups").toFile()
         val backups = dir.listFiles { f -> f.name.startsWith("backup-") }?.sortedByDescending { it.name } ?: return null
         for (b in backups) {
-            try { return store.load(b.toPath()) } catch (_: Exception) { }
+            try { return store.load(b.toPath()) } catch (e: Exception) { e.printStackTrace() }
         }
         return null
     }

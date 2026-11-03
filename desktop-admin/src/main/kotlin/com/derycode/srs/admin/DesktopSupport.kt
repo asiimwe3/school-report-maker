@@ -39,7 +39,7 @@ object DesktopCrashTracker {
                     "App: Admin Console $APP_VERSION\nOS: ${System.getProperty("os.name")} ${System.getProperty("os.version")}\n" +
                     "Thread: ${thread.name}\n${throwable.stackTraceToString().take(3500)}\n"
                 Files.writeString(logFile, Files.exists(logFile).let { if (it) Files.readString(logFile) else "" } + entry)
-            } catch (_: Exception) { }
+            } catch (e: Exception) { e.printStackTrace() }
             previous?.uncaughtException(thread, throwable)
         }
     }
@@ -135,7 +135,7 @@ object DesktopUpdateChecker {
 
     /** Fallback so an admin is never stuck: opens the download page in their browser. */
     fun openReleasesPage() {
-        try { Desktop.getDesktop().browse(URI(Support.RELEASES_PAGE)) } catch (_: Exception) { }
+        try { Desktop.getDesktop().browse(URI(Support.RELEASES_PAGE)) } catch (e: Exception) { e.printStackTrace() }
     }
 }
 
@@ -173,7 +173,7 @@ fun SupportScreenDesktop(state: AppState) {
                         msg = "Downloading…"
                     }
                     Btn("Open releases page", primary = false, onClick = {
-                        try { Desktop.getDesktop().browse(URI(Support.RELEASES_PAGE)) } catch (_: Exception) { }
+                        try { Desktop.getDesktop().browse(URI(Support.RELEASES_PAGE)) } catch (e: Exception) { e.printStackTrace() }
                     })
                 }
             } ?: Text("You are up to date." + if (update == null && msg == "checked") "" else "", color = Theme.MUTED, fontSize = 14.sp)
@@ -191,7 +191,7 @@ fun SupportScreenDesktop(state: AppState) {
                     Btn("Send to support (WhatsApp 0762306675)") {
                         val log = Files.readString(DesktopCrashTracker.logFile).take(3000)
                         val text = URLEncoder.encode("School Report Maker (Admin Console) crash report:\n\n$log", "UTF-8")
-                        try { Desktop.getDesktop().browse(URI("${Support.SUPPORT_LINK}?text=$text")) } catch (_: Exception) { }
+                        try { Desktop.getDesktop().browse(URI("${Support.SUPPORT_LINK}?text=$text")) } catch (e: Exception) { e.printStackTrace() }
                     }
                     Btn("Clear crash file", primary = false, onClick = { Files.deleteIfExists(DesktopCrashTracker.logFile); state.refresh() })
                 }

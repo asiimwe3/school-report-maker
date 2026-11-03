@@ -87,7 +87,7 @@ fun StudentsScreen(state: AppState) {
                             )
                         }, f)
                         exportMsg = "Exported ${visible.size} students to ${f.name}"
-                        try { java.awt.Desktop.getDesktop().open(f) } catch (_: Exception) { }
+                        try { java.awt.Desktop.getDesktop().open(f) } catch (e: Exception) { e.printStackTrace() }
                     } catch (e: Exception) { exportMsg = "Could not export: ${e.message}" }
                 }
             }
@@ -204,7 +204,7 @@ fun StudentsScreen(state: AppState) {
                             try {
                                 ExcelBridge.writeTemplate(f)
                                 excelMsg = "Template saved: ${f.absolutePath}"
-                                try { java.awt.Desktop.getDesktop().open(f) } catch (_: Exception) { }
+                                try { java.awt.Desktop.getDesktop().open(f) } catch (e: Exception) { e.printStackTrace() }
                             } catch (e: Exception) { bulkErr = "Could not save template: ${e.message}" }
                         }
                     }) { Text("Download Excel template", color = Theme.ACCENT, fontSize = 13.sp) }

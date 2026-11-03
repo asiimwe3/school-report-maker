@@ -45,7 +45,7 @@ class CorruptRecoveryTest {
             val backups = bdir.toFile().listFiles { f -> f.name.startsWith("backup-") }!!
                 .sortedByDescending { it.name }
             var r: SchoolData? = null
-            for (b in backups) { try { r = store.load(b.toPath()); break } catch (_: Exception) { } }
+            for (b in backups) { try { r = store.load(b.toPath()); break } catch (e: Exception) { e.printStackTrace() } }
             r
         }
         assertNotNull(recovered)

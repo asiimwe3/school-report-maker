@@ -386,7 +386,7 @@ fun shareTeacherInvite(schoolName: String, code: String, teacherName: String) {
     try {
         java.awt.Desktop.getDesktop().browse(java.net.URI(
             "https://wa.me/?text=" + java.net.URLEncoder.encode(msg, "UTF-8")))
-    } catch (_: Exception) { }
+    } catch (e: Exception) { e.printStackTrace() }
 }
 
 fun shareInviteOnWhatsApp(schoolName: String, code: String, headTeacher: String) {
@@ -398,7 +398,7 @@ fun shareInviteOnWhatsApp(schoolName: String, code: String, headTeacher: String)
     try {
         java.awt.Desktop.getDesktop().browse(java.net.URI(
             "https://wa.me/?text=" + java.net.URLEncoder.encode(msg, "UTF-8")))
-    } catch (_: Exception) { }
+    } catch (e: Exception) { e.printStackTrace() }
 }
 
 // Cloud screen (nav: SYSTEM → Cloud & Online)
@@ -506,7 +506,7 @@ fun CloudScreen(state: AppState) {
                             try {
                                 val sel = java.awt.datatransfer.StringSelection(s.cloudInviteCode)
                                 java.awt.Toolkit.getDefaultToolkit().systemClipboard.setContents(sel, null)
-                            } catch (_: Exception) { }
+                            } catch (e: Exception) { e.printStackTrace() }
                         }, shape = RoundedCornerShape(10.dp), colors = ButtonDefaults.buttonColors(containerColor = Theme.ACCENT), modifier = Modifier.height(40.dp)) { Text("Copy code", fontSize = 12.sp) }
                         Button({ shareInviteOnWhatsApp(state.data.school.name, s.cloudInviteCode, state.data.school.headTeacher.ifBlank { "The Head Teacher" }) },
                             shape = RoundedCornerShape(10.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1FAF55)), modifier = Modifier.height(40.dp)) { Text("Share on WhatsApp", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold) }
@@ -672,7 +672,7 @@ fun CloudScreen(state: AppState) {
                                 try {
                                     val sel = java.awt.datatransfer.StringSelection(inv.code)
                                     java.awt.Toolkit.getDefaultToolkit().systemClipboard.setContents(sel, null)
-                                } catch (_: Exception) { }
+                                } catch (e: Exception) { e.printStackTrace() }
                             }, shape = RoundedCornerShape(8.dp), colors = ButtonDefaults.buttonColors(containerColor = Theme.ACCENT), modifier = Modifier.height(32.dp)) { Text("Copy", fontSize = 11.sp) }
                             if (!inv.used) Button({
                                 shareInviteOnWhatsApp(state.data.school.name, inv.code, state.data.school.headTeacher.ifBlank { "The Head Teacher" })

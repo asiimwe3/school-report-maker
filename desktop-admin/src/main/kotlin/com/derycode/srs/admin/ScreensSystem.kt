@@ -329,7 +329,7 @@ fun PreviewScreen(state: AppState) {
                     val f = outDir.resolve("preview-${label.replace(" ", "")}-term${term.number}.docx")
                     try {
                         DocxReport.writeClassReport(f, d, results, layout, classTemplate?.accentColor)
-                        try { Desktop.getDesktop().open(f.toFile()) } catch (_: Exception) { }
+                        try { Desktop.getDesktop().open(f.toFile()) } catch (e: Exception) { e.printStackTrace() }
                         msg = "Saved ${results.size} reports to ${f.fileName}"
                     } catch (e: Exception) { msg = "Could not generate: ${e.message}" }
                 }
@@ -384,7 +384,7 @@ fun PreviewScreen(state: AppState) {
                         Files.createDirectories(outDir)
                         val f = outDir.resolve("preview-${sid}.docx")
                         DocxReport.writeStudentReport(f, d, r, layout, classTemplate?.accentColor)
-                        try { Desktop.getDesktop().open(f.toFile()) } catch (_: Exception) { }
+                        try { Desktop.getDesktop().open(f.toFile()) } catch (e: Exception) { e.printStackTrace() }
                         msg = "Saved to ${f.fileName}"
                     }
                 }
@@ -548,7 +548,7 @@ fun SettingsScreen(state: AppState) {
                         try {
                             val sel = java.awt.datatransfer.StringSelection(s.cloudInviteCode)
                             java.awt.Toolkit.getDefaultToolkit().systemClipboard.setContents(sel, null)
-                        } catch (_: Exception) { }
+                        } catch (e: Exception) { e.printStackTrace() }
                     }
                     Btn("Share on WhatsApp") {
                         shareInviteOnWhatsApp(state.data.school.name, s.cloudInviteCode, state.data.school.headTeacher.ifBlank { "The Head Teacher" })
@@ -790,7 +790,7 @@ fun BackupHistoryScreen(state: AppState) {
                 }
                 Btn("Open backups folder") {
                     val dir = dataDir.resolve("backups").toFile()
-                    if (dir.exists()) try { Desktop.getDesktop().open(dir) } catch (_: Exception) { }
+                    if (dir.exists()) try { Desktop.getDesktop().open(dir) } catch (e: Exception) { e.printStackTrace() }
                 }
                 if (msg.isNotEmpty()) Text(msg, color = Theme.GOOD, fontSize = 14.sp)
             }
@@ -1133,7 +1133,7 @@ fun ImportExportScreen(state: AppState) {
                     msg = "Saved ${f.fileName} (${d.termResults.size} results)"
                 }
                 Btn("Open exports folder") {
-                    if (exportDir.toFile().exists()) try { Desktop.getDesktop().open(exportDir.toFile()) } catch (_: Exception) { }
+                    if (exportDir.toFile().exists()) try { Desktop.getDesktop().open(exportDir.toFile()) } catch (e: Exception) { e.printStackTrace() }
                 }
             }
             if (msg.isNotEmpty()) Text(msg, color = Theme.GOOD, fontSize = 14.sp)

@@ -26,3 +26,11 @@ The release workflow currently attaches an unsigned debug APK so field testers c
 ## Publishing
 
 After validation, commit all changes, push `main`, and create/push tag `v2.2.25`. The release workflow will build and attach the MSI and APK to that GitHub release.
+
+## After publishing a release (do not skip)
+
+1. Open https://github.com/asiimwe3/school-report-maker/releases/latest and confirm the `.msi` and
+   `.apk` assets are listed with the **exact filenames** written in `version.json`.
+2. Open every URL in `version.json` in a browser — each must download, not 404.
+3. Confirm `versionName` / `versionCode` in `teacher-app/build.gradle.kts` and
+   `consoleVersion` in `desktop-admin/build.gradle.kts` match `version.json`.

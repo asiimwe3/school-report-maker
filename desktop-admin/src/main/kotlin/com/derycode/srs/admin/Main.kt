@@ -189,7 +189,7 @@ private fun pickAsset(kind: String, onPicked: (String) -> Unit) {
             val dest = assetsDir.resolve("$kind.$ext")
             java.nio.file.Files.copy(src, dest, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
             onPicked(dest.toAbsolutePath().toString())
-        } catch (_: Exception) { }
+        } catch (e: Exception) { e.printStackTrace() }
     }
 }
 

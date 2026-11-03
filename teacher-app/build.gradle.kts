@@ -28,10 +28,26 @@ android {
     // made the app look like "it won't install / won't open" on teachers' phones.
     signingConfigs {
         create("upload") {
-            storeFile = rootProject.file("keys/teacher-upload.keystore")
-            storePassword = "derycode-teacher"
-            keyAlias = "teacher-upload"
-            keyPassword = "derycode-teacher"
+            // Signing material. CI should provide SRS_KEYSTORE_B64 (base64 of the
+            // keystore) + SRS_KEYSTORE_PASSWORD so the keystore can be rotated and
+            // removed from the repo. Falls back to the committed keystore so local
+            // builds and existing CI keep working unchanged.
+            val pathFromEnv = System.getenv("SRS_KEYSTORE_PATH")
+            val b64 = System.getenv("SRS_KEYSTORE_B64")
+            val keystoreFile: java.io.File = when {
+                !pathFromEnv.isNullOrBlank() -> file(pathFromEnv)
+                !b64.isNullOrBlank() -> {
+                    val out = java.io.File(rootProject.projectDir, "keys/teacher-upload.keystore")
+                    out.parentFile?.mkdirs()
+                    out.writeBytes(java.util.Base64.getDecoder().decode(b64))
+                    out
+                }
+                else -> rootProject.file("keys/teacher-upload.keystore")
+            }
+            storeFile = keystoreFile
+            storePassword = System.getenv("SRS_KEYSTORE_PASSWORD") ?: "derycode-teacher"
+            keyAlias = System.getenv("SRS_KEY_ALIAS") ?: "teacher-upload"
+            keyPassword = System.getenv("SRS_KEY_PASSWORD") ?: "derycode-teacher"
         }
     }
 

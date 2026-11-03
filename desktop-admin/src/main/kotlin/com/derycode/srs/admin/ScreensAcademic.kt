@@ -439,7 +439,7 @@ fun ReportsScreen(state: AppState) {
                                 shown?.let { r ->
                                     val f = outDir.resolve("student-${r.studentId}-report.docx")
                                     DocxReport.writeStudentReport(f, d, r, layout, templateFor(d, cls)?.accentColor)
-                                    try { Desktop.getDesktop().open(f.toFile()) } catch (_: Exception) { }
+                                    try { Desktop.getDesktop().open(f.toFile()) } catch (e: Exception) { e.printStackTrace() }
                                 }
                             }
                             Btn("Print / save as PDF") {
@@ -451,7 +451,7 @@ fun ReportsScreen(state: AppState) {
                                     val html = com.derycode.srs.core.report.ReportEngine.studentReport(d, r, layout)
                                     val f = outDir.resolve("card-${r.studentId}-${layout.name.lowercase()}.html")
                                     Files.writeString(f, html)
-                                    try { Desktop.getDesktop().open(f.toFile()) } catch (_: Exception) { }
+                                    try { Desktop.getDesktop().open(f.toFile()) } catch (e: Exception) { e.printStackTrace() }
                                 }
                             }
                             Btn("Preview whole class", primary = false) { state.screen = "preview" }
@@ -482,7 +482,7 @@ fun ReportsScreen(state: AppState) {
                                 } + dd.reports)
                             }
                             state.refresh()
-                            try { Desktop.getDesktop().open(f.toFile()) } catch (_: Exception) { }
+                            try { Desktop.getDesktop().open(f.toFile()) } catch (e: Exception) { e.printStackTrace() }
                         }
                         Btn("Print merit list (Word)", primary = false) {
                             val outDir = dataDir.resolve("reports")
@@ -490,14 +490,14 @@ fun ReportsScreen(state: AppState) {
                             val label = if (cls.stream.isBlank()) cls.name else "${cls.name} ${cls.stream}"
                             val f = outDir.resolve("merit-${label.replace(" ", "")}-term${term.number}.docx")
                             DocxReport.writeMeritList(f, d, results, label, "Term ${term.number} ${year?.year}")
-                            try { Desktop.getDesktop().open(f.toFile()) } catch (_: Exception) { }
+                            try { Desktop.getDesktop().open(f.toFile()) } catch (e: Exception) { e.printStackTrace() }
                         }
                         Btn("Generate single (first student)", primary = false) {
                             val outDir = dataDir.resolve("reports")
                             Files.createDirectories(outDir)
                             val f = outDir.resolve("student-${results.first().studentId}-report.docx")
                             DocxReport.writeStudentReport(f, d, results.first(), layout, templateFor(d, cls)?.accentColor)
-                            try { Desktop.getDesktop().open(f.toFile()) } catch (_: Exception) { }
+                            try { Desktop.getDesktop().open(f.toFile()) } catch (e: Exception) { e.printStackTrace() }
                         }
                     }
                 }
@@ -586,7 +586,7 @@ fun SyncScreen(state: AppState) {
                 Btn("Open exports folder", primary = false, onClick = {
                     val dir = dataDir.resolve("exports").toFile()
                     if (!dir.exists()) dir.mkdirs()
-                    try { java.awt.Desktop.getDesktop().open(dir) } catch (_: Exception) { }
+                    try { java.awt.Desktop.getDesktop().open(dir) } catch (e: Exception) { e.printStackTrace() }
                 })
             }
         }
@@ -789,7 +789,7 @@ fun AttendanceScreen(state: AppState) {
                     }
                     Files.writeString(f, "admissionNo,student,present,late,absent,attendancePercent\n$rows")
                     msg = "Saved ${f.fileName}"
-                    try { java.awt.Desktop.getDesktop().open(f.toFile().parentFile) } catch (_: Exception) { }
+                    try { java.awt.Desktop.getDesktop().open(f.toFile().parentFile) } catch (e: Exception) { e.printStackTrace() }
                 }
             }
             if (msg.isNotBlank()) Cell(msg, color = Theme.GOOD)
