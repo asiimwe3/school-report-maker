@@ -47,6 +47,20 @@ fun HomeScreen(state: TeacherState, onOpenClass: (String) -> Unit, onQuickAction
                 onOpenMarks = { onQuickAction(Route.Assessments) }
             )
         }
+        // ── A school switch happened: say where the old school's marks went ──
+        if (state.lastSwitchNote.isNotBlank()) {
+            item {
+                CardBox {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Icon(Icons.Filled.SwapHoriz, contentDescription = null, tint = ORANGE, modifier = Modifier.size(18.dp))
+                        Text(state.lastSwitchNote, color = NAVY, fontSize = 13.sp, modifier = Modifier.weight(1f))
+                        TextButton({ state.lastSwitchNote = "" }) { Text("OK", color = BLUE, fontWeight = FontWeight.Bold, fontSize = 13.sp) }
+                    }
+                    Spacer(Modifier.height(2.dp))
+                    Text("Only this school's learners, marks and timetable show on this phone now.", color = MUTED, fontSize = 12.sp)
+                }
+            }
+        }
         // ── My post: what the school has given me (role, duties, class) ──
         state.me?.let { me ->
             val myCt = d.classes.firstOrNull { it.classTeacherId == me.id }

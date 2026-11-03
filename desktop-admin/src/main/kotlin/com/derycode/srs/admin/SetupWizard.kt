@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.derycode.srs.core.model.SchoolIsolation
 import com.derycode.srs.core.model.SchoolCategory
 import com.derycode.srs.core.support.LicenseKeys
 import java.io.File
@@ -558,17 +559,39 @@ fun CloudScreen(state: AppState) {
                 }
                 if (bundles.isEmpty()) { busy = false; say(m != "ok", if (m == "ok") "No new teacher submissions." else m); return@Thread }
                 var imported = 0
+                var foreign = 0
+                var droppedRows = 0
                 var summary = ""
                 val tmp = File.createTempFile("srs-tmarks", ".json")
                 for (b in bundles) {
                     tmp.writeText(b)
+                    // Which school sent this? A bundle from another school is never
+                    // merged into this one, however it reached the cloud.
+                    val peek = try { state.repo.store.peekSchool(tmp.toPath()) } catch (_: Exception) { Pair("", "") }
+                    val bundleId = peek.first
+                    val bundleName = peek.second
+                    val fromThisSchool = SchoolIsolation.sameSchool(
+                        com.derycode.srs.core.model.SchoolData(
+                            school = com.derycode.srs.core.model.School(id = bundleId, name = bundleName)
+                        ),
+                        state.repo.data
+                    )
+                    if (!fromThisSchool) {
+                        foreign++
+                        continue
+                    }
                     val report = state.repo.store.importBundle(state.repo.data, tmp.toPath())
                     if (report.success) {
                         imported++
                         state.repo.mutate("TEACHER_MARKS_IMPORTED", "Marks", new = report.message) { d ->
-                            d.copy(marks = report.merged, students = report.mergedStudents, enrollments = report.mergedEnrollments,
+                            val merged = d.copy(marks = report.merged, students = report.mergedStudents, enrollments = report.mergedEnrollments,
                                 enrollmentRequests = report.mergedRequests, dutyRecords = report.mergedDutyRecords,
                                 gatePasses = report.mergedGatePasses, attendance = report.mergedAttendance)
+                            // any row pointing at a learner this school does not have
+                            // is another school's information: drop it, never show it
+                            val (clean, dropped) = SchoolIsolation.prune(merged)
+                            droppedRows += dropped
+                            clean
                         }
                         summary = report.message
                     }
@@ -576,7 +599,11 @@ fun CloudScreen(state: AppState) {
                 tmp.delete()
                 if (imported > 0) CloudApi.consumeTeacherBundles(CloudSync.url(st), CloudSync.key(st), state.repo.data.settings.cloudAccessToken, st.cloudSchoolId)
                 busy = false
-                say(imported == 0, if (imported > 0) "✓ Imported $imported teacher submission(s). $summary" else "Nothing imported.")
+                val extra = buildString {
+                    if (foreign > 0) append(" Skipped $foreign submission(s) that belong to another school.")
+                    if (droppedRows > 0) append(" Dropped $droppedRows row(s) that did not belong to this school.")
+                }
+                say(imported == 0, if (imported > 0) "✓ Imported $imported teacher submission(s). $summary$extra" else "Nothing imported.$extra" + if (foreign > 0) " Those marks stay with their own school." else "")
                 state.refresh()
             }.start()
         }, enabled = s.cloudSchoolId.isNotBlank() && !busy, shape = RoundedCornerShape(10.dp), colors = ButtonDefaults.buttonColors(containerColor = Theme.GOOD, contentColor = Color.White), modifier = Modifier.height(42.dp)) { Text("Pull Teacher Submissions", fontSize = 13.sp) }

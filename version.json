@@ -1,7 +1,8 @@
 {
-  "console": "2.3.21",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.21.msi",
-  "teacher": "1.20.0",
+  "console": "2.3.22",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.22.msi",
+  "teacher": "1.20.1",
   "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.0.apk",
-  "notes": "Teachers screen: when someone leaves, move every timetable period, subject link, class-teacher post and duty to the colleague taking over in one step, then their access switches off."
+  "notes": "Strict school separation: joining a different school now replaces everything and archives the old school on the phone, marks sent to the school are only this school's learners, and the console refuses submissions from another school.",
+  "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.1.apk"
 }

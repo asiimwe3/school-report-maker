@@ -65,7 +65,7 @@ class MainActivity : ComponentActivity() {
 // State & storage — local file is the primary database (never requires internet)
 // ─────────────────────────────────────────────────────────────────────────────
 
-class TeacherState(context: Context) {
+class TeacherState(private val context: Context) {
     private val store = JsonStore()
     private val file: Path = context.filesDir.toPath().resolve("school-data.json")
     val exportDir: File? = context.getExternalFilesDir(null)
@@ -173,17 +173,21 @@ class TeacherState(context: Context) {
         val f = dir.resolve("school-data-from-admin.json")
         if (!f.exists()) return "File not found: ${f.name} — copy it from the admin computer first (USB/Bluetooth)."
         return try {
-            val (incomingId, incomingName) = store.peekSchool(f.toPath())
-            val sameSchool = incomingId.isBlank() || incomingId == data.school.id || data.students.isEmpty() && data.marks.isEmpty()
+            val incomingCheck = store.loadSchoolConfigFresh(f.toPath())
+            val incomingName = incomingCheck.school.name.ifBlank { incomingCheck.school.id }
+            val sameSchool = data.students.isEmpty() && data.marks.isEmpty() ||
+                SchoolIsolation.sameSchool(incomingCheck, data)
             if (!sameSchool) {
-                pendingSchoolName = incomingName.ifBlank { incomingId }
+                pendingSchoolName = incomingName
                 "This file is from ${pendingSchoolName} — but this phone already holds ${data.school.name.ifBlank { "another school" }} with ${data.students.size} students. Importing would mix two schools! Tap 'Switch school' below to replace everything, or copy the correct file."
             } else {
                 pendingSchoolName = null
-                val imported = store.loadSchoolConfig(f.toPath(), data)
-                data = imported
+                val merged = store.loadSchoolConfig(f.toPath(), data)
+                // a mark/comment for a learner this school does not have is another
+                // school's row: drop it here so it can never surface or be sent
+                data = SchoolIsolation.prune(merged).first
                 save()
-                "✓ Connected to ${imported.school.name.ifBlank { "your school" }} — imported ${imported.classes.size} classes, ${imported.students.size} students, ${imported.subjects.size} subjects. Your marks were kept."
+                "✓ Connected to ${data.school.name.ifBlank { "your school" }} — imported ${data.classes.size} classes, ${data.students.size} students, ${data.subjects.size} subjects. Your marks were kept."
             }
         } catch (_: Exception) { "Import failed — file unreadable or wrong format." }
     }
@@ -222,7 +226,9 @@ class TeacherState(context: Context) {
         val dir = exportDir ?: return null
         val target = File(dir, "cloud-bundle-temp.json")
         return try {
-            store.exportBundle(target.toPath(), data.school.name, deviceId = "teacher-cloud", marks = data.marks,
+            val mine = SchoolIsolation.scopedMarks(data)
+            if (mine.isEmpty()) return null
+            store.exportBundle(target.toPath(), data.school.name, deviceId = "teacher-cloud", marks = mine,
                 students = data.students, enrollmentRequests = data.enrollmentRequests,
                 dutyRecords = data.dutyRecords, gatePasses = data.gatePasses, attendance = data.attendance)
             target.readText().also { target.delete() }
@@ -283,14 +289,32 @@ class TeacherState(context: Context) {
      * streams, subjects, staff, timetable, calendar, grading and the learners.
      * Marks already on this phone for the SAME student/subject/term are kept.
      */
+    /**
+     * Joining a school by code. If this code opens a DIFFERENT school, the incoming
+     * setup replaces everything: not one mark, comment or learner of the old school
+     * is carried across, so a second school's information can never show up here.
+     * The old school is archived to a file first, so nothing a teacher typed is lost.
+     */
     fun adoptSchoolSetup(incoming: SchoolData, code: String) {
-        val keepMarks = data.marks.filter { local ->
-            incoming.marks.none { it.studentId == local.studentId && it.subjectId == local.subjectId && it.termId == local.termId && it.componentId == local.componentId }
-        }
-        data = incoming.copy(marks = incoming.marks + keepMarks)
+        val previous = data
+        val switching = previous.students.isNotEmpty() && !SchoolIsolation.sameSchool(incoming, previous)
+        if (switching) archivePreviousSchool(previous)
+        data = SchoolIsolation.adopt(incoming, previous)
         save()
         codeFile.writeText(code.trim().uppercase())
         schoolCode = code.trim().uppercase()
+        if (switching) lastSwitchNote = "Replaced " + previous.school.name + " (" + previous.marks.size + " marks archived on this phone)."
+    }
+
+    /** Notes for the UI after a school switch, cleared when the teacher reads it. */
+    var lastSwitchNote by mutableStateOf("")
+
+    private fun archivePreviousSchool(previous: SchoolData) {
+        try {
+            val slug = previous.school.name.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-').ifBlank { "school" }
+            val f = java.io.File(context.filesDir, "archived-school-" + slug + ".json")
+            store.save(f.toPath(), previous)
+        } catch (_: Exception) { /* archiving must never block the switch */ }
     }
 
     /** The invite code this phone joined with — kept so sending marks never asks again. */
