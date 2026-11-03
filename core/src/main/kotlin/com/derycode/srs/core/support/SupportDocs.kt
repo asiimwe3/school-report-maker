@@ -28,6 +28,9 @@ data class UpdateInfo(
     val teacher: String = "",
     val consoleDownload: String = "",
     val teacherDownload: String = "",
+    /** The teacher app for a laptop (Compose Desktop) - its own installer. */
+    val teacherDesktop: String = "",
+    val teacherDesktopDownload: String = "",
     val released: String = ""
 ) {
     val consoleVersion: String get() = console.ifBlank { versionName }

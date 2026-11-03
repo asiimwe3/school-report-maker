@@ -26,6 +26,29 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: gh release upload "$GITHUB_REF_NAME" desktop-admin/build/compose/binaries/main/msi/*.msi --clobber
 
+  windows-teacher-msi:
+    name: Build the laptop teacher installer and attach it
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.9
+      - name: Package the teacher app for Windows
+        run: gradle :desktop-teacher:packageMsi
+        shell: bash
+      - name: Attach it to the GitHub release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$GITHUB_REF_NAME" desktop-teacher/build/compose/binaries/main/msi/*.msi --clobber
+
   android-apk:
     name: Build teacher APK and attach to release
     runs-on: ubuntu-latest
@@ -51,3 +74,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release upload "$GITHUB_REF_NAME" "$APK" --clobber
+
+  attach-version-json:
+    name: Attach version.json (in-app update check reads this)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$GITHUB_REF_NAME" version.json --clobber

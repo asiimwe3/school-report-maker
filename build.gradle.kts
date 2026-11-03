@@ -24,6 +24,9 @@ val verifyVersionJson by tasks.registering {
 
         val teacher = version(Regex("versionName\\s*=\\s*\"([^\"]+)\""), "teacher-app/build.gradle.kts")
         val console = version(Regex("val consoleVersion\\s*=\\s*\"([^\"]+)\""), "desktop-admin/build.gradle.kts")
+        val teacherDesktop = version(
+            Regex("val teacherDesktopVersion\\s*=\\s*\"([^\"]+)\""), "desktop-teacher/build.gradle.kts"
+        )
         val text = root.file("version.json").asFile.readText()
         fun field(name: String) = Regex("\"$name\"\\s*:\\s*\"([^\"]*)\"").find(text)?.groupValues?.get(1)
         val base = "https://github.com/asiimwe3/school-report-maker/releases/latest/download"
@@ -33,14 +36,16 @@ val verifyVersionJson by tasks.registering {
             "consoleDownload" to "$base/SchoolReportMaker-$console.msi",
             "teacher" to teacher,
             "teacherDownload" to "$base/srs-teacher-$teacher.apk",
-            "apkDownload" to "$base/srs-teacher-$teacher.apk"
+            "apkDownload" to "$base/srs-teacher-$teacher.apk",
+            "teacherDesktop" to teacherDesktop,
+            "teacherDesktopDownload" to "$base/SchoolReportMakerTeacher-$teacherDesktop.msi"
         )
         val wrong = expected.filter { (k, v) -> field(k) != v }
         if (wrong.isNotEmpty()) {
             val detail = wrong.entries.joinToString("\n") { (k, v) -> "  $k is \"${field(k)}\", build files say \"$v\"" }
             throw GradleException("version.json is out of date with the builds:\n$detail\nRun: python3 scripts/sync_version.py")
         }
-        println("version.json matches the builds (console $console, teacher $teacher)")
+        println("version.json matches the builds (console $console, teacher $teacher, teacher desktop $teacherDesktop)")
     }
 }
 

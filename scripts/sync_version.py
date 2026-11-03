@@ -31,6 +31,9 @@ def read(pattern: str, path: str) -> str:
 def main() -> int:
     teacher = read(r'versionName\s*=\s*"([^"]+)"', "teacher-app/build.gradle.kts")
     console = read(r'val consoleVersion\s*=\s*"([^"]+)"', "desktop-admin/build.gradle.kts")
+    teacher_desktop = read(
+        r'val teacherDesktopVersion\s*=\s*"([^"]+)"', "desktop-teacher/build.gradle.kts"
+    )
 
     path = ROOT / "version.json"
     current = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
@@ -41,6 +44,9 @@ def main() -> int:
         "teacher": teacher,
         "teacherDownload": f"{RELEASES}/srs-teacher-{teacher}.apk",
         "apkDownload": f"{RELEASES}/srs-teacher-{teacher}.apk",
+        # the same teacher app, for a laptop: its own installer, its own version
+        "teacherDesktop": teacher_desktop,
+        "teacherDesktopDownload": f"{RELEASES}/SchoolReportMakerTeacher-{teacher_desktop}.msi",
         "released": current.get("released") or date.today().isoformat(),
         "notes": current.get("notes", ""),
     }
@@ -53,11 +59,15 @@ def main() -> int:
                 print(f"version.json stale: {k} is {have!r}, build files say {want!r}")
             print("run: python3 scripts/sync_version.py")
             return 1
-        print(f"version.json matches the builds (console {console}, teacher {teacher})")
+        print(
+            f"version.json matches the builds (console {console}, teacher {teacher}, "
+            f"teacher desktop {teacher_desktop})"
+        )
         return 0
 
     # keep the file's key order stable and readable
-    order = ["console", "consoleDownload", "teacher", "teacherDownload", "apkDownload", "released", "notes"]
+    order = ["console", "consoleDownload", "teacher", "teacherDownload", "apkDownload",
+             "teacherDesktop", "teacherDesktopDownload", "released", "notes"]
     merged = {k: wanted[k] for k in order if k in wanted}
     for k, v in current.items():
         merged.setdefault(k, v)
