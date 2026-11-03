@@ -75,6 +75,7 @@ fun CloudScreen(state: TeacherState, onScan: () -> Unit = {}) {
     var phone by remember { mutableStateOf(state.me?.phone ?: "") }
     var contacts by remember { mutableStateOf("") }
     var myRole by remember { mutableStateOf("TEACHER") }
+    var photoMsg by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var photoB64 by remember { mutableStateOf("") }
 
@@ -169,8 +170,16 @@ fun CloudScreen(state: TeacherState, onScan: () -> Unit = {}) {
             val bmp = if (scale < 1f) Bitmap.createScaledBitmap(raw, (raw.width * scale).toInt(), (raw.height * scale).toInt(), true) else raw
             val out = ByteArrayOutputStream()
             bmp.compress(Bitmap.CompressFormat.JPEG, 78, out)
-            photoB64 = Base64.encodeToString(out.toByteArray(), Base64.NO_WRAP)
-        } catch (_: Exception) { }
+            val bytes = out.toByteArray()
+            if (bytes.size > 900_000) {
+                photoMsg = "That photo is too large. Choose a smaller one."
+            } else {
+                photoB64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
+                photoMsg = ""
+            }
+        } catch (e: Exception) {
+            photoMsg = "Could not read that picture (${e.message?.take(40) ?: "unreadable file"}). Try another."
+        }
     }
 
     // ── STEP 1: invite code → create your account ──
@@ -298,7 +307,11 @@ fun CloudScreen(state: TeacherState, onScan: () -> Unit = {}) {
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password), modifier = Modifier.fillMaxWidth())
                 Spacer(Modifier.height(8.dp))
                 Cell("Your role at the school", MUTED, true)
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+                androidx.compose.foundation.layout.FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
                     listOf("Teacher" to "TEACHER", "Head Teacher" to "HEAD_TEACHER", "Admin" to "SCHOOL_ADMIN", "Data Entry" to "DATA_ENTRY").forEach { (label, value) ->
                         FilterChip(selected = myRole == value, onClick = { myRole = value }, label = { Text(label, fontSize = 12.sp) },
                             colors = FilterChipDefaults.filterChipColors(
@@ -308,6 +321,10 @@ fun CloudScreen(state: TeacherState, onScan: () -> Unit = {}) {
                                 selectedLabelColor = Color.White))
                     }
                 }
+                Text(
+                    "Your post is saved with your name. The head teacher can correct it on the console at any time.",
+                    color = MUTED, fontSize = 11.sp
+                )
                 Spacer(Modifier.height(12.dp))
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Box(Modifier.size(64.dp).background(NAVY, CircleShape), contentAlignment = Alignment.Center) {
@@ -320,8 +337,16 @@ fun CloudScreen(state: TeacherState, onScan: () -> Unit = {}) {
                         } else Icon(Icons.Filled.Person, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
                     }
                     Column {
-                        Cell("Passport photo (optional)", MUTED, true)
-                        TextButton(onClick = { photoPicker.launch("image/*") }) { Text("Add photo", color = BLUE) }
+                        Cell(if (photoB64.isBlank()) "Passport photo (optional)" else "Your photo", MUTED, true)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            TextButton(onClick = { photoPicker.launch("image/*") }) {
+                                Text(if (photoB64.isBlank()) "Add photo" else "Change", color = BLUE)
+                            }
+                            if (photoB64.isNotBlank()) {
+                                TextButton(onClick = { photoB64 = "" }) { Text("Remove", color = ORANGE) }
+                            }
+                        }
+                        if (photoMsg.isNotBlank()) Text(photoMsg, color = ORANGE, fontSize = 11.sp)
                     }
                 }
                 Spacer(Modifier.height(12.dp))
