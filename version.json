@@ -1,9 +1,9 @@
 {
   "console": "2.3.26",
   "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.26.msi",
-  "teacher": "1.20.2",
-  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.2.apk",
-  "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.2.apk",
+  "teacher": "1.20.3",
+  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.3.apk",
+  "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.3.apk",
   "released": "2026-11-03",
-  "notes": "Teacher 1.20.2: the Subject and Assessment Type rows now scroll sideways, so long names such as Entrepreneurship or End of Term stay readable instead of collapsing into one letter per line. Console 2.3.26 unchanged: new or repaired computers can sign in to the school account and pull that school's cloud copy, and the account password is shown so it can be written down."
+  "notes": "1.20.3 puts the marks sheet tools (download the class list, import it back, scan to upload marks) above the Save and Continue button so scanning is on the first marks screen, and names it plainly: Scan to upload marks (photo)."
 }

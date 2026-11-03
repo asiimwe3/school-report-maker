@@ -96,13 +96,6 @@ fun EnterMarksScreen(state: TeacherState, classId: String, initialSubjectId: Str
         }
         if (!showGrid) {
             item {
-                Button(
-                    onClick = { showGrid = true },
-                    colors = ButtonDefaults.buttonColors(containerColor = BLUE),
-                    modifier = Modifier.fillMaxWidth().height(48.dp)
-                ) { Text("Save & Continue", fontWeight = FontWeight.Bold); Spacer(Modifier.width(6.dp)); Icon(Icons.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp)) }
-            }
-            item {
                 SheetToolsCard(
                     state = state,
                     classId = classId,
@@ -113,6 +106,13 @@ fun EnterMarksScreen(state: TeacherState, classId: String, initialSubjectId: Str
                     locked = locked,
                     onMessage = { msg = it }
                 )
+            }
+            item {
+                Button(
+                    onClick = { showGrid = true },
+                    colors = ButtonDefaults.buttonColors(containerColor = BLUE),
+                    modifier = Modifier.fillMaxWidth().height(48.dp)
+                ) { Text("Save & Continue", fontWeight = FontWeight.Bold); Spacer(Modifier.width(6.dp)); Icon(Icons.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp)) }
             }
             if (msg.isNotEmpty()) item {
                 CardBox { Cell(msg, GREEN, true) }

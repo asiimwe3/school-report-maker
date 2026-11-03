@@ -178,9 +178,9 @@ internal fun SheetToolsCard(
     }
 
     CardBox {
-        Cell("Marks sheet", MUTED, true)
+        Cell("Enter marks from a sheet", MUTED, true)
         Spacer(Modifier.height(8.dp))
-        Text("Download the class list, fill the scores, then import it back or photograph it. Names are matched to the register for you.",
+        Text("Scan to upload marks: download the class list, fill the scores by hand, then photograph the page. Names are matched to the register for you.",
             color = MUTED, fontSize = 14.sp)
         Spacer(Modifier.height(10.dp))
         OptionRowAction(Icons.Filled.Download, "Download marks entry template") {
@@ -193,7 +193,7 @@ internal fun SheetToolsCard(
             openTemplate.launch(arrayOf("text/*", "application/csv", "application/vnd.ms-excel", "*/*"))
         }
         Divider(color = STROKE, modifier = Modifier.padding(vertical = 4.dp))
-        OptionRowAction(Icons.Filled.PhotoCamera, "Scan a filled sheet (photo)") { photographSheet() }
+        OptionRowAction(Icons.Filled.PhotoCamera, "Scan to upload marks (photo)") { photographSheet() }
         if (busy) {
             Spacer(Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
