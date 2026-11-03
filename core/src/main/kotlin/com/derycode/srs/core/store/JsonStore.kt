@@ -328,14 +328,37 @@ class SchoolRepository(
         if (next.gradingSchemes.isEmpty()) { next = next.copy(gradingSchemes = com.derycode.srs.core.grading.GradingSchemes.ALL); changed = true }
         if (next.templates.isEmpty()) {
             next = next.copy(templates = listOf(
-                com.derycode.srs.core.model.ReportTemplate(id = "tpl-classic", name = "Classic", layout = com.derycode.srs.core.model.TemplateLayout.CLASSIC, isDefault = true),
+                com.derycode.srs.core.model.ReportTemplate(id = "tpl-standard", name = "Standard", layout = com.derycode.srs.core.model.TemplateLayout.SUMMARY, accentColor = "#0B5CAD", isDefault = true),
+                com.derycode.srs.core.model.ReportTemplate(id = "tpl-classic", name = "Classic", layout = com.derycode.srs.core.model.TemplateLayout.CLASSIC),
                 com.derycode.srs.core.model.ReportTemplate(id = "tpl-modern", name = "Modern", layout = com.derycode.srs.core.model.TemplateLayout.MODERN),
                 com.derycode.srs.core.model.ReportTemplate(id = "tpl-compact", name = "Compact", layout = com.derycode.srs.core.model.TemplateLayout.COMPACT),
                 com.derycode.srs.core.model.ReportTemplate(id = "tpl-plain", name = "Plain", layout = com.derycode.srs.core.model.TemplateLayout.PLAIN)
             ))
             changed = true
         }
+        next = withStandardAsDefault(next)
+        if (next != data) changed = true
         if (changed) { data = next; save() }
+    }
+
+    /**
+     * The school's own blue "Standard" summary card is the default report design.
+     * A school that already has the template keeps it; one that predates it gets it
+     * added. The default flips to Standard exactly once ([standardDefaultApplied]):
+     * after that, a design the school chooses is never overridden.
+     */
+    internal fun withStandardAsDefault(d: com.derycode.srs.core.model.SchoolData): com.derycode.srs.core.model.SchoolData {
+        if (d.settings.standardDefaultApplied) return d
+        val layout = com.derycode.srs.core.model.TemplateLayout.SUMMARY
+        var templates = d.templates
+        if (templates.none { it.layout == layout && !it.archived }) {
+            val archived = templates.firstOrNull { it.layout == layout }
+            templates = if (archived != null) templates.map { if (it.id == archived.id) it.copy(archived = false) else it }
+            else listOf(com.derycode.srs.core.model.ReportTemplate(id = "tpl-standard", name = "Standard", layout = layout, accentColor = "#0B5CAD")) + templates
+        }
+        val standardId = templates.first { it.layout == layout && !it.archived }.id
+        templates = templates.map { it.copy(isDefault = it.id == standardId) }
+        return d.copy(templates = templates, settings = d.settings.copy(standardDefaultApplied = true))
     }
 
     // ── School config for teacher phones (Section 45: teacher gets structure, admin gets marks) ──

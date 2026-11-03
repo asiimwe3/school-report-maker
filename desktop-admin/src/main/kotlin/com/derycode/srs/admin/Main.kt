@@ -244,7 +244,7 @@ fun main() = application {
     Theme.apply(repo.data.settings.theme.ifBlank { "Dark" })
     // v2.2.35 — name the default templates after the school, not generic words
     run {
-        val generic = setOf("Classic", "Modern", "Compact", "Plain")
+        val generic = setOf("Classic", "Modern", "Compact", "Plain")   // "Standard" keeps its name: it is the school's own card
         val sname = repo.data.school.name.ifBlank { "School" }
         if (repo.data.templates.any { it.name in generic }) {
             repo.mutate("TEMPLATES_AUTONAMED", "ReportTemplate") { dd ->

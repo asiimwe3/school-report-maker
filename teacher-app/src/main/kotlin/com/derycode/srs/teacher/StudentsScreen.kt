@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -41,9 +42,13 @@ fun StudentsListScreen(state: TeacherState, initialClassId: String?, onOpenStude
             ClassPickerRow(classes, classId) { classId = it }
             Spacer(Modifier.height(10.dp))
         }
-        Text(subject?.let { "${it.name} \u2013 ${classes.firstOrNull { c -> c.id == classId }?.let { classLabel(it) } ?: ""}" }
-            ?: classes.firstOrNull { it.id == classId }?.let { classLabel(it) } ?: "No class selected",
-            color = MUTED, fontSize = 16.sp)
+        val currentClass = classes.firstOrNull { c -> c.id == classId }
+        // the class list: name of the class, how many learners, and the subject in view
+        Text(
+            currentClass?.let { "${classLabel(it)}  \u00b7  ${state.studentsIn(classId).size} learners" } ?: "No class selected",
+            color = NAVY, fontSize = 17.sp, fontWeight = FontWeight.Bold
+        )
+        if (subject != null) { Text(subject.name, color = MUTED, fontSize = 14.sp) }
         Spacer(Modifier.height(8.dp))
         SearchField(query, { query = it }, "Search student name or index...")
         Spacer(Modifier.height(10.dp))
@@ -51,9 +56,9 @@ fun StudentsListScreen(state: TeacherState, initialClassId: String?, onOpenStude
             EmptyHint(if (classes.isEmpty()) "No classes assigned yet." else "No students found.")
         } else {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(students) { s ->
+                itemsIndexed(students) { i, s ->
                     val pct = latestPercent(state, s.id, subject?.id, termId)
-                    StudentRow(s, pct) { onOpenStudent(s.id) }
+                    StudentRow(i + 1, s, pct) { onOpenStudent(s.id) }
                 }
                 item { Spacer(Modifier.height(4.dp)) }
             }
@@ -69,11 +74,12 @@ private fun ClassPickerRow(classes: List<SchoolClass>, selected: String, onSelec
 }
 
 @Composable
-private fun StudentRow(s: Student, pct: Double?, onClick: () -> Unit) {
+private fun StudentRow(no: Int, s: Student, pct: Double?, onClick: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(CARD).clickable(onClick = onClick).padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        Text("$no", color = MUTED, fontSize = 14.sp, modifier = Modifier.width(22.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
         Avatar(s.firstName.take(1) + s.lastName.take(1), avatarColor(s.id), 38)
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {

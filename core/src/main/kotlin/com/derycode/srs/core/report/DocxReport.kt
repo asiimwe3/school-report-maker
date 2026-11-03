@@ -246,6 +246,7 @@ object DocxReport {
         val school = data.school
         var accent = (accentHex ?: school.colorPrimary).ifBlank { "1F4E79" }.let { colorHex(it) }
         if (layout == TemplateLayout.PLAIN) accent = "222222"
+        if (layout == TemplateLayout.SUMMARY) accent = "0B5CAD"   // the school's blue card
         val ink = if (school.colorSecondary.isBlank()) "222222" else colorHex(school.colorSecondary)
         val term = data.academicYears.asSequence()
             .flatMap { y -> y.terms.asSequence().map { t -> y to t } }
@@ -286,7 +287,7 @@ object DocxReport {
                 listOf("TERMLY REPORT CARD — $termLabel"),
                 listOf(listOf(school.name)))
             else -> doc.p(
-                if (layout == TemplateLayout.COMPACT) "TERMLY REPORT CARD — $termLabel" else "TERMLY REPORT CARD",
+                if (layout == TemplateLayout.COMPACT) "TERMLY REPORT CARD — $termLabel" else if (layout == TemplateLayout.SUMMARY) "SUMMARY REPORT" else "TERMLY REPORT CARD",
                 bold = true, size = if (layout == TemplateLayout.COMPACT) 18 else 22, align = "center",
                 color = if (layout == TemplateLayout.PLAIN) ink else accent,
                 spacingAfter = if (layout == TemplateLayout.COMPACT) 20 else 30)
@@ -401,7 +402,7 @@ object DocxReport {
             val ms = data.marks.filter { m -> m.studentId == sid && m.termId == result.termId && m.type == com.derycode.srs.core.model.MarkType.VALUE && m.maxScore > 0 }
             if (ms.isEmpty()) null else ms.sumOf { it.score } / ms.sumOf { it.maxScore.toDouble() } * 100.0
         }
-        if (classAverages.size >= 2) {
+        if (classAverages.size >= 2 && layout != TemplateLayout.SUMMARY) {
             val classAvg = classAverages.average()
             doc.p("Class Performance Analysis", bold = true, size = 20, color = accent, spacingAfter = 20)
             doc.table(

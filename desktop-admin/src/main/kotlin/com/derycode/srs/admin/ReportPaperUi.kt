@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -297,11 +298,27 @@ private fun schoolLogo(school: School, modifier: Modifier, size: androidx.compos
     else Box(modifier.size(size))   // no logo — invisible spacer keeps the header symmetric
 }
 
+/** Loads a photo from disk for the screen, or null when there is none. */
+private fun loadBitmap(path: String?): androidx.compose.ui.graphics.ImageBitmap? {
+    if (path.isNullOrBlank()) return null
+    return try {
+        val p = Path.of(path)
+        if (Files.exists(p)) org.jetbrains.skia.Image.makeFromEncoded(Files.readAllBytes(p)).toComposeImageBitmap() else null
+    } catch (_: Exception) { null }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
-// Summary sheet — matches the school's own summary card: A1–A3 assessments,
+// Summary sheet ("Standard"): the school's blue summary card. A1-A3 assessments,
 // the 20/80 split, per-subject teacher comment and initials, both comments,
-// fees and term dates, three signature blocks and the stamp circle.
+// fees and term dates, signature lines and the stamp circle. Mirrors
+// ReportEngine.summaryReport so the screen shows what prints.
 // ─────────────────────────────────────────────────────────────────────────────
+
+private val StdBlue = Color(0xFF0B5CAD)
+private val StdBlueDark = Color(0xFF0A4C8F)
+private val StdBlueSoft = Color(0xFFDCEBFA)
+private val StdBlueLine = Color(0xFF7FB0E0)
+private val StdText = Color(0xFF0B2A4A)
 
 @Composable
 private fun SummaryPaper(
@@ -315,7 +332,6 @@ private fun SummaryPaper(
     muted: Color
 ) {
     val school = d.school
-    val line = Color(0xFFBBBBBB)
     val termNo = term?.second?.number ?: 1
     val year = term?.first?.year ?: ""
     val clsName = cls?.name ?: "—"
@@ -324,53 +340,69 @@ private fun SummaryPaper(
     fun initialsOf(name: String) = name.split(' ', '.', '-')
         .filter { it.isNotBlank() }.map { it.first().uppercaseChar() }.take(3).joinToString("")
 
-    Column(Modifier.fillMaxSize()) {
+    val averageGrade = result?.let { r ->
+        d.gradingSchemes.firstOrNull { it.id == r.schemeId }?.boundaries
+            ?.firstOrNull { r.averagePercent >= it.minScore && r.averagePercent <= it.maxScore + 0.999 }?.grade
+    }.orEmpty()
+    val head = d.teachers.firstOrNull { it.role == Role.HEAD_TEACHER }
+    val classTeacher = cls?.classTeacherId?.let { id -> d.teachers.firstOrNull { it.id == id } }
+
+    Column(Modifier.fillMaxSize().border(1.5.dp, StdBlue)) {
         // header
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-            schoolLogo(school, Modifier, 46.dp)
+        Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+            schoolLogo(school, Modifier, 50.dp)
             Spacer(Modifier.width(8.dp))
             Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(school.name.uppercase(), color = ink, fontSize = 19.sp, fontWeight = FontWeight.Black,
-                    fontFamily = FontFamily.Serif, textAlign = TextAlign.Center)
-                Text(
-                    (if (school.schoolType.isBlank()) "SECONDARY SCHOOL" else school.schoolType).uppercase(),
-                    color = muted, fontSize = 7.sp, fontWeight = FontWeight.Bold
-                )
-                if (school.motto.isNotBlank()) Text(school.motto, color = muted, fontSize = 7.sp, fontStyle = FontStyle.Italic)
-                contactLine(school, muted, 7.sp)
+                Text(school.name.uppercase(), color = StdBlue, fontSize = 17.sp, fontWeight = FontWeight.Black, textAlign = TextAlign.Center)
+                Text((if (school.schoolType.isBlank()) "SECONDARY SCHOOL" else school.schoolType).uppercase(),
+                    color = StdBlue, fontSize = 10.sp, fontWeight = FontWeight.Black)
+                if (school.motto.isNotBlank()) Text(school.motto, color = StdBlueDark, fontSize = 7.sp, fontStyle = FontStyle.Italic)
+                contactLine(school, StdBlueDark, 6.sp)
             }
             Spacer(Modifier.width(8.dp))
-            Column(
-                Modifier.width(84.dp).border(1.dp, ink).padding(horizontal = 4.dp, vertical = 5.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text("TERM $termNo", color = ink, fontSize = 10.sp, fontWeight = FontWeight.Black)
-                Text("TERMLY REPORT CARD", color = ink, fontSize = 6.sp, fontWeight = FontWeight.Bold)
-                Text(year, color = ink, fontSize = 10.sp, fontWeight = FontWeight.Black)
+            Box(Modifier.width(1.5.dp).height(48.dp).background(StdBlue))
+            Spacer(Modifier.width(8.dp))
+            Column(Modifier.width(78.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("TERM $termNo", color = StdBlue, fontSize = 9.sp, fontWeight = FontWeight.Black)
+                Text("SUMMARY REPORT", color = StdBlue, fontSize = 8.sp, fontWeight = FontWeight.Black, textAlign = TextAlign.Center)
+                Spacer(Modifier.height(3.dp))
+                Box(Modifier.background(StdBlue, RoundedCornerShape(4.dp)).padding(horizontal = 12.dp, vertical = 2.dp)) {
+                    Text(year, color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Black)
+                }
             }
         }
-        Spacer(Modifier.height(4.dp))
-        Box(Modifier.fillMaxWidth().height(2.dp).background(ink))
-        Spacer(Modifier.height(5.dp))
 
         // student information
-        Bar("STUDENT INFORMATION", ink)
-        Spacer(Modifier.height(2.dp))
-        Column(Modifier.fillMaxWidth().border(1.dp, line).padding(5.dp)) {
-            InfoLine("STUDENT NAME", student?.fullName ?: result?.studentId ?: "", "ADMISSION NO.", student?.admissionNo ?: "", ink, muted)
-            InfoLine("CLASS", clsName, "STREAM", stream, ink, muted)
-            InfoLine("RESULT", result?.division ?: result?.uceResult ?: result?.let { "${it.averagePercent.toInt()}%" } ?: "",
-                "POSITION", result?.classPosition?.takeIf { it > 0 }?.toString() ?: "", ink, muted)
+        Bar("STUDENT INFORMATION", StdBlue)
+        Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 5.dp)) {
+            Box(Modifier.size(width = 46.dp, height = 54.dp).border(1.dp, StdBlue).background(StdBlueSoft), contentAlignment = Alignment.Center) {
+                val bmp = remember(student?.photoPath) { loadBitmap(student?.photoPath) }
+                if (bmp != null) Image(BitmapPainter(bmp), contentDescription = "Passport photo", modifier = Modifier.fillMaxSize())
+                else {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Box(Modifier.size(15.dp).background(StdBlue, CircleShape))
+                        Spacer(Modifier.height(2.dp))
+                        Box(Modifier.size(width = 30.dp, height = 16.dp).background(StdBlue, RoundedCornerShape(topStart = 15.dp, topEnd = 15.dp)))
+                    }
+                }
+            }
+            Spacer(Modifier.width(8.dp))
+            Column(Modifier.weight(1f)) {
+                InfoLine("STUDENT NAME", student?.fullName ?: result?.studentId ?: "")
+                InfoLine("ADMISSION NO.", student?.admissionNo ?: "")
+                InfoLine("CLASS", clsName)
+                InfoLine("STREAM", stream)
+                InfoLine("RESULT", result?.division ?: result?.uceResult ?: result?.let { "${it.averagePercent.toInt()}%" } ?: "")
+            }
         }
-        Spacer(Modifier.height(5.dp))
 
         // marks table
-        Row(Modifier.fillMaxWidth().background(ink).padding(vertical = 3.dp, horizontal = 3.dp)) {
-            THead("SUBJECT", 1.7f, Color.White)
-            THead("A1", 0.5f, Color.White); THead("A2", 0.5f, Color.White); THead("A3", 0.5f, Color.White)
-            THead("FRNTV\n20%", 0.75f, Color.White); THead("EXAM\n80%", 0.75f, Color.White)
-            THead("TOTAL\n100%", 0.8f, Color.White); THead("GRADE", 0.55f, Color.White)
-            THead("TEACHER COMMENT", 1.7f, Color.White); THead("INIT", 0.45f, Color.White)
+        Row(Modifier.fillMaxWidth().background(StdBlueSoft).border(0.5.dp, StdBlueLine).padding(vertical = 4.dp, horizontal = 3.dp),
+            verticalAlignment = Alignment.CenterVertically) {
+            THead("SUBJECT", 1.7f); THead("A1", 0.5f); THead("A2", 0.5f); THead("A3", 0.5f)
+            THead("FRNTV\n(20%)", 0.75f); THead("EXAM\n(80%)", 0.75f)
+            THead("TOTAL\n(100%)", 0.8f); THead("GRADE", 0.55f)
+            THead("TEACHER COMMENT", 1.7f); THead("INITIALS", 0.55f)
         }
         val rows = result?.subjectResults.orEmpty()
         rows.forEach { r ->
@@ -383,123 +415,127 @@ private fun SummaryPaper(
             val init = d.teachers.firstOrNull { t ->
                 d.assignments.any { a -> a.teacherId == t.id && a.subjectId == r.subjectId && a.classId == cls?.id }
             }?.let { initialsOf(it.name) }.orEmpty()
-            Row(Modifier.fillMaxWidth().border(0.5.dp, line).padding(vertical = 2.dp, horizontal = 3.dp), verticalAlignment = Alignment.CenterVertically) {
-                TCell(name, 1.7f, ink, bold = true)
-                TCell(r.assessments.getOrElse(0) { -1.0 }.let(::cell), 0.5f, ink)
-                TCell(r.assessments.getOrElse(1) { -1.0 }.let(::cell), 0.5f, ink)
-                TCell(r.assessments.getOrElse(2) { -1.0 }.let(::cell), 0.5f, ink)
-                TCell(cell(r.formativePercent), 0.75f, ink)
-                TCell(cell(r.examPercent), 0.75f, ink)
-                TCell(if (r.percentage == r.percentage.toLong().toDouble()) r.percentage.toLong().toString() else "%.1f".format(r.percentage), 0.8f, ink, bold = true)
-                TCell(r.grade, 0.55f, ink, bold = true)
-                TCell(comment, 1.7f, muted)
-                TCell(init, 0.45f, ink)
+            Row(Modifier.fillMaxWidth().border(0.5.dp, StdBlueLine).padding(vertical = 2.dp, horizontal = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+                TCell(name, 1.7f, StdBlue, bold = true, left = true)
+                TCell(r.assessments.getOrElse(0) { -1.0 }.let(::cell), 0.5f, StdText)
+                TCell(r.assessments.getOrElse(1) { -1.0 }.let(::cell), 0.5f, StdText)
+                TCell(r.assessments.getOrElse(2) { -1.0 }.let(::cell), 0.5f, StdText)
+                TCell(cell(r.formativePercent), 0.75f, StdText)
+                TCell(cell(r.examPercent), 0.75f, StdText)
+                TCell(if (r.percentage == r.percentage.toLong().toDouble()) r.percentage.toLong().toString() else "%.1f".format(r.percentage), 0.8f, StdText, bold = true)
+                TCell(r.grade, 0.55f, StdText, bold = true)
+                TCell(comment, 1.7f, StdText, left = true)
+                TCell(init, 0.55f, StdText)
             }
         }
-        Row(Modifier.fillMaxWidth().background(Color(0xFFEFEFEF)).border(0.5.dp, line).padding(vertical = 3.dp, horizontal = 3.dp)) {
-            TCell("AVERAGE SCORE", 1.7f, ink, bold = true)
-            TCell("", 0.5f, ink); TCell("", 0.5f, ink); TCell("", 0.5f, ink); TCell("", 0.75f, ink); TCell("", 0.75f, ink)
-            TCell(result?.let { "%.1f".format(it.averagePercent) } ?: "", 0.8f, ink, bold = true)
-            TCell("", 0.55f, ink); TCell("", 1.7f, ink); TCell("", 0.45f, ink)
+        Row(Modifier.fillMaxWidth().background(StdBlueSoft).border(0.5.dp, StdBlueLine).padding(vertical = 3.dp, horizontal = 3.dp)) {
+            TCell("AVERAGE SCORE", 1.7f + 0.5f * 3 + 0.75f * 2, StdBlue, bold = true)
+            TCell(result?.let { "%.1f".format(it.averagePercent) } ?: "", 0.8f, StdBlue, bold = true)
+            TCell(averageGrade, 0.55f, StdBlue, bold = true)
+            TCell("", 1.7f, StdBlue); TCell("", 0.55f, StdBlue)
         }
         Spacer(Modifier.height(5.dp))
 
         // comments
-        Bar("COMMENTS", ink)
-        Spacer(Modifier.height(2.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-            CommentBox("CLASS TEACHER",
+        Bar("COMMENTS", StdBlue, center = true)
+        Row(Modifier.fillMaxWidth().padding(6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            CommentBox("Class Teacher:", classTeacher?.name.orEmpty(),
                 d.comments.filter { it.studentId == result?.studentId && it.termId == result?.termId && it.type == CommentType.CLASS_TEACHER }
-                    .joinToString(" ") { it.text },
-                line, ink, muted, Modifier.weight(1f))
-            CommentBox("HEAD TEACHER REMARKS",
+                    .joinToString(" ") { it.text }, Modifier.weight(1f))
+            CommentBox("Head Teacher Remarks:", head?.name ?: school.headTeacher,
                 d.comments.filter { it.studentId == result?.studentId && it.termId == result?.termId && it.type == CommentType.HEAD_TEACHER }
-                    .joinToString(" ") { it.text },
-                line, ink, muted, Modifier.weight(1f))
+                    .joinToString(" ") { it.text }, Modifier.weight(1f))
         }
-        Spacer(Modifier.height(5.dp))
 
         // fees and dates
-        Bar("FEES AND TERM DATES", ink)
-        Spacer(Modifier.height(2.dp))
-        Row(Modifier.fillMaxWidth().border(1.dp, line).padding(5.dp)) {
-            Column(Modifier.weight(1f)) {
-                Text("CURRENT TERM CLOSING DATE", color = muted, fontSize = 6.sp, fontWeight = FontWeight.Bold)
-                Text(term?.second?.endDate?.ifBlank { "____ / ____ / ______" } ?: "____ / ____ / ______", color = ink, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+        Bar("FEES AND TERM DATES", StdBlue, center = true)
+        Column(Modifier.fillMaxWidth().padding(6.dp).border(1.dp, StdBlue)) {
+            Row(Modifier.fillMaxWidth().background(StdBlueSoft).padding(4.dp)) {
+                Text("Current Term Closing Date", color = StdBlue, fontSize = 6.sp, fontWeight = FontWeight.Black,
+                    textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
+                Text("Next Term Opening Date", color = StdBlue, fontSize = 6.sp, fontWeight = FontWeight.Black,
+                    textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
             }
-            Column(Modifier.weight(1f)) {
-                Text("NEXT TERM OPENING DATE", color = muted, fontSize = 6.sp, fontWeight = FontWeight.Bold)
-                Text(term?.second?.nextTermBegins?.ifBlank { "____ / ____ / ______" } ?: "____ / ____ / ______", color = ink, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+            Row(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+                Text(term?.second?.endDate?.ifBlank { "____ / ____ / ______" } ?: "____ / ____ / ______", color = StdText, fontSize = 8.sp,
+                    fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
+                Text(term?.second?.nextTermBegins?.ifBlank { "____ / ____ / ______" } ?: "____ / ____ / ______", color = StdText, fontSize = 8.sp,
+                    fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
             }
         }
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(8.dp))
 
-        // signatures
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            SigBlock("Class Teacher", ink, muted, Modifier.weight(1f))
-            SigBlock("Head Teacher", ink, muted, Modifier.weight(1f))
-            Box(
-                Modifier.size(56.dp).border(1.dp, muted, CircleShape),
-                contentAlignment = Alignment.Center
-            ) { Text("SCHOOL\nSTAMP", color = muted, fontSize = 5.sp, textAlign = TextAlign.Center) }
+        // signatures + stamp
+        Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            SigBlock("Class Teacher", Modifier.weight(1f))
+            SigBlock("Head Teacher", Modifier.weight(1f))
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(Modifier.size(44.dp).border(1.dp, StdBlue, CircleShape))
+                Text("School Stamp", color = StdBlue, fontSize = 5.sp, fontWeight = FontWeight.Bold)
+            }
         }
-        Spacer(Modifier.height(6.dp))
-        Box(Modifier.fillMaxWidth().height(1.dp).background(ink))
-        Text(
-            school.motto.ifBlank { "Together for a Brighter Future" },
-            color = muted, fontSize = 7.sp, fontStyle = FontStyle.Italic,
-            textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()
-        )
+        Spacer(Modifier.weight(1f))
+        Box(Modifier.fillMaxWidth().background(StdBlue).padding(vertical = 4.dp), contentAlignment = Alignment.Center) {
+            Text(school.motto.ifBlank { "Together for a Brighter Future" }, color = Color.White, fontSize = 8.sp, fontStyle = FontStyle.Italic)
+        }
     }
 }
 
 @Composable
-private fun Bar(text: String, ink: Color) {
-    Box(Modifier.fillMaxWidth().background(ink).padding(horizontal = 5.dp, vertical = 2.dp)) {
-        Text(text, color = Color.White, fontSize = 6.sp, fontWeight = FontWeight.Bold)
+private fun Bar(text: String, color: Color, center: Boolean = false) {
+    Box(Modifier.fillMaxWidth().background(color).padding(horizontal = 8.dp, vertical = 2.dp),
+        contentAlignment = if (center) Alignment.Center else Alignment.CenterStart) {
+        Text(text, color = Color.White, fontSize = 7.sp, fontWeight = FontWeight.Black)
     }
 }
 
 @Composable
-private fun InfoLine(l1: String, v1: String, l2: String, v2: String, ink: Color, muted: Color) {
-    Row(Modifier.fillMaxWidth().padding(vertical = 1.dp)) {
-        Text("$l1: ", color = muted, fontSize = 6.sp, fontWeight = FontWeight.Bold)
-        Text(v1, color = ink, fontSize = 8.sp, modifier = Modifier.weight(1f))
-        Text("$l2: ", color = muted, fontSize = 6.sp, fontWeight = FontWeight.Bold)
-        Text(v2, color = ink, fontSize = 8.sp, modifier = Modifier.weight(1f))
+private fun InfoLine(label: String, value: String) {
+    Row(Modifier.fillMaxWidth().padding(vertical = 1.5.dp), verticalAlignment = Alignment.Bottom) {
+        Text(label, color = StdBlue, fontSize = 6.sp, fontWeight = FontWeight.Black, modifier = Modifier.width(62.dp))
+        Text(":", color = StdBlue, fontSize = 7.sp, fontWeight = FontWeight.Black, modifier = Modifier.width(8.dp))
+        Column(Modifier.weight(1f)) {
+            Text(value.ifBlank { " " }, color = StdText, fontSize = 8.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+            Box(Modifier.fillMaxWidth().height(0.8.dp).background(StdBlue))
+        }
     }
 }
 
 @Composable
-private fun androidx.compose.foundation.layout.RowScope.THead(text: String, weight: Float, color: Color) {
-    Text(text, color = color, fontSize = 5.sp, fontWeight = FontWeight.Bold, maxLines = 2,
+private fun androidx.compose.foundation.layout.RowScope.THead(text: String, weight: Float) {
+    Text(text, color = StdBlue, fontSize = 5.sp, fontWeight = FontWeight.Black, maxLines = 2,
         textAlign = TextAlign.Center, modifier = Modifier.weight(weight))
 }
 
 @Composable
-private fun androidx.compose.foundation.layout.RowScope.TCell(text: String, weight: Float, color: Color, bold: Boolean = false) {
+private fun androidx.compose.foundation.layout.RowScope.TCell(text: String, weight: Float, color: Color, bold: Boolean = false, left: Boolean = false) {
     Text(text, color = color, fontSize = 7.sp, fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal,
-        maxLines = 2, textAlign = TextAlign.Center, modifier = Modifier.weight(weight))
+        maxLines = 2, textAlign = if (left) TextAlign.Start else TextAlign.Center, modifier = Modifier.weight(weight))
 }
 
 @Composable
-private fun CommentBox(label: String, body: String, line: Color, ink: Color, muted: Color, modifier: Modifier = Modifier) {
-    Column(modifier.border(1.dp, line)) {
-        Box(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp)) {
-            Text(label, color = ink, fontSize = 6.sp, fontWeight = FontWeight.Bold)
+private fun CommentBox(label: String, person: String, body: String, modifier: Modifier = Modifier) {
+    Column(modifier.border(1.dp, StdBlue)) {
+        Row(Modifier.fillMaxWidth().background(StdBlueSoft).padding(horizontal = 5.dp, vertical = 3.dp)) {
+            Text(label, color = StdBlue, fontSize = 6.sp, fontWeight = FontWeight.Black)
+            Spacer(Modifier.width(3.dp))
+            Text(person, color = StdText, fontSize = 6.sp, fontWeight = FontWeight.Black)
         }
-        Box(Modifier.fillMaxWidth().height(1.dp).background(line))
-        Text(body.ifBlank { " " }, color = muted, fontSize = 7.sp,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 40.dp).padding(4.dp))
-        Text("Signature: ______________", color = muted, fontSize = 6.sp, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+        Text(body.ifBlank { " " }, color = StdText, fontSize = 7.sp,
+            modifier = Modifier.fillMaxWidth().heightIn(min = 36.dp).padding(5.dp))
+        Row(Modifier.fillMaxWidth().padding(horizontal = 5.dp, vertical = 4.dp), verticalAlignment = Alignment.Bottom) {
+            Text("Signature:", color = StdBlue, fontSize = 6.sp, fontWeight = FontWeight.Black)
+            Spacer(Modifier.width(4.dp))
+            Box(Modifier.weight(1f).height(0.8.dp).background(StdBlue))
+        }
     }
 }
 
 @Composable
-private fun SigBlock(label: String, ink: Color, muted: Color, modifier: Modifier = Modifier) {
+private fun SigBlock(label: String, modifier: Modifier = Modifier) {
     Column(modifier) {
-        Box(Modifier.fillMaxWidth().height(1.dp).background(ink))
+        Box(Modifier.fillMaxWidth().height(1.dp).background(StdBlue))
         Spacer(Modifier.height(2.dp))
-        Text(label, color = muted, fontSize = 6.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+        Text(label, color = StdBlue, fontSize = 6.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
     }
 }

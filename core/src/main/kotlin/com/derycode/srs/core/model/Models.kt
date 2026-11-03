@@ -489,6 +489,8 @@ data class AppSettings(
     val feePinHash: String = "",  // v2.2.7: PIN required to edit fee structures/balances
     // ── Onboarding & cloud (v2.2.0) ──
     val setupComplete: Boolean = false,
+    /** Set once the "Standard" card has been made the default, so a school that later picks another design keeps it. */
+    val standardDefaultApplied: Boolean = false,
     val cloudUrl: String = "",
     val cloudKey: String = "",
     val cloudEmail: String = "",

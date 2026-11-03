@@ -1,9 +1,10 @@
 {
-  "console": "2.3.26",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.26.msi",
-  "teacher": "1.20.3",
-  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.3.apk",
-  "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.3.apk",
+  "console": "2.3.27",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.27.msi",
+  "teacher": "1.20.4",
+  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.4.apk",
+  "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.4.apk",
   "released": "2026-11-03",
-  "notes": "1.20.3 puts the marks sheet tools (download the class list, import it back, scan to upload marks) above the Save and Continue button so scanning is on the first marks screen, and names it plainly: Scan to upload marks (photo)."
+  "notes": "2.3.27 / teacher 1.20.4. The blue Standard card from the school template is now the default report design: shield header, SUMMARY REPORT term box, passport photo, A1-A3 with the 20/80 split, average grade, comment boxes, term dates, signatures and stamp. Students are shown as class lists: a numbered section per class in the console, and a numbered class register on the phone.",
+  "consoleVersion": "2.3.27"
 }

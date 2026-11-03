@@ -190,6 +190,12 @@ object ReportEngine {
             """.trimIndent()
         }
 
+        // The grade next to the average score, read from the scheme the result was computed with.
+        val averageGrade = data.gradingSchemes.firstOrNull { it.id == result.schemeId }
+            ?.boundaries
+            ?.firstOrNull { result.averagePercent >= it.minScore && result.averagePercent <= it.maxScore + 0.999 }
+            ?.grade ?: ""
+
         val overall = buildString {
             result.aggregate?.let { append("Aggregate $it") }
             result.division?.let { if (isNotEmpty()) append(" — "); append(it) }
@@ -207,43 +213,66 @@ object ReportEngine {
         val head = data.teachers.firstOrNull { it.role == com.derycode.srs.core.model.Role.HEAD_TEACHER }
         val classTeacher = cls?.classTeacherId?.let { id -> data.teachers.firstOrNull { it.id == id } }
 
+        val blue = "#0B5CAD"
+        val blueDark = "#0A4C8F"
+        val blueSoft = "#DCEBFA"
+        val blueLine = "#7FB0E0"
         val css = """
-            @page { size: A4 portrait; margin: 9mm; }
-            * { box-sizing: border-box; }
-            body { margin: 0; font-family: "Times New Roman", Georgia, serif; color: #111; }
-            .card { width: 100%; }
-            .head { display: flex; align-items: flex-start; gap: 10px; border-bottom: 2.5px solid #111; padding-bottom: 6px; }
-            .logo { width: 74px; height: 74px; display: flex; align-items: center; justify-content: center; font-size: 34px; }
-            .logo img { width: 70px; height: 70px; object-fit: contain; }
+            @page { size: A4 portrait; margin: 7mm; }
+            * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            body { margin: 0; font-family: "Segoe UI", Arial, Helvetica, sans-serif; color: $blueDark; }
+            .card { width: 100%; border: 2px solid $blue; }
+            .head { display: flex; align-items: center; gap: 10px; padding: 8px 12px 6px 12px; }
+            .logo { width: 84px; height: 84px; display: flex; align-items: center; justify-content: center; font-size: 40px; }
+            .logo img { width: 80px; height: 80px; object-fit: contain; }
             .school { flex: 1; text-align: center; }
-            .school h1 { margin: 0; font-size: 25px; letter-spacing: .6px; text-transform: uppercase; }
-            .school .type { font-size: 11px; letter-spacing: 2.4px; text-transform: uppercase; }
-            .school .motto { font-size: 10.5px; font-style: italic; color: #333; margin-top: 1px; }
-            .school .contact { font-size: 9.5px; color: #222; margin-top: 3px; line-height: 1.35; }
-            .termbox { width: 108px; text-align: center; border: 1.5px solid #111; padding: 5px 4px; font-size: 10px; }
-            .termbox b { display: block; font-size: 13px; letter-spacing: .5px; }
+            .school h1 { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: .4px; text-transform: uppercase; color: $blue; line-height: 1.05; }
+            .school .type { font-size: 17px; font-weight: 800; text-transform: uppercase; color: $blue; margin-top: 1px; }
+            .school .motto { font-size: 12.5px; font-style: italic; color: $blueDark; margin-top: 3px; }
+            .school .contact { font-size: 10px; color: $blueDark; margin-top: 3px; line-height: 1.45; }
+            .termbox { width: 150px; text-align: center; border-left: 2px solid $blue; padding: 4px 0 4px 10px; color: $blue; }
+            .termbox .t { font-size: 15px; font-weight: 800; }
+            .termbox .r { font-size: 15px; font-weight: 800; }
+            .termbox .y { display: inline-block; margin-top: 5px; background: $blue; color: #fff; font-size: 17px; font-weight: 800; padding: 3px 22px; border-radius: 6px; }
             table { width: 100%; border-collapse: collapse; }
-            .info { margin-top: 8px; border: 1.5px solid #111; }
-            .info td { border: 1px solid #999; padding: 3px 6px; font-size: 10.5px; }
-            .bar { background: #111; color: #fff; font-size: 10px; letter-spacing: 1.6px; padding: 3px 8px; text-transform: uppercase; }
-            .marks { margin-top: 8px; }
-            .marks th, .marks td { border: 1px solid #444; padding: 3px 4px; font-size: 9.5px; text-align: center; }
-            .marks th { background: #111; color: #fff; font-size: 8px; letter-spacing: .4px; line-height: 1.15; }
-            .marks td.subj { text-align: left; font-weight: bold; }
+            .bar { background: $blue; color: #fff; font-size: 11.5px; font-weight: 800; letter-spacing: .8px; padding: 5px 12px; text-transform: uppercase; }
+            .bar.center { text-align: center; }
+            .infowrap { display: flex; gap: 14px; padding: 8px 14px 8px 14px; border-bottom: 1px solid $blueLine; }
+            .photo { width: 84px; height: 98px; border: 1.5px solid $blue; background: $blueSoft; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+            .photo img { width: 100%; height: 100%; object-fit: cover; }
+            .photo svg { width: 62px; height: 62px; fill: $blue; }
+            .fields { flex: 1; }
+            .fields .row { display: flex; align-items: flex-end; font-size: 11px; margin-top: 5px; }
+            .fields .k { width: 112px; font-weight: 800; text-transform: uppercase; color: $blue; letter-spacing: .3px; }
+            .fields .c { width: 14px; font-weight: 800; }
+            .fields .v { flex: 1; border-bottom: 1px solid $blue; padding: 0 4px 1px 4px; min-height: 15px; font-weight: 700; color: #0b2a4a; }
+            .marks { margin-top: 0; }
+            .marks th, .marks td { border: 1px solid $blueLine; padding: 3px 4px; font-size: 9.6px; text-align: center; color: #0b2a4a; }
+            .marks th { background: $blueSoft; color: $blue; font-size: 8.4px; font-weight: 800; letter-spacing: .3px; line-height: 1.2; padding: 6px 3px; }
+            .marks td { height: 20px; }
+            .marks td.subj { text-align: left; font-weight: 700; color: $blue; font-size: 9.2px; }
             .marks td.cmt { text-align: left; font-size: 8.6px; }
-            .marks td.total { font-weight: bold; }
-            .marks td.grade { font-weight: bold; }
-            .avgrow td { background: #f0f0f0; font-weight: bold; }
-            .two { display: flex; gap: 8px; margin-top: 8px; }
-            .box { flex: 1; border: 1.5px solid #111; }
-            .box .label { font-size: 9px; font-weight: bold; letter-spacing: 1.2px; padding: 3px 6px; border-bottom: 1px solid #999; text-transform: uppercase; }
-            .box .body { padding: 5px 6px; font-size: 9.5px; min-height: 52px; line-height: 1.4; }
-            .sigs { display: flex; gap: 8px; margin-top: 10px; }
-            .sig { flex: 1; text-align: center; font-size: 9px; }
-            .sig .line { border-bottom: 1px solid #111; height: 22px; margin-bottom: 3px; }
-            .stamp { width: 84px; height: 84px; border: 1.5px dashed #777; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #777; text-align: center; }
-            .foot { text-align: center; font-size: 9.5px; font-style: italic; margin-top: 8px; border-top: 1px solid #111; padding-top: 4px; }
-            .key { font-size: 8.5px; color: #333; margin-top: 4px; }
+            .marks td.total, .marks td.grade { font-weight: 800; }
+            .avgrow td { background: $blueSoft; font-weight: 800; color: $blue; }
+            .two { display: flex; gap: 10px; padding: 8px 10px 8px 10px; }
+            .box { flex: 1; border: 1.5px solid $blue; }
+            .box .label { background: $blueSoft; color: $blue; font-size: 10.5px; font-weight: 800; padding: 4px 8px; border-bottom: 1px solid $blueLine; }
+            .box .label b { color: #0b2a4a; margin-left: 4px; }
+            .box .body { padding: 6px 8px; font-size: 10px; min-height: 48px; line-height: 1.45; color: #0b2a4a; }
+            .box .sigline { padding: 2px 8px 8px 8px; font-size: 10px; font-weight: 800; color: $blue; display: flex; align-items: flex-end; gap: 6px; }
+            .box .sigline span { flex: 1; border-bottom: 1px solid $blue; height: 14px; }
+            .dates { margin: 8px 10px 8px 10px; border: 1.5px solid $blue; }
+            .dates td { border: 1px solid $blueLine; text-align: center; font-size: 10.5px; padding: 5px 6px; color: #0b2a4a; }
+            .dates td.h { background: $blueSoft; color: $blue; font-weight: 800; }
+            .dates td.v { height: 28px; font-weight: 700; }
+            .sigs { display: flex; gap: 22px; align-items: flex-end; padding: 8px 14px 6px 14px; }
+            .sig { flex: 1; text-align: center; font-size: 10px; font-weight: 800; color: $blue; }
+            .sig .line { border-bottom: 1px solid $blue; height: 24px; margin-bottom: 3px; }
+            .sig small { display: block; color: #0b2a4a; font-weight: 600; font-size: 9px; }
+            .stampwrap { width: 120px; text-align: center; font-size: 9px; font-weight: 800; color: $blue; }
+            .stamp { width: 70px; height: 70px; margin: 0 auto 3px auto; border: 1.2px dashed $blue; border-radius: 50%; }
+            .foot { background: $blue; color: #fff; text-align: center; font-size: 11.5px; font-style: italic; padding: 6px 4px; margin-top: 6px; }
+            .key { font-size: 8px; color: #46688c; margin: 4px 10px 3px 10px; text-align: center; }
         """.trimIndent()
 
         val contact = listOfNotNull(
@@ -266,36 +295,32 @@ object ReportEngine {
             <div class="school">
               <h1>${escape(school.name)}</h1>
               <div class="type">${escape(if (school.schoolType.isBlank()) "Secondary School" else school.schoolType)}</div>
-              <div class="motto">${if (school.motto.isBlank()) "" else "“${escape(school.motto)}”"}</div>
+              <div class="motto">${if (school.motto.isBlank()) "" else escape(school.motto)}</div>
               <div class="contact">${escape(contact)}</div>
             </div>
             <div class="termbox">
-              <b>TERM ${term?.number ?: ""}</b>
-              <div>TERMLY REPORT CARD</div>
-              <div><b>${termPair?.first?.year ?: ""}</b></div>
+              <div class="t">TERM ${term?.number ?: ""}</div>
+              <div class="r">SUMMARY REPORT</div>
+              <div class="y">${termPair?.first?.year ?: ""}</div>
             </div>
           </div>
 
-          <div class="bar" style="margin-top:8px">Student information</div>
-          <table class="info">
-            <tr>
-              <td><b>STUDENT NAME:</b> ${escape(student.fullName)}</td>
-              <td><b>ADMISSION NO.:</b> ${escape(student.admissionNo)}</td>
-            </tr>
-            <tr>
-              <td><b>CLASS:</b> ${escape(cls?.name ?: studentClass(data, student.id))}</td>
-              <td><b>STREAM:</b> ${escape(cls?.stream ?: "")}</td>
-            </tr>
-            <tr>
-              <td><b>RESULT:</b> ${escape(overall)}</td>
-              <td><b>POSITION:</b> ${result.classPosition} of ${data.enrollments.count { it.classId == cls?.id }.coerceAtLeast(result.classPosition)}</td>
-            </tr>
-          </table>
+          <div class="bar">Student information</div>
+          <div class="infowrap">
+            <div class="photo">${if (!student.photoPath.isNullOrBlank()) """<img src="file://${student.photoPath}"/>""" else """<svg viewBox="0 0 24 24"><circle cx="12" cy="7.5" r="4.6"/><path d="M2.5 23c0-5.4 4.2-9 9.5-9s9.5 3.6 9.5 9z"/></svg>"""}</div>
+            <div class="fields">
+              <div class="row"><div class="k">Student name</div><div class="c">:</div><div class="v">${escape(student.fullName)}</div></div>
+              <div class="row"><div class="k">Admission no.</div><div class="c">:</div><div class="v">${escape(student.admissionNo)}</div></div>
+              <div class="row"><div class="k">Class</div><div class="c">:</div><div class="v">${escape(cls?.name ?: studentClass(data, student.id))}</div></div>
+              <div class="row"><div class="k">Stream</div><div class="c">:</div><div class="v">${escape(cls?.stream ?: "")}</div></div>
+              <div class="row"><div class="k">Result</div><div class="c">:</div><div class="v">${escape(overall)}</div></div>
+            </div>
+          </div>
 
           <table class="marks">
             <thead>
               <tr>
-                <th style="width:23%">SUBJECT</th><th>A1</th><th>A2</th><th>A3</th>
+                <th style="width:21%">SUBJECT</th><th>A1</th><th>A2</th><th>A3</th>
                 <th>FRNTV<br/>SCORE<br/>(20%)</th><th>EXAM<br/>SCORE<br/>(80%)</th>
                 <th>TOTAL<br/>SCORE<br/>(100%)</th><th>GRADE</th>
                 <th style="width:22%">TEACHER COMMENT</th><th>TEACHER<br/>INITIALS</th>
@@ -304,38 +329,36 @@ object ReportEngine {
             <tbody>
               $rows
               <tr class="avgrow">
-                <td class="subj">AVERAGE SCORE</td><td></td><td></td><td></td><td></td><td></td>
-                <td>${fmt(result.averagePercent)}</td><td></td><td></td><td></td>
+                <td class="subj" colspan="6" style="text-align:center">AVERAGE SCORE</td>
+                <td>${fmt(result.averagePercent)}</td><td>${averageGrade}</td><td></td><td></td>
               </tr>
             </tbody>
           </table>
 
-          <div class="bar" style="margin-top:8px">Comments</div>
+          <div class="bar center" style="margin-top:8px">Comments</div>
           <div class="two">
             <div class="box">
-              <div class="label">Class Teacher</div>
+              <div class="label">Class Teacher:<b>${escape(classTeacher?.name ?: "")}</b></div>
               <div class="body">${if (classComment.isBlank()) "&nbsp;" else escape(classComment)}</div>
-              <div class="body" style="min-height:0;padding-top:0">Signature: ______________</div>
+              <div class="sigline">Signature:<span></span></div>
             </div>
             <div class="box">
-              <div class="label">Head Teacher Remarks</div>
+              <div class="label">Head Teacher Remarks:<b>${escape(head?.name ?: school.headTeacher)}</b></div>
               <div class="body">${if (headComment.isBlank()) "&nbsp;" else escape(headComment)}</div>
-              <div class="body" style="min-height:0;padding-top:0">Signature: ______________</div>
+              <div class="sigline">Signature:<span></span></div>
             </div>
           </div>
 
-          <div class="bar" style="margin-top:8px">Fees and term dates</div>
-          <table class="info">
-            <tr>
-              <td><b>CURRENT TERM CLOSING DATE:</b> ${escape(term?.endDate ?: "")}</td>
-              <td><b>NEXT TERM OPENING DATE:</b> ${escape(term?.nextTermBegins ?: "")}</td>
-            </tr>
+          <div class="bar center">Fees and term dates</div>
+          <table class="dates">
+            <tr><td class="h">Current Term Closing Date</td><td class="h">Next Term Opening Date</td></tr>
+            <tr><td class="v">${escape(term?.endDate ?: "")}</td><td class="v">${escape(term?.nextTermBegins ?: "")}</td></tr>
           </table>
 
           <div class="sigs">
-            <div class="sig"><div class="line"></div>Class Teacher<br/><b>${escape(classTeacher?.name ?: "")}</b></div>
-            <div class="sig"><div class="line"></div>Head Teacher<br/><b>${escape(head?.name ?: school.headTeacher)}</b></div>
-            <div class="stamp">SCHOOL<br/>STAMP</div>
+            <div class="sig"><div class="line"></div>Class Teacher</div>
+            <div class="sig"><div class="line"></div>Head Teacher</div>
+            <div class="stampwrap"><div class="stamp"></div>School Stamp</div>
           </div>
 
           <div class="foot">${escape(school.motto.ifBlank { "Together for a Brighter Future" })}</div>

@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -272,39 +273,96 @@ fun StudentsScreen(state: AppState) {
         }
 
         CardBox {
+            // Students read as class lists: one numbered section per class, in
+            // register order, so the sheet on the desk matches the class lists.
             val header = @Composable {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Box(Modifier.width(38.dp)) { HeaderCell("#") }
                     Box(Modifier.weight(2f)) { HeaderCell("Name") }
                     Box(Modifier.weight(1f)) { HeaderCell("Adm No") }
                     Box(Modifier.weight(0.5f)) { HeaderCell("Sex") }
-                    Box(Modifier.weight(1.5f)) { HeaderCell("Class") }
                     Box(Modifier.weight(1f)) { HeaderCell("Status") }
                     Box(Modifier.weight(1f)) { HeaderCell("Actions") }
                 }
             }
+
+            // current-year class for each student, then the students grouped by it
+            val classOfStudent: Map<String, SchoolClass> = d.enrollments
+                .filter { year == null || it.academicYearId == year.id }
+                .mapNotNull { e -> d.classes.firstOrNull { c -> c.id == e.classId }?.let { c -> e.studentId to c } }
+                .toMap()
+            fun label(c: SchoolClass) = if (c.stream.isBlank()) c.name else "${c.name} ${c.stream}"
+            val groups: List<Pair<SchoolClass?, List<Student>>> =
+                visible.groupBy { classOfStudent[it.id] }
+                    .toList()
+                    .sortedWith(compareBy({ it.first?.level?.ordinal ?: 99 },
+                        { it.first?.name?.filter { ch -> ch.isDigit() }?.toIntOrNull() ?: 0 },
+                        { it.first?.stream ?: "" }))
+                    .map { (c, list) -> c to list.sortedBy { it.fullName } }
+            val unplaced = groups.firstOrNull { it.first == null }?.second.orEmpty()
+            val placedGroups = groups.filter { it.first != null }
+
             header()
-            LazyColumn(Modifier.height(420.dp)) {
-                items(visible) { s ->
-                    val enroll = year?.let { y -> d.enrollments.lastOrNull { it.studentId == s.id && it.academicYearId == y.id } }
-                    val cls = enroll?.let { d.classes.firstOrNull { c -> c.id == it.classId } }
-                    Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.weight(2f)) { Cell(s.fullName, bold = true) }
-                        Box(Modifier.weight(1f)) { Cell(s.admissionNo, color = Theme.MUTED) }
-                        Box(Modifier.weight(0.5f)) { Cell(s.sex, color = Theme.MUTED) }
-                        Box(Modifier.weight(1.5f)) { Cell(cls?.let { if (it.stream.isBlank()) it.name else "${it.name} ${it.stream}" } ?: "—", color = Theme.MUTED) }
-                        Box(Modifier.weight(1f)) { Cell(s.status.name, color = if (s.status == StudentStatus.ACTIVE) Theme.GOOD else Theme.WARN) }
-                        Column(Modifier.weight(1f)) {
-                            TextButton(onClick = { editingStudent = s }) { Text("Edit", color = Theme.ACCENT, fontSize = 13.sp) }
-                            if (s.status == StudentStatus.ACTIVE) {
-                                TextButton(onClick = {
-                                    state.repo.mutate("STUDENT_ARCHIVED", "Student", s.id) { dd ->
-                                        dd.copy(students = dd.students.map { if (it.id == s.id) it.copy(status = StudentStatus.WITHDRAWN) else it })
-                                    }
-                                    state.refresh()
-                                }) { Text("Archive", color = Theme.WARN, fontSize = 13.sp) }
+            LazyColumn(Modifier.height(460.dp)) {
+                placedGroups.forEach { (cls, list) ->
+                    item(key = "h-${cls!!.id}") {
+                        Row(Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Box(Modifier.background(Theme.ACCENT_SOFT, RoundedCornerShape(6.dp)).padding(horizontal = 8.dp, vertical = 3.dp)) {
+                                Text(label(cls).uppercase(), color = Theme.ACCENT, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                             }
-                            TextButton(onClick = { deletingStudent = s }) { Text("Delete", color = Theme.WARN, fontSize = 13.sp) }
+                            Text("${list.size} student${if (list.size == 1) "" else "s"}", color = Theme.MUTED, fontSize = 12.sp)
+                            Box(Modifier.weight(1f).height(1.dp).background(Theme.LINE))
+                            val teacherName = cls.classTeacherId?.let { id -> d.teachers.firstOrNull { it.id == id }?.name }
+                            if (!teacherName.isNullOrBlank()) Text("Class teacher: $teacherName", color = Theme.MUTED, fontSize = 12.sp)
+                        }
+                    }
+                    itemsIndexed(list) { i, s ->
+                        Row(Modifier.fillMaxWidth().padding(vertical = 5.dp), horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically) {
+                            Box(Modifier.width(38.dp)) { Cell("${i + 1}", color = Theme.MUTED) }
+                            Box(Modifier.weight(2f)) { Cell(s.fullName, bold = true) }
+                            Box(Modifier.weight(1f)) { Cell(s.admissionNo, color = Theme.MUTED) }
+                            Box(Modifier.weight(0.5f)) { Cell(s.sex, color = Theme.MUTED) }
+                            Box(Modifier.weight(1f)) { Cell(s.status.name, color = if (s.status == StudentStatus.ACTIVE) Theme.GOOD else Theme.WARN) }
+                            Column(Modifier.weight(1f)) {
+                                TextButton(onClick = { editingStudent = s }) { Text("Edit", color = Theme.ACCENT, fontSize = 13.sp) }
+                                if (s.status == StudentStatus.ACTIVE) {
+                                    TextButton(onClick = {
+                                        state.repo.mutate("STUDENT_ARCHIVED", "Student", s.id) { dd ->
+                                            dd.copy(students = dd.students.map { if (it.id == s.id) it.copy(status = StudentStatus.WITHDRAWN) else it })
+                                        }
+                                        state.refresh()
+                                    }) { Text("Archive", color = Theme.WARN, fontSize = 13.sp) }
+                                }
+                                TextButton(onClick = { deletingStudent = s }) { Text("Delete", color = Theme.WARN, fontSize = 13.sp) }
+                            }
+                        }
+                    }
+                }
+                if (unplaced.isNotEmpty()) {
+                    item(key = "h-none") {
+                        Row(Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Box(Modifier.background(Theme.WARN.copy(alpha = .18f), RoundedCornerShape(6.dp)).padding(horizontal = 8.dp, vertical = 3.dp)) {
+                                Text("NOT IN A CLASS YET", color = Theme.WARN, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                            }
+                            Text("${unplaced.size} · add them to a class in Classes & Streams", color = Theme.MUTED, fontSize = 12.sp)
+                        }
+                    }
+                    items(unplaced) { s ->
+                        Row(Modifier.fillMaxWidth().padding(vertical = 5.dp), horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically) {
+                            Box(Modifier.width(38.dp)) { Cell("—", color = Theme.MUTED) }
+                            Box(Modifier.weight(2f)) { Cell(s.fullName, bold = true) }
+                            Box(Modifier.weight(1f)) { Cell(s.admissionNo, color = Theme.MUTED) }
+                            Box(Modifier.weight(0.5f)) { Cell(s.sex, color = Theme.MUTED) }
+                            Box(Modifier.weight(1f)) { Cell(s.status.name, color = Theme.MUTED) }
+                            Column(Modifier.weight(1f)) {
+                                TextButton(onClick = { editingStudent = s }) { Text("Edit", color = Theme.ACCENT, fontSize = 13.sp) }
+                                TextButton(onClick = { deletingStudent = s }) { Text("Delete", color = Theme.WARN, fontSize = 13.sp) }
+                            }
                         }
                     }
                 }
