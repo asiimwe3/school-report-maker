@@ -16,6 +16,8 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.derycode.srs.core.model.*
@@ -959,6 +961,9 @@ fun TimetableScreen(state: AppState) {
     var pSubject by remember { mutableStateOf("") }
     var pTeacher by remember { mutableStateOf("") }
     var error by remember { mutableStateOf("") }
+    var bulkText by remember { mutableStateOf("") }
+    var codeText by remember { mutableStateOf("") }
+    var bulkMsg by remember { mutableStateOf("") }
 
     val cls = d.classes.firstOrNull { it.id == pClass }
     val dayPeriods = d.timetable.filter { it.day == day }.sortedWith(compareBy({ it.start }, { it.end }))
@@ -1072,6 +1077,82 @@ fun TimetableScreen(state: AppState) {
                 if (error.isNotBlank()) { Spacer(Modifier.height(6.dp)); ErrorText(error) }
                 Spacer(Modifier.height(10.dp))
                 Text("Times use 24h HH:mm · ${d.timetable.size} period(s) across ${d.timetable.map { it.day }.distinct().size} day(s) this week.", color = Theme.MUTED, fontSize = 13.sp)
+            }
+        }
+
+        // ── Bulk entry: paste one whole day from the printed timetable ────────
+        // A printed timetable is a grid: rows = time slots, columns = classes.
+        // The admin copies those rows here exactly as they read on paper, and
+        // every period for that day is created in one action.
+        CardBox {
+            Text("Paste a whole day", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(4.dp))
+            Text("One line per time slot, columns in class order. Teachers can be a number code or a name.", color = Theme.MUTED, fontSize = 13.sp)
+            Spacer(Modifier.height(8.dp))
+            val bulkClasses = d.classes.filter { it.active && it.level == state.level }
+                .sortedBy { it.name.filter { c -> c.isDigit() }.toIntOrNull() ?: 99 }
+            Text("Columns: " + bulkClasses.mapIndexed { i, c -> "${i + 1}=${if (c.stream.isBlank()) c.name else c.name + " " + c.stream}" }
+                .joinToString("  ·  "), color = Theme.ACCENT, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(6.dp))
+            Text("Example:  08:00-08:40 | MATH 8 | ENG 2 | GEO 3 | BIO 4     (blank or - = free period)", color = Theme.MUTED, fontSize = 12.sp)
+            Spacer(Modifier.height(8.dp))
+            OutlinedTextField(
+                bulkText, { bulkText = it; bulkMsg = "" },
+                Modifier.fillMaxWidth().height(170.dp),
+                placeholder = { Text("08:00-08:40 | MATH 8 | ENG 2 | GEO 3 | BIO 4\n08:40-09:20 | ENG 2 | MATH 8 | BIO 4 | GEO 3", fontSize = 12.sp) },
+                textStyle = TextStyle(fontSize = 13.sp, fontFamily = FontFamily.Monospace)
+            )
+            Spacer(Modifier.height(8.dp))
+            OutlinedTextField(
+                codeText, { codeText = it; bulkMsg = "" },
+                Modifier.fillMaxWidth().height(110.dp),
+                placeholder = { Text("Teacher codes (optional), one per line:\n2 = TR.WASUKIRA ASHIMU\n8 = TR.MUSINGUZI LODRICK", fontSize = 12.sp) },
+                textStyle = TextStyle(fontSize = 13.sp, fontFamily = FontFamily.Monospace)
+            )
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Btn("Add all periods for ${DAY_LABELS[day - 1]}") {
+                    val r = TimetableBulk.importDay(state, day, bulkText, codeText, bulkClasses)
+                    bulkMsg = r
+                    if (r.startsWith("OK")) { bulkText = ""; state.refresh() }
+                }
+                Btn("Preview only", primary = false) {
+                    bulkMsg = TimetableBulk.importDay(state, day, bulkText, codeText, bulkClasses, dryRun = true)
+                }
+            }
+            if (bulkMsg.isNotBlank()) {
+                Spacer(Modifier.height(8.dp))
+                Text(bulkMsg, color = if (bulkMsg.startsWith("OK")) Theme.GOOD else Theme.WARN, fontSize = 13.sp)
+            }
+        }
+
+        // ── Teacher load: who teaches what, class by class ───────────────────
+        val loads = d.timetable.filter { it.teacherId.isNotBlank() }
+            .groupBy { it.teacherId }
+            .map { (tid, ps) ->
+                val t = d.teachers.firstOrNull { it.id == tid }
+                val perClass = ps.groupBy { it.classId }.map { (cid, list) ->
+                    val c = d.classes.firstOrNull { it.id == cid }
+                    val subs = list.mapNotNull { it.subjectId }.distinct()
+                        .mapNotNull { sid -> d.subjects.firstOrNull { it.id == sid }?.code?.ifBlank { null } ?: d.subjects.firstOrNull { it.id == sid }?.name }
+                        .distinct()
+                    "${c?.name ?: "?"}${if (subs.isEmpty()) "" else ": " + subs.joinToString("/")}"
+                }.sorted()
+                Triple(t?.name ?: tid, ps.size, perClass)
+            }.sortedByDescending { it.second }
+        if (loads.isNotEmpty()) {
+            CardBox {
+                Text("Teacher load from this timetable", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(4.dp))
+                Text("Derived from the periods above — this is who teaches which class and subject.", color = Theme.MUTED, fontSize = 13.sp)
+                Spacer(Modifier.height(10.dp))
+                loads.forEach { (name, count, perClass) ->
+                    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.Top) {
+                        Text(name, color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.width(220.dp))
+                        Text("$count period(s)", color = Theme.ACCENT, fontSize = 13.sp, modifier = Modifier.width(110.dp))
+                        Text(perClass.joinToString("   ·   "), color = Theme.MUTED, fontSize = 13.sp)
+                    }
+                }
             }
         }
     }

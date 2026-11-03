@@ -1,7 +1,7 @@
 {
-  "console": "2.3.11",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.11.msi",
+  "console": "2.3.12",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.12.msi",
   "teacher": "1.19.1",
   "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.19.1.apk",
-  "notes": "Teacher 1.19.1: all four posts (Teacher, Head Teacher, Admin, Data Entry) fit on screen when joining, and a photo you pick now shows, can be changed or removed, and tells you if the picture cannot be read."
+  "notes": "Timetable: paste a whole day from the printed timetable in one go — time slots down the page, classes across. Teacher codes like '8' become real teachers automatically, and a Teacher load panel shows who teaches which class and subject."
 }
