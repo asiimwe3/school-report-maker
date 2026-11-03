@@ -11,7 +11,7 @@ import kotlin.test.assertTrue
  * the 20% formative and 80% exam split, totals, per-subject teacher comment
  * and initials, both comments, fees and term dates.
  */
-class SummaryReportTest {
+class StandardReportTest {
 
     private fun sample(): SchoolData {
         val school = School(name = "Tooro Royal College", motto = "Together for a Brighter Future",
@@ -57,7 +57,7 @@ class SummaryReportTest {
     }
 
     @Test
-    fun summaryCardCarriesTheSchoolLayout() {
+    fun standardCardCarriesTheSchoolLayout() {
         val data = sample()
         val result = ResultEngine.classResults(data, "c1", "t1", "g1").first()
         val html = ReportEngine.studentReport(data, result, TemplateLayout.SUMMARY)
@@ -77,6 +77,6 @@ class SummaryReportTest {
         assertTrue(html.contains(">FM<"), "teacher initials missing")
 
         // keep a copy so the layout can be eyeballed after a build
-        java.io.File("build/summary-preview.html").writeText(html)
+        java.io.File("build/standard-card-preview.html").writeText(html)
     }
 }

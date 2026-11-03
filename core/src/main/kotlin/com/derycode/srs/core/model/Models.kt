@@ -17,7 +17,21 @@ enum class MarkSheetState { DRAFT, SUBMITTED, REVIEWED, APPROVED, LOCKED }
 
 enum class Role { SUPER_ADMIN, SCHOOL_ADMIN, HEAD_TEACHER, DEPUTY_HEAD, DOS, CLASS_TEACHER, TEACHER, BURSAR, LIBRARIAN, DATA_ENTRY }
 
-enum class TemplateLayout { CLASSIC, MODERN, COMPACT, PLAIN, SUMMARY }
+enum class TemplateLayout {
+    CLASSIC, MODERN, COMPACT, PLAIN,
+    /** The A1-A3 / 20-80 sheet schools print as their standard card. */
+    SUMMARY;
+
+    /** What the school sees in the design picker. */
+    val displayName: String
+        get() = when (this) {
+            CLASSIC -> "Classic"
+            MODERN -> "Modern"
+            COMPACT -> "Compact"
+            PLAIN -> "Plain"
+            SUMMARY -> "Standard"
+        }
+}
 
 enum class CommentType { SUBJECT, CLASS_TEACHER, HEAD_TEACHER }
 

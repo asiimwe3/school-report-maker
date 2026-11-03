@@ -268,7 +268,7 @@ object ReportEngine {
             </div>
             <div class="termbox">
               <b>TERM ${term?.number ?: ""}</b>
-              <div>SUMMARY REPORT</div>
+              <div>TERMLY REPORT CARD</div>
               <div><b>${termPair?.first?.year ?: ""}</b></div>
             </div>
           </div>

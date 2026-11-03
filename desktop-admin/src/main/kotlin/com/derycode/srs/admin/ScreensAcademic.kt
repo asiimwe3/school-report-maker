@@ -370,7 +370,7 @@ fun ReportsScreen(state: AppState) {
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("Design:", color = Theme.MUTED, fontSize = 14.sp)
             TemplateLayout.entries.forEach { l ->
-                FilterChip(selected = layout == l, onClick = { layout = l }, label = { Text(l.name.lowercase().replaceFirstChar { it.uppercase() }, fontSize = 13.sp) })
+                FilterChip(selected = layout == l, onClick = { layout = l }, label = { Text(l.displayName, fontSize = 13.sp) })
             }
         }
         if (cls == null || term == null || scheme == null) {

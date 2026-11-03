@@ -81,7 +81,7 @@ fun TemplatesScreen(state: AppState) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 TemplateLayout.entries.forEach { l ->
                     FilterChip(selected = layout == l, onClick = { layout = l },
-                        label = { Text(l.name.lowercase().replaceFirstChar { it.uppercase() }, fontSize = 13.sp) })
+                        label = { Text(l.displayName, fontSize = 13.sp) })
                 }
             }
             Spacer(Modifier.height(10.dp))
@@ -97,7 +97,7 @@ fun TemplatesScreen(state: AppState) {
             Spacer(Modifier.height(12.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Btn("Add design") {
-                    val finalName = name.ifBlank { "$schoolName ${layout.name.lowercase().replaceFirstChar { it.uppercase() }}" }
+                    val finalName = name.ifBlank { "$schoolName ${layout.displayName}" }
                     val id = state.repo.nextId()
                     state.repo.mutate("TEMPLATE_ADDED", "ReportTemplate", id, new = finalName) { dd ->
                         dd.copy(templates = dd.templates + ReportTemplate(id = id, name = finalName, layout = layout, accentColor = accent))
@@ -168,7 +168,7 @@ private fun TemplateCard(state: AppState, t: ReportTemplate) {
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Box(Modifier.size(9.dp).background(hexToColor(t.accentColor), androidx.compose.foundation.shape.CircleShape))
-                Text(t.layout.name.lowercase().replaceFirstChar { it.uppercase() }, color = Theme.MUTED, fontSize = 12.sp)
+                Text(t.layout.displayName, color = Theme.MUTED, fontSize = 12.sp)
             }
         }
         Spacer(Modifier.height(10.dp))
@@ -294,7 +294,7 @@ fun PreviewScreen(state: AppState) {
                 Text("Design:", color = Theme.MUTED, fontSize = 14.sp)
                 TemplateLayout.entries.forEach { l ->
                     FilterChip(selected = layout == l, onClick = { layout = l },
-                        label = { Text(l.name.lowercase().replaceFirstChar { it.uppercase() }, fontSize = 13.sp) })
+                        label = { Text(l.displayName, fontSize = 13.sp) })
                 }
             }
         }

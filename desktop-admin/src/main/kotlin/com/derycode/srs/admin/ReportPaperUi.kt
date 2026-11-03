@@ -345,7 +345,7 @@ private fun SummaryPaper(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text("TERM $termNo", color = ink, fontSize = 10.sp, fontWeight = FontWeight.Black)
-                Text("SUMMARY REPORT", color = ink, fontSize = 6.sp, fontWeight = FontWeight.Bold)
+                Text("TERMLY REPORT CARD", color = ink, fontSize = 6.sp, fontWeight = FontWeight.Bold)
                 Text(year, color = ink, fontSize = 10.sp, fontWeight = FontWeight.Black)
             }
         }

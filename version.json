@@ -1,7 +1,7 @@
 {
-  "console": "2.3.15",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.15.msi",
+  "console": "2.3.16",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.16.msi",
   "teacher": "1.19.3",
   "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.19.3.apk",
-  "notes": "Timetable pastes understand the codes schools actually print: SAGRI (and S/AGRI) is Agriculture, and a shared ENT&ART column lands on Entrepreneurship with a 'with ART' note."
+  "notes": "The A1-A3 / 20-80 card is now one of the standard report designs, called Standard, and its heading reads TERMLY REPORT CARD like the others. Pick it on Reports with Design: Standard."
 }
