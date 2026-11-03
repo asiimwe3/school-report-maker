@@ -668,8 +668,61 @@ fun TeachersScreen(state: AppState) {
     var cloudMsg by remember { mutableStateOf("") }
     var cloudErr by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf("") }
+    var staffPaste by remember { mutableStateOf("") }
+    var staffReport by remember { mutableStateOf("") }
 
     ScreenTitle("Teachers", "Teachers, roles and subject/class assignments")
+
+    CardBox {
+        Text("Paste the staff list", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(4.dp))
+        Text(
+            "Copy the staff list from a document or WhatsApp and paste it here — one teacher per line:\n" +
+                "Mwesige Francis — English (S1, S2, S3) — 0777109213\n" +
+                "Karungi Lucy — Agriculture (S1, S2, S3), Geography (S2) — 0777876671\n" +
+                "Every teacher is created with their phone number, subjects and classes already assigned. " +
+                "Anyone already on the console is updated, not duplicated, so a corrected list can be pasted again. " +
+                "Lines marked as crossed out are skipped.",
+            color = Theme.MUTED, fontSize = 13.sp
+        )
+        Spacer(Modifier.height(8.dp))
+        OutlinedTextField(
+            value = staffPaste,
+            onValueChange = { staffPaste = it },
+            modifier = Modifier.fillMaxWidth().height(190.dp),
+            placeholder = { Text("Paste the staff list here", color = Theme.MUTED, fontSize = 13.sp) },
+            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp)
+        )
+        Spacer(Modifier.height(8.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Btn(if (staffPaste.isBlank()) "Import staff list" else "Import ${StaffImport.parse(staffPaste).entries.size} teachers") {
+                val plan = StaffImport.parse(staffPaste)
+                if (plan.entries.isEmpty()) {
+                    staffReport = "Nothing to import — paste lines that look like: Name — Subject (S1, S2) — 07xxxxxxxx"
+                } else {
+                    val result = StaffImport.apply(state.data, plan, state.repo::nextId)
+                    state.repo.mutate("STAFF_LIST_IMPORTED", "Teacher", "bulk", new = "${plan.entries.size} staff") { result.data }
+                    state.refresh()
+                    staffReport = buildString {
+                        append("Imported ${plan.entries.size} staff. ")
+                        append("New: ${result.created.size}. ")
+                        append("Updated: ${result.updated.size}. ")
+                        append("Assignments now: ${result.data.assignments.size}.")
+                        if (plan.skipped.isNotEmpty()) append("\nSkipped: " + plan.skipped.joinToString("; ") { it.second })
+                        if (result.warnings.isNotEmpty()) append("\nCheck: " + result.warnings.joinToString("; "))
+                    }
+                }
+            }
+            OutlinedButton({ staffPaste = ""; staffReport = "" }, shape = RoundedCornerShape(8.dp), modifier = Modifier.height(36.dp)) {
+                Text("Clear", fontSize = 12.sp)
+            }
+        }
+        if (staffReport.isNotBlank()) {
+            Spacer(Modifier.height(8.dp))
+            Text(staffReport, color = Theme.TEXT, fontSize = 13.sp)
+        }
+    }
+
     CloudStaffSection(state)
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         CardBox {
