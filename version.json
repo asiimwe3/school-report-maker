@@ -1,7 +1,7 @@
 {
-  "console": "2.3.20",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.20.msi",
+  "console": "2.3.21",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.21.msi",
   "teacher": "1.20.0",
   "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.0.apk",
-  "notes": "Paste the whole staff list on the Teachers screen once: each teacher is created with their phone, subjects and classes already assigned, and a re-paste updates instead of duplicating."
+  "notes": "Teachers screen: when someone leaves, move every timetable period, subject link, class-teacher post and duty to the colleague taking over in one step, then their access switches off."
 }

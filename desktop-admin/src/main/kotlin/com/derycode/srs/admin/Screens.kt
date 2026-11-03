@@ -670,6 +670,9 @@ fun TeachersScreen(state: AppState) {
     var editing by remember { mutableStateOf("") }
     var staffPaste by remember { mutableStateOf("") }
     var staffReport by remember { mutableStateOf("") }
+    var leaving by remember { mutableStateOf("") }
+    var takingOver by remember { mutableStateOf("") }
+    var handoverMsg by remember { mutableStateOf("") }
 
     ScreenTitle("Teachers", "Teachers, roles and subject/class assignments")
 
@@ -720,6 +723,71 @@ fun TeachersScreen(state: AppState) {
         if (staffReport.isNotBlank()) {
             Spacer(Modifier.height(8.dp))
             Text(staffReport, color = Theme.TEXT, fontSize = 13.sp)
+        }
+    }
+
+    CardBox {
+        Text("Teacher leaves — hand over the work", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(4.dp))
+        Text(
+            "When someone leaves and a colleague takes over (Abigaba Joseph → Sande Joseph, for example), " +
+                "move every timetable period, subject link, class-teacher post and duty across in one step. " +
+                "The leaver's access is switched off but their old marks and report cards stay exactly as they were.",
+            color = Theme.MUTED, fontSize = 13.sp
+        )
+        Spacer(Modifier.height(8.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(Modifier.width(240.dp)) {
+                FieldLabel("Leaving teacher")
+                d.teachers.filter { it.active }.forEach { t ->
+                    Row(Modifier.fillMaxWidth().clickable { leaving = t.id; handoverMsg = "" }.padding(vertical = 3.dp)) {
+                        Text((if (leaving == t.id) "● " else "○ ") + t.name, color = if (leaving == t.id) Theme.ACCENT else Theme.TEXT, fontSize = 14.sp)
+                    }
+                }
+            }
+            Column(Modifier.width(240.dp)) {
+                FieldLabel("Takes over")
+                d.teachers.filter { it.active && it.id != leaving }.forEach { t ->
+                    Row(Modifier.fillMaxWidth().clickable { takingOver = t.id; handoverMsg = "" }.padding(vertical = 3.dp)) {
+                        Text((if (takingOver == t.id) "● " else "○ ") + t.name, color = if (takingOver == t.id) Theme.ACCENT else Theme.TEXT, fontSize = 14.sp)
+                    }
+                }
+            }
+            Column(Modifier.width(280.dp)) {
+                FieldLabel("Will move")
+                if (leaving.isBlank()) {
+                    Text("Pick the teacher who is leaving.", color = Theme.MUTED, fontSize = 13.sp)
+                } else {
+                    val pv = TeacherHandover.preview(d, leaving)
+                    Text("${pv.subjectLinks} subject/class links", color = Theme.TEXT, fontSize = 13.sp)
+                    Text("${pv.timetablePeriods} timetable periods", color = Theme.TEXT, fontSize = 13.sp)
+                    Text(if (pv.classTeacherOf.isEmpty()) "No class-teacher post" else "Class teacher of " + pv.classTeacherOf.joinToString(", "), color = Theme.TEXT, fontSize = 13.sp)
+                    Text("${pv.duties} duty records", color = Theme.TEXT, fontSize = 13.sp)
+                    val alreadyCt = d.classes.filter { it.classTeacherId == takingOver }.map { it.name }
+                    if (alreadyCt.isNotEmpty() && pv.classTeacherOf.isNotEmpty()) {
+                        val name = d.teachers.firstOrNull { it.id == takingOver }?.name ?: "The new teacher"
+                        Text("Note: $name is already class teacher of ${alreadyCt.joinToString(", ")} — they will hold both.", color = Theme.WARN, fontSize = 12.sp)
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    Btn("Move work and switch off access") {
+                        if (leaving.isBlank() || takingOver.isBlank()) {
+                            handoverMsg = "Pick both teachers first."
+                        } else {
+                            val from = d.teachers.first { it.id == leaving }
+                            val to = d.teachers.first { it.id == takingOver }
+                            val res = TeacherHandover.apply(state.data, leaving, takingOver, state.repo::nextId)
+                            state.repo.mutate("TEACHER_HANDOVER", "Teacher", leaving, old = from.name, new = to.name) { res.data }
+                            state.refresh()
+                            handoverMsg = "${from.name}'s work moved to ${to.name}. ${from.name} is now inactive; old marks and reports are untouched."
+                            leaving = ""; takingOver = ""
+                        }
+                    }
+                    if (handoverMsg.isNotBlank()) {
+                        Spacer(Modifier.height(6.dp))
+                        Text(handoverMsg, color = Theme.TEXT, fontSize = 13.sp)
+                    }
+                }
+            }
         }
     }
 
