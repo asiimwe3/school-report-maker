@@ -9,6 +9,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -567,13 +569,27 @@ fun TeacherApp(state: TeacherState) {
         gesturesEnabled = current !is Route.EnterMarks,
         drawerContent = {
             ModalDrawerSheet {
+                // Header stays pinned; the list below scrolls so the LAST items
+                // (Support & Licence, How-to Guide) are never cut off on small phones.
                 Spacer(Modifier.height(12.dp))
-                Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
-                    Text("SRS Teacher", color = NAVY, fontSize = 21.sp, fontWeight = FontWeight.Bold)
-                    Text(state.data.school.name.ifBlank { "School Report Maker" }, color = MUTED, fontSize = 13.sp)
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    androidx.compose.foundation.Image(
+                        painter = androidx.compose.ui.res.painterResource(R.drawable.srs_logo),
+                        contentDescription = "DeryCode School Report System",
+                        modifier = Modifier.size(56.dp).clip(RoundedCornerShape(14.dp))
+                    )
+                    Spacer(Modifier.width(14.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("SRS Teacher", color = NAVY, fontSize = 21.sp, fontWeight = FontWeight.Bold)
+                        Text(state.data.school.name.ifBlank { "School Report Maker" }, color = MUTED, fontSize = 13.sp, maxLines = 2)
+                    }
                 }
-                Spacer(Modifier.height(6.dp))
+                Spacer(Modifier.height(10.dp))
                 HorizontalDivider()
+                Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
                 Spacer(Modifier.height(6.dp))
                 DrawerItem(Icons.Filled.Home, "Home", current is Route.Home) { switchTab(Route.Home); scope.launch { drawerState.close() } }
                 DrawerItem(Icons.Filled.MenuBook, "Classes & Marks", current is Route.Classes || current is Route.ClassDetail || current is Route.EnterMarks) { switchTab(Route.Classes); scope.launch { drawerState.close() } }
@@ -594,6 +610,10 @@ fun TeacherApp(state: TeacherState) {
                 DrawerItem(Icons.Filled.SupportAgent, "Support & Licence", current is Route.Support) { switchTab(Route.Support); scope.launch { drawerState.close() } }
                 DrawerItem(Icons.Filled.School, "How-to Guide", current is Route.Tutorial) { switchTab(Route.Tutorial); scope.launch { drawerState.close() } }
                 Spacer(Modifier.height(12.dp))
+                }
+                HorizontalDivider()
+                Text("DeryCode · Simple · Fast · Reliable", color = MUTED, fontSize = 11.sp,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp))
             }
         }
     ) {

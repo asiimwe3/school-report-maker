@@ -1,7 +1,7 @@
 {
-  "console": "2.3.18",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.18.msi",
-  "teacher": "1.19.4",
-  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.19.4.apk",
-  "notes": "Printed report cards now follow the compulsory-first subject order too (the print and PDF path was still using the setup order). Console 2.3.18."
+  "console": "2.3.19",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.19.msi",
+  "teacher": "1.19.5",
+  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.19.5.apk",
+  "notes": "DeryCode School Report System logo is now the app icon on phones and the console. The phone's side menu scrolls, so Support & Licence and How-to Guide are no longer cut off, and the logo sits at the top."
 }
