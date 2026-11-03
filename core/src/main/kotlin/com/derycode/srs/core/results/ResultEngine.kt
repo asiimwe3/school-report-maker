@@ -239,8 +239,13 @@ object ResultEngine {
             ?: data.subjects.filter { it.level == klass.level && it.active }.map { it.id }
 
         val compulsory = data.subjects.filter { it.compulsory }.map { it.id }.toSet()
+        // Every report card lists the compulsory subjects first and the electives
+        // after them, keeping the school's own order inside each group.
+        val orderedSubjectIds = subjectIds.sortedBy { id ->
+            if (data.subjects.firstOrNull { it.id == id }?.compulsory == true) 0 else 1
+        }
         val raw = students.map {
-            studentTermResult(data, it.id, termId, schemeId, subjectIds, compulsory)
+            studentTermResult(data, it.id, termId, schemeId, orderedSubjectIds, compulsory)
         }
         val ranked = rank(raw)
         return ranked

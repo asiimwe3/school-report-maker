@@ -80,3 +80,36 @@ class StandardReportTest {
         java.io.File("build/standard-card-preview.html").writeText(html)
     }
 }
+
+/**
+ * Every card lists the compulsory subjects first, then the electives, no matter
+ * how the subjects were entered in the school setup.
+ */
+class SubjectOrderTest {
+    @Test
+    fun compulsorySubjectsComeBeforeOptionalOnes() {
+        val subjects = listOf(
+            Subject(id = "s-mus", name = "Music", code = "MUS", compulsory = false),
+            Subject(id = "s-eng", name = "English", code = "ENG", compulsory = true),
+            Subject(id = "s-art", name = "Fine Art", code = "ART", compulsory = false),
+            Subject(id = "s-mat", name = "Mathematics", code = "MTC", compulsory = true)
+        )
+        val data = SchoolData(
+            school = School(name = "Test SS"),
+            classes = listOf(SchoolClass(id = "c1", name = "Senior 1", level = Level.O_LEVEL)),
+            students = listOf(Student(id = "st1", admissionNo = "1", firstName = "A", lastName = "B")),
+            subjects = subjects,
+            components = listOf(AssessmentComponent(id = "ca", code = "CA", name = "CA", weightPercent = 100)),
+            marks = subjects.map { Mark(id = "m-${it.id}", studentId = "st1", subjectId = it.id, termId = "t1", componentId = "ca", score = 70.0, maxScore = 100) },
+            gradingSchemes = listOf(GradingScheme(id = "g1", name = "UCE", level = Level.O_LEVEL,
+                caWeightPercent = 100, examWeightPercent = 0,
+                boundaries = listOf(GradeBoundary(minScore = 0.0, maxScore = 100.0, grade = "B", label = "Good")))),
+            academicYears = listOf(AcademicYear(id = "y1", year = "2026", currentTermId = "t1",
+                terms = listOf(Term(id = "t1", yearId = "y1", number = 1)))),
+            enrollments = listOf(Enrollment(id = "e1", studentId = "st1", classId = "c1", academicYearId = "y1"))
+        )
+        val order = ResultEngine.classResults(data, "c1", "t1", "g1").first()
+            .subjectResults.map { it.subjectId }
+        assertTrue(order == listOf("s-eng", "s-mat", "s-mus", "s-art"), "order was $order")
+    }
+}

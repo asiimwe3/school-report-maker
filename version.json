@@ -1,7 +1,7 @@
 {
-  "console": "2.3.16",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.16.msi",
-  "teacher": "1.19.3",
-  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.19.3.apk",
-  "notes": "The A1-A3 / 20-80 card is now one of the standard report designs, called Standard, and its heading reads TERMLY REPORT CARD like the others. Pick it on Reports with Design: Standard."
+  "console": "2.3.17",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.17.msi",
+  "teacher": "1.19.4",
+  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.19.4.apk",
+  "notes": "Report cards now list compulsory subjects first and optional ones after them, in every design. The A1-A3 card is named Standard."
 }
