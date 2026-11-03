@@ -19,6 +19,18 @@ internal object TimetableBulk {
 
     private val DAYS = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
 
+    /**
+     * Codes as they are printed on school sheets, mapped to the subject code the
+     * console keeps. "S/AGRI" and "SAGRI" are how Tooro Royal College prints
+     * Agriculture; "ENT&ART" is one column shared by Entrepreneurship and Art.
+     */
+    private val ALIASES = mapOf(
+        "SAGRI" to "AGRI", "S.AGRI" to "AGRI", "AGRI" to "AGRI", "AGRIC" to "AGRI",
+        "ENT&ART" to "ENT", "ENT&ART" to "ENT", "ENTA" to "ENT",
+        "PE" to "PE", "PE'S" to "PE", "PHYED" to "PE",
+        "HIS" to "HIST", "KIS" to "KISW", "MATH" to "MATH"
+    )
+
     private class TeacherMap(
         val byCode: Map<String, String>,   // "8" -> teacher id
         val byName: Map<String, String>    // "musinguzi lodrick" -> teacher id
@@ -193,9 +205,11 @@ internal object TimetableBulk {
         return cleaned to ""
     }
 
-    private fun resolveSubject(d: SchoolData, cls: SchoolClass, token: String): Subject? {
-        val t = token.trim().lowercase()
-        if (t.isEmpty()) return null
+    internal fun resolveSubject(d: SchoolData, cls: SchoolClass, token: String): Subject? {
+        val raw = token.trim()
+        if (raw.isEmpty()) return null
+        val alias = ALIASES[raw.uppercase().replace(" ", "").replace("/", "").replace("&", "&")]
+        val t = (alias ?: raw).lowercase()
         val forLevel = d.subjects.filter { it.active && (it.level == cls.level) }
         val pool = if (forLevel.isEmpty()) d.subjects.filter { it.active } else forLevel
         return pool.firstOrNull { it.code.equals(token.trim(), true) }

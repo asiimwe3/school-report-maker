@@ -1,7 +1,7 @@
 {
-  "console": "2.3.14",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.14.msi",
+  "console": "2.3.15",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.15.msi",
   "teacher": "1.19.3",
   "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.19.3.apk",
-  "notes": "New SUMMARY report card: A1-A3 assessments, 20% formative and 80% exam split, total, grade, per-subject teacher comment and initials, average row, both comments, fees and term dates, three signatures and the school stamp. Pick Design: Summary on Reports, preview inline, print or save as PDF. Keeps the timetable picture feature."
+  "notes": "Timetable pastes understand the codes schools actually print: SAGRI (and S/AGRI) is Agriculture, and a shared ENT&ART column lands on Entrepreneurship with a 'with ART' note."
 }

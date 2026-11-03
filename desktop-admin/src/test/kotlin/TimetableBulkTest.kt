@@ -48,3 +48,35 @@ class TimetableBulkTest {
         assertEquals("AGRI" to "3", TimetableBulk.splitCell("AGRI3"))
     }
 }
+
+/** Codes printed on real school sheets must land on the right subject. */
+class TimetableSubjectAliasTest {
+
+    private fun data(): com.derycode.srs.core.model.SchoolData {
+        val d = com.derycode.srs.core.model.SchoolData()
+        return d.copy(subjects = listOf(
+            com.derycode.srs.core.model.Subject(id = "s-agri", name = "Agriculture", code = "AGRI"),
+            com.derycode.srs.core.model.Subject(id = "s-math", name = "Mathematics", code = "MATH"),
+            com.derycode.srs.core.model.Subject(id = "s-ent", name = "Entrepreneurship", code = "ENT")
+        ))
+    }
+
+    private fun cls() = com.derycode.srs.core.model.SchoolClass(
+        id = "c1", name = "Senior 1", level = com.derycode.srs.core.model.Level.O_LEVEL
+    )
+
+    @Test fun `SAGRI on the sheet is Agriculture`() {
+        val s = TimetableBulk.resolveSubject(data(), cls(), "SAGRI")
+        assertEquals("s-agri", s?.id)
+        assertEquals("s-agri", TimetableBulk.resolveSubject(data(), cls(), "S/AGRI")?.id)
+        assertEquals("s-agri", TimetableBulk.resolveSubject(data(), cls(), "AGRI")?.id)
+    }
+
+    @Test fun `ENT and ART column resolves to Entrepreneurship`() {
+        assertEquals("s-ent", TimetableBulk.resolveSubject(data(), cls(), "ENT&ART")?.id)
+    }
+
+    @Test fun `plain codes still resolve`() {
+        assertEquals("s-math", TimetableBulk.resolveSubject(data(), cls(), "MATH")?.id)
+    }
+}
