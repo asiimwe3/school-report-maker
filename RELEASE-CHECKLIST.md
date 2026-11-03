@@ -41,3 +41,11 @@ The release workflow attaches the MSI, APK and `version.json` to an **existing**
 A pushed tag on its own does not create one, and every attach step then fails with
 "release not found". Either create it first (`gh release create vX.Y.Z --title vX.Y.Z`) or create
 it on github.com, then push the tag.
+
+## Changing .github/workflows
+
+A token without the `workflow` scope cannot push changes to `.github/workflows/*`, and GitHub
+rejects the whole push. The repo keeps current copies at `ci-workflow-fixed.yml` and
+`release-workflow-fixed.yml`: when those two files change, copy them over the real workflows
+(.github/workflows/ci.yml and .github/workflows/release.yml) with a `workflow`-scoped token
+(or by hand on github.com). Until then a new job exists in the repo but never runs.
