@@ -1,8 +1,8 @@
 {
-  "console": "2.3.22",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.22.msi",
+  "console": "2.3.23",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.23.msi",
   "teacher": "1.20.1",
   "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.0.apk",
-  "notes": "Strict school separation: joining a different school now replaces everything and archives the old school on the phone, marks sent to the school are only this school's learners, and the console refuses submissions from another school.",
+  "notes": "2.3.23 fixes the school check on Pull Teacher Submissions so a teacher from your own school is never mistaken for another school.",
   "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.1.apk"
 }

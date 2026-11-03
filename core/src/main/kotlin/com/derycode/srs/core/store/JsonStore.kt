@@ -104,6 +104,16 @@ class JsonStore(
      * (student, subject, term, component); every merge is returned for audit.
      * Old/corrupt bundles never corrupt newer data (versioned + validated).
      */
+    /**
+     * Which school sent this bundle? A bundle records the sender's school name,
+     * not a full school config, so this reads that one field. Empty string means
+     * the bundle does not say (older teacher builds) — the caller then falls back
+     * to pruning rows it cannot attribute.
+     */
+    fun peekBundleSchool(bundleFile: Path): String = try {
+        json.decodeFromString<Bundle>(Files.readString(bundleFile)).schoolName.trim()
+    } catch (_: Exception) { "" }
+
     fun importBundle(data: SchoolData, bundleFile: Path): BundleMergeReport {
         return try {
             val bundle = json.decodeFromString<Bundle>(Files.readString(bundleFile))

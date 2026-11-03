@@ -567,12 +567,12 @@ fun CloudScreen(state: AppState) {
                     tmp.writeText(b)
                     // Which school sent this? A bundle from another school is never
                     // merged into this one, however it reached the cloud.
-                    val peek = try { state.repo.store.peekSchool(tmp.toPath()) } catch (_: Exception) { Pair("", "") }
-                    val bundleId = peek.first
-                    val bundleName = peek.second
-                    val fromThisSchool = SchoolIsolation.sameSchool(
+                    val bundleSchool = try { state.repo.store.peekBundleSchool(tmp.toPath()) } catch (_: Exception) { "" }
+                    // Silence is not proof of another school: an older bundle with no
+                    // school name is accepted and then pruned row by row.
+                    val fromThisSchool = bundleSchool.isBlank() || SchoolIsolation.sameSchool(
                         com.derycode.srs.core.model.SchoolData(
-                            school = com.derycode.srs.core.model.School(id = bundleId, name = bundleName)
+                            school = com.derycode.srs.core.model.School(name = bundleSchool)
                         ),
                         state.repo.data
                     )
