@@ -34,3 +34,10 @@ After validation, commit all changes, push `main`, and create/push tag `v2.2.25`
 2. Open every URL in `version.json` in a browser — each must download, not 404.
 3. Confirm `versionName` / `versionCode` in `teacher-app/build.gradle.kts` and
    `consoleVersion` in `desktop-admin/build.gradle.kts` match `version.json`.
+
+## Before pushing a version tag
+
+The release workflow attaches the MSI, APK and `version.json` to an **existing** GitHub release.
+A pushed tag on its own does not create one, and every attach step then fails with
+"release not found". Either create it first (`gh release create vX.Y.Z --title vX.Y.Z`) or create
+it on github.com, then push the tag.
