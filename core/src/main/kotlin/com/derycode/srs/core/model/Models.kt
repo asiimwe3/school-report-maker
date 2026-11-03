@@ -201,6 +201,27 @@ data class AssessmentComponent(
     val active: Boolean = true
 )
 
+/**
+ * The school's paper marksheet prints three assessment columns (A1, A2, A3, each
+ * out of 20) before the exam. A school set up before those existed must still get
+ * them, and gets them empty - no marks change, so no result changes.
+ */
+fun SchoolData.withPaperAssessments(): SchoolData {
+    val have = components.map { it.code.uppercase() }.toSet()
+    val missing = listOf(
+        "A1" to "Assessment 1", "A2" to "Assessment 2", "A3" to "Assessment 3"
+    ).filter { (code, _) -> code !in have }.map { (code, name) ->
+        AssessmentComponent(
+            id = "c-${code.lowercase()}", code = code, name = name,
+            levels = listOf(Level.O_LEVEL, Level.A_LEVEL)
+        )
+    }
+    if (missing.isEmpty()) return this
+    // keep them next to the other assessments, not after the exam columns
+    val at = components.indexOfFirst { it.code == "CA" }.let { if (it < 0) components.size else it }
+    return copy(components = components.take(at) + missing + components.drop(at))
+}
+
 /** Marks: one student, one subject, one term, one component. */
 @Serializable
 data class Mark(

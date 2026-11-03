@@ -245,6 +245,15 @@ class TeacherStore(root: Path? = null) {
     }
 
     /** Marks for one sheet, filled with what is already saved. */
+    /** Clearing a cell on the sheet means the mark is gone, not that it was never there. */
+    fun removeMark(studentId: String, subjectId: String, termId: String, componentId: String) {
+        val keep = data.marks.filterNot {
+            it.studentId == studentId && it.subjectId == subjectId &&
+                it.termId == termId && it.componentId == componentId
+        }
+        if (keep.size != data.marks.size) { data = data.copy(marks = keep); save() }
+    }
+
     fun sheetValues(classId: String, subjectId: String, componentId: String): Map<String, Mark> {
         val term = currentTermId
         return studentsIn(classId).mapNotNull { s ->

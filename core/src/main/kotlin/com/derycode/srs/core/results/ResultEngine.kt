@@ -19,6 +19,13 @@ import kotlin.math.roundToInt
  */
 object ResultEngine {
 
+    /**
+     * Column codes that belong to the continuous-assessment side of a weighted
+     * scheme. A1/A2/A3 are the school's own assessment columns (each out of 20);
+     * everything else that is coded differently is the examination.
+     */
+    private val CA_CODES = setOf("CA", "A1", "A2", "A3")
+
     // ── Subject totals ───────────────────────────────────────────────────────
 
     /**
@@ -42,8 +49,8 @@ object ResultEngine {
 
         return if (weighted) {
             // Weighted scheme: CA components share caWeight, exam components share examWeight.
-            val caMarks = usable.filter { componentById[it.componentId]?.code == "CA" }
-            val examMarks = usable.filter { componentById[it.componentId]?.code != "CA" }
+            val caMarks = usable.filter { componentById[it.componentId]?.code in CA_CODES }
+            val examMarks = usable.filter { componentById[it.componentId]?.code?.let { c -> c !in CA_CODES } ?: true }
             val caPart = if (caMarks.isEmpty()) 0.0 else caMarks.map(::pct).average() * caWeight / 100.0
             val examPart = if (examMarks.isEmpty()) 0.0 else examMarks.map(::pct).average() * examWeight / 100.0
             (caPart + examPart) to incomplete
@@ -77,12 +84,15 @@ object ResultEngine {
         val byId = components.associateBy { it.id }
         fun pct(m: Mark): Double = if (m.maxScore <= 0) 0.0 else (m.score / m.maxScore) * 100.0
 
-        val caMarks = usable.filter { byId[it.componentId]?.code == "CA" }
-        val examMarks = usable.filter { byId[it.componentId]?.code != "CA" }
+        val caMarks = usable.filter { byId[it.componentId]?.code in CA_CODES }
+        val examMarks = usable.filter { byId[it.componentId]?.code?.let { c -> c !in CA_CODES } ?: true }
 
         // A1/A2/A3: the first three assessment columns the school actually uses,
         // in the order the components are defined (falling back to CA entries).
-        val assessmentOrder = components.filter { c -> usable.any { it.componentId == c.id } }
+        val coded = components.filter { it.code in setOf("A1", "A2", "A3") }
+            .sortedBy { it.code }
+            .filter { c -> usable.any { it.componentId == c.id } }
+        val assessmentOrder = (coded.ifEmpty { components.filter { c -> usable.any { it.componentId == c.id } } })
             .take(3)
             .mapNotNull { c -> usable.firstOrNull { it.componentId == c.id }?.let(::pct) }
 

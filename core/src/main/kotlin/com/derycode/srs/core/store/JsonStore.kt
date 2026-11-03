@@ -9,6 +9,7 @@ import com.derycode.srs.core.model.GatePass
 import com.derycode.srs.core.model.Mark
 import com.derycode.srs.core.model.MarkType
 import com.derycode.srs.core.model.SchoolData
+import com.derycode.srs.core.model.withPaperAssessments
 import com.derycode.srs.core.model.Student
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -30,7 +31,8 @@ class JsonStore(
 
     fun load(path: Path): SchoolData {
         if (!Files.exists(path)) return SchoolData()
-        return json.decodeFromString(Files.readString(path))
+        // older school files predate the A1/A2/A3 columns: fill them in, empty
+        return json.decodeFromString<SchoolData>(Files.readString(path)).withPaperAssessments()
     }
 
     fun save(path: Path, data: SchoolData) {

@@ -27,6 +27,15 @@ object FilePicker {
         return File(dir, if (f.endsWith(".json")) f else "$f.json").toPath()
     }
 
+    fun saveDocx(suggested: String): java.nio.file.Path? {
+        val dialog = java.awt.FileDialog(null as java.awt.Frame?, "Save the marksheet", java.awt.FileDialog.SAVE)
+        dialog.file = suggested
+        dialog.isVisible = true
+        val dir = dialog.directory ?: return null
+        val f = dialog.file ?: return null
+        return File(dir, if (f.endsWith(".docx")) f else "$f.docx").toPath()
+    }
+
     fun revealInFolder(path: java.nio.file.Path) {
         try {
             val target = path.toFile()
