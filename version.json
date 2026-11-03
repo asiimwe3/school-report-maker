@@ -1,4 +1,6 @@
 {
+  "console": "2.3.19",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.19.msi",
   "teacher": "1.20.0",
   "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.0.apk",
   "notes": "Enter Marks now has a marks sheet: download the class list template, fill it in Excel or by hand, then import it back or photograph it. Names are matched to the register and you review before saving."
