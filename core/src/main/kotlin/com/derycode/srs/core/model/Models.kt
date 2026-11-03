@@ -491,6 +491,12 @@ data class AppSettings(
     val setupComplete: Boolean = false,
     /** Set once the "Standard" card has been made the default, so a school that later picks another design keeps it. */
     val standardDefaultApplied: Boolean = false,
+    // ── O-Level assessment weighting (v2.4.31) ──
+    // Final score = A2 × 20% + A3 × 80%. Stored on the school, so every term and
+    // every academic year uses the same rule until the school changes it here.
+    val a2a3Weighting: Boolean = true,
+    val a2WeightPercent: Int = 20,
+    val a3WeightPercent: Int = 80,
     val cloudUrl: String = "",
     val cloudKey: String = "",
     val cloudEmail: String = "",

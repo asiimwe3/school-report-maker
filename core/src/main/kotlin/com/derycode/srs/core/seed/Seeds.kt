@@ -17,6 +17,11 @@ object Seeds {
         AssessmentComponent(id = "c-eot", code = "EOT", name = "End of Term", levels = listOf(Level.PRIMARY, Level.O_LEVEL, Level.A_LEVEL)),
         AssessmentComponent(id = "c-ca", code = "CA", name = "Continuous Assessment", weightPercent = 20, levels = listOf(Level.O_LEVEL, Level.A_LEVEL)),
         AssessmentComponent(id = "c-aoi", code = "AOI", name = "Activity of Integration", levels = listOf(Level.O_LEVEL)),
+        // O-Level final score = A2 (20%) + A3 (80%). One row per assessment, exactly
+        // like every other component, so old marks stay untouched and the final score
+        // is always derived, never stored.
+        AssessmentComponent(id = "c-a2", code = "A2", name = "Assessment 2", weightPercent = 20, levels = listOf(Level.O_LEVEL)),
+        AssessmentComponent(id = "c-a3", code = "A3", name = "Assessment 3", weightPercent = 80, levels = listOf(Level.O_LEVEL)),
         AssessmentComponent(id = "c-proj", code = "PROJECT", name = "Project Work", levels = listOf(Level.O_LEVEL, Level.A_LEVEL))
     )
 

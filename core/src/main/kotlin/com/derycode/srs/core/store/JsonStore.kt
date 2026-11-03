@@ -337,6 +337,7 @@ class SchoolRepository(
             changed = true
         }
         next = withStandardAsDefault(next)
+        next = withA2A3Components(next)
         if (next != data) changed = true
         if (changed) { data = next; save() }
     }
@@ -347,6 +348,30 @@ class SchoolRepository(
      * added. The default flips to Standard exactly once ([standardDefaultApplied]):
      * after that, a design the school chooses is never overridden.
      */
+    /**
+     * O-Level final score = A2 × 20% + A3 × 80%. A school that predates the two
+     * assessments gets them added once, so its grid shows the A2/A3 columns and the
+     * weighted final score. Nothing is rewritten: old marks keep their own component
+     * and are never relabelled as A2 or A3, so history reads exactly as it was.
+     */
+    internal fun withA2A3Components(d: com.derycode.srs.core.model.SchoolData): com.derycode.srs.core.model.SchoolData {
+        val hasOL = d.classes.any { it.level == com.derycode.srs.core.model.Level.O_LEVEL }
+        if (!hasOL) return d
+        val hasA2 = d.components.any { it.code.equals("A2", true) }
+        val hasA3 = d.components.any { it.code.equals("A3", true) }
+        if (hasA2 && hasA3) return d
+        var comps = d.components
+        if (!hasA2) comps = comps + com.derycode.srs.core.model.AssessmentComponent(
+            id = "c-a2", code = "A2", name = "Assessment 2", weightPercent = d.settings.a2WeightPercent,
+            levels = listOf(com.derycode.srs.core.model.Level.O_LEVEL)
+        )
+        if (!hasA3) comps = comps + com.derycode.srs.core.model.AssessmentComponent(
+            id = "c-a3", code = "A3", name = "Assessment 3", weightPercent = d.settings.a3WeightPercent,
+            levels = listOf(com.derycode.srs.core.model.Level.O_LEVEL)
+        )
+        return d.copy(components = comps)
+    }
+
     internal fun withStandardAsDefault(d: com.derycode.srs.core.model.SchoolData): com.derycode.srs.core.model.SchoolData {
         if (d.settings.standardDefaultApplied) return d
         val layout = com.derycode.srs.core.model.TemplateLayout.SUMMARY

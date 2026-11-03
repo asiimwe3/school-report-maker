@@ -31,8 +31,17 @@ object ResultEngine {
         components: List<AssessmentComponent>,
         caWeight: Int,
         examWeight: Int,
-        weighted: Boolean
+        weighted: Boolean,
+        a2Weight: Int = AssessmentWeighting.A2_DEFAULT_WEIGHT,
+        a3Weight: Int = AssessmentWeighting.A3_DEFAULT_WEIGHT,
+        a2a3Enabled: Boolean = true
     ): Pair<Double, Boolean> {   // (percentage, incomplete)
+        // O-Level: final = A2 × 20% + A3 × 80%. One rule, used by every screen and report.
+        val rules = AssessmentWeighting.rules(components, a2Weight, a3Weight, a2a3Enabled)
+        if (rules.isNotEmpty() && marks.any { m -> rules.any { it.component.id == m.componentId } }) {
+            val s = AssessmentWeighting.score(marks, rules)
+            return (s.final ?: s.partial ?: 0.0) to s.incomplete
+        }
         val usable = marks.filter { it.type == MarkType.VALUE }
         val incomplete = marks.any { it.type == MarkType.ABS || it.type == MarkType.MISSING }
         if (usable.isEmpty()) return 0.0 to true
@@ -62,7 +71,10 @@ object ResultEngine {
     data class SubjectBreakdown(
         val formative: Double = -1.0,
         val exam: Double = -1.0,
-        val assessments: List<Double> = emptyList()
+        val assessments: List<Double> = emptyList(),
+        /** A2 × 20% + A3 × 80%; null when either mark is still missing. */
+        val final: Double? = null,
+        val incomplete: Boolean = false
     )
 
     fun subjectBreakdown(
@@ -70,8 +82,22 @@ object ResultEngine {
         components: List<AssessmentComponent>,
         caWeight: Int,
         examWeight: Int,
-        weighted: Boolean
+        weighted: Boolean,
+        a2Weight: Int = AssessmentWeighting.A2_DEFAULT_WEIGHT,
+        a3Weight: Int = AssessmentWeighting.A3_DEFAULT_WEIGHT,
+        a2a3Enabled: Boolean = true
     ): SubjectBreakdown {
+        val rules = AssessmentWeighting.rules(components, a2Weight, a3Weight, a2a3Enabled)
+        if (rules.isNotEmpty() && marks.any { m -> rules.any { it.component.id == m.componentId } }) {
+            val s = AssessmentWeighting.score(marks, rules)
+            return SubjectBreakdown(
+                formative = s.byCode[AssessmentWeighting.A2] ?: -1.0,
+                exam = s.byCode[AssessmentWeighting.A3] ?: -1.0,
+                assessments = rules.mapNotNull { s.byCode[it.code] },
+                final = s.final,
+                incomplete = s.incomplete
+            )
+        }
         val usable = marks.filter { it.type == MarkType.VALUE }
         if (usable.isEmpty()) return SubjectBreakdown()
         val byId = components.associateBy { it.id }
@@ -123,9 +149,13 @@ object ResultEngine {
         val subjectResults = principalSubjectIds.mapNotNull { subjectId ->
             val sm = studentMarks.filter { it.subjectId == subjectId }
             val (pct, incomplete) = subjectPercentage(
-                sm, data.components, scheme.caWeightPercent, scheme.examWeightPercent, weighted
+                sm, data.components, scheme.caWeightPercent, scheme.examWeightPercent, weighted,
+                data.settings.a2WeightPercent, data.settings.a3WeightPercent, data.settings.a2a3Weighting
             )
-            val bd = subjectBreakdown(sm, data.components, scheme.caWeightPercent, scheme.examWeightPercent, weighted)
+            val bd = subjectBreakdown(
+                sm, data.components, scheme.caWeightPercent, scheme.examWeightPercent, weighted,
+                data.settings.a2WeightPercent, data.settings.a3WeightPercent, data.settings.a2a3Weighting
+            )
             SubjectResult(
                 subjectId = subjectId,
                 total = sm.filter { it.type == MarkType.VALUE }.sumOf { it.score },

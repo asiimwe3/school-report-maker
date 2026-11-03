@@ -44,7 +44,9 @@ fun MarksScreen(state: AppState) {
     var error by remember { mutableStateOf("") }
 
     val cls = d.classes.firstOrNull { it.id == classId }
+    // Weighted assessments (A2 20%, A3 80%) lead the grid, then the rest in school order.
     val levelComponents = d.components.filter { term != null && cls != null && it.levels.contains(cls.level) && it.active }
+        .sortedByDescending { it.weightPercent }
     val yearFor = year
 
     ScreenTitle("Marks Grid", "Keyboard-first: type a value, press Enter, it saves. Special: ABS / EXEMPT.")
@@ -127,7 +129,9 @@ fun MarksScreen(state: AppState) {
             CardBox {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Box(Modifier.weight(2f)) { HeaderCell("Student") }
-                    levelComponents.forEach { Box(Modifier.weight(1f)) { HeaderCell(it.code) } }
+                    levelComponents.forEach { Box(Modifier.weight(1f)) { HeaderCell(componentHeader(it)) } }
+                    Box(Modifier.weight(1.1f)) { HeaderCell("Final") }
+                    Box(Modifier.weight(0.7f)) { HeaderCell("Grade") }
                 }
                 Spacer(Modifier.height(6.dp))
                 LazyColumn(Modifier.height(380.dp)) {
@@ -150,6 +154,41 @@ fun MarksScreen(state: AppState) {
                                     modifier = Modifier.weight(1f),
                                     placeholder = { Text("—", color = Theme.MUTED, fontSize = 13.sp) }
                                 )
+                            }
+                            // Final = A2 × 20% + A3 × 80%, computed from what is in the
+                            // boxes right now, so it updates as soon as either changes.
+                            val typed = levelComponents.mapNotNull { comp ->
+                                val k = "${s.id}|$subjectId|${term.id}|${comp.id}"
+                                val txt = edits[k] ?: d.marks.firstOrNull {
+                                    it.studentId == s.id && it.subjectId == subjectId && it.termId == term.id && it.componentId == comp.id
+                                }?.takeIf { it.type == MarkType.VALUE }?.score?.let { v -> if (v == v.toLong().toDouble()) v.toLong().toString() else v.toString() } ?: ""
+                                val v = com.derycode.srs.core.results.AssessmentWeighting.sanitize(txt) ?: return@mapNotNull null
+                                Mark(
+                                    id = "row-${s.id}-${comp.id}", studentId = s.id, subjectId = subjectId,
+                                    termId = term.id, componentId = comp.id, score = v, maxScore = 100
+                                )
+                            }
+                            val rowScore = com.derycode.srs.core.results.AssessmentWeighting.forMarks(
+                                typed, levelComponents,
+                                d.settings.a2a3Weighting
+                            )
+                            // same scheme the reports use for this class's level
+                            val rowScheme = d.gradingSchemes.firstOrNull { it.level == cls.level && it.active }
+                                ?: d.gradingSchemes.firstOrNull { it.level == cls.level }
+                            Box(Modifier.weight(1.1f)) {
+                                Cell(
+                                    when {
+                                        rowScore.final != null -> com.derycode.srs.core.results.AssessmentWeighting.display(rowScore)
+                                        rowScore.weighted -> "incomplete"
+                                        else -> "—"
+                                    },
+                                    bold = rowScore.final != null,
+                                    color = if (rowScore.final != null) Theme.TEXT else Theme.MUTED
+                                )
+                            }
+                            Box(Modifier.weight(0.7f)) {
+                                val g = rowScore.grade(rowScheme)
+                                Cell(g, bold = g != "—", color = if (g == "—") Theme.MUTED else Theme.GOOD)
                             }
                         }
                         // save on change is too aggressive; save happens per field on Enter via explicit button below
