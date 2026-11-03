@@ -176,6 +176,34 @@ object CloudApi {
         return out
     }
 
+    /** The school this account already owns, if any. */
+    data class MySchool(val id: String, val name: String, val inviteCode: String)
+
+    internal fun parseMySchool(body: String): MySchool? = try {
+        val root = Json.parseToJsonElement(body)
+        val first = (root as? JsonArray)?.firstOrNull() as? JsonObject
+        fun field(n: String) = (first?.get(n) as? JsonPrimitive)?.content ?: ""
+        val id = field("id")
+        if (id.isEmpty()) null else MySchool(id, field("name"), field("invite_code"))
+    } catch (_: Exception) { null }
+
+    /**
+     * Which school does this login already own?
+     *
+     * Row-level security returns only the caller's own row, so the filter is not
+     * needed - and must not be guessed, because a new PC has no school id yet.
+     * This is what makes "sign in on another computer" possible: without it the
+     * console could only ever create a second school and orphan the first.
+     */
+    fun findMySchool(url: String, key: String, token: String): Pair<MySchool?, String> {
+        val (code, body) = http("GET", "$url/rest/v1/srs_schools?select=id,name,invite_code&limit=1", key, token, null)
+        if (code == 401 || code == 403) return Pair(null, "This account cannot read its school (HTTP $code). Sign in with the school account, not a teacher's.")
+        if (code !in 200..299) return Pair(null, "Could not read your school from the cloud (HTTP $code): ${body.take(120)}")
+        val mine = parseMySchool(body)
+            ?: return Pair(null, "This account has no school in the cloud yet. Use \"Turn on cloud\" to create one.")
+        return Pair(mine, "ok")
+    }
+
     fun createSchool(url: String, key: String, token: String, name: String, district: String, address: String,
                      headTeacher: String, plan: String, licenseKey: String, studentCount: Int, inviteCode: String): Pair<String, String> {
         val body = "{\"name\":\"${esc(name)}\",\"district\":\"${esc(district)}\",\"address\":\"${esc(address)}\",\"head_teacher\":\"${esc(headTeacher)}\",\"plan\":\"${esc(plan)}\",\"license_key\":\"${esc(licenseKey)}\",\"student_count\":$studentCount,\"invite_code\":\"${esc(inviteCode)}\"}"
@@ -816,7 +844,140 @@ object CloudSync {
 }
     }
 
-        fun pullNow(repo: SchoolRepository, onResult: (Boolean, String) -> Unit) {
+        /**
+     * One button for "this computer belongs to this school account".
+     *
+     * Sign in if the account exists, create it if it does not, then either attach
+     * to the school the account already owns (a new or repaired computer) or
+     * register the school on the console (first time). Creating a second school
+     * for an account that already has one is what used to happen here, leaving
+     * the real school unreachable and the teacher codes pointing at an empty row.
+     */
+    fun connectAccount(repo: SchoolRepository, email: String, password: String, onResult: ((Boolean, String) -> Unit)? = null) {
+        val em = email.trim().lowercase()
+        val st = repo.data.settings
+        val base = url(st)
+        val k = key(st)
+
+        val existing = CloudApi.login(base, k, em, password)
+        if (existing.ok) {
+            val (mine, _) = CloudApi.findMySchool(base, k, existing.accessToken)
+            if (mine != null) { signInToSchool(repo, em, password, onResult); return }
+            // Account exists but has no school yet - register this one on it.
+            registerSchool(repo, base, k, existing.accessToken, em, password, onResult)
+            return
+        }
+
+        val fresh = CloudApi.signUp(base, k, em, password)
+        if (!fresh.ok) {
+            // "already registered" with a password that did not work: say so plainly.
+            val why = if (fresh.error.contains("already", true) || fresh.error.contains("registered", true))
+                "That email already has a school account, but the password did not match it. Use the password saved in Cloud → School account."
+            else fresh.error
+            onResult?.invoke(false, why)
+            return
+        }
+        registerSchool(repo, base, k, fresh.accessToken, em, password, onResult)
+    }
+
+    /** Registers this console's school on an account and publishes the first backup. */
+    private fun registerSchool(repo: SchoolRepository, base: String, k: String, token: String,
+                              em: String, password: String, onResult: ((Boolean, String) -> Unit)?) {
+        guardedThread(onResult) {
+            val d = repo.data
+            val rnd = java.security.SecureRandom()
+            val baseCode = d.school.name.uppercase().filter { it.isLetterOrDigit() }.take(4).padEnd(4, 'X')
+            val code = baseCode + (1..4).map { "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[rnd.nextInt(32)] }.joinToString("")
+            val (sid, serr) = CloudApi.createSchool(
+                base, k, token, d.school.name, d.school.address, d.school.address,
+                d.school.headTeacher, d.settings.licencePlan.ifBlank { "Trial" }, d.settings.licenceRef,
+                d.students.size, code
+            )
+            if (sid.isBlank()) { onResult?.invoke(false, serr); return@guardedThread }
+            repo.mutate("cloud-created", "settings") { cur ->
+                cur.copy(settings = cur.settings.copy(
+                    cloudUrl = base, cloudKey = k, cloudEmail = em, cloudPassword = password,
+                    cloudAccessToken = token, cloudSchoolId = sid, cloudInviteCode = code,
+                    teacherCloudEnabled = true
+                ))
+            }
+            val payload = CloudApi.cloudPayload(repo.data)
+            val pushed = CloudApi.pushBackup(base, k, token, sid, payload)
+            if (pushed.first) markPushed(repo, payload.length)
+            onResult?.invoke(true,
+                if (pushed.first) "Connected. School code $code is ready for teachers."
+                else "Connected and registered, but the first backup failed: ${pushed.second}")
+        }
+    }
+
+    /**
+     * Sign in to an existing school account on another computer.
+     *
+     * Creates nothing: it signs in, finds the school the account already owns,
+     * and pulls that school's latest backup. Refuses when this console is already
+     * holding a different school, because replacing it here would mix two
+     * schools' learners and marks.
+     */
+    fun signInToSchool(repo: SchoolRepository, email: String, password: String, onResult: ((Boolean, String) -> Unit)? = null) {
+        guardedThread(onResult) {
+            val st = repo.data.settings
+            val base = url(st)
+            val k = key(st)
+            val em = email.trim().lowercase()
+            val auth = CloudApi.login(base, k, em, password)
+            if (!auth.ok) { onResult?.invoke(false, auth.error); return@guardedThread }
+
+            val (mine, err) = CloudApi.findMySchool(base, k, auth.accessToken)
+            if (mine == null) { onResult?.invoke(false, err); return@guardedThread }
+
+            val local = repo.data.school.name.trim()
+            val sameSchool = local.isBlank() || local.equals(mine.name.trim(), ignoreCase = true)
+            if (!sameSchool) {
+                onResult?.invoke(false,
+                    "That account holds \"${mine.name}\", but this computer already holds \"$local\". " +
+                    "Sign in to this school's own account, or open this console on the computer that already has the school.")
+                return@guardedThread
+            }
+
+            repo.mutate("cloud-signin", "settings") { cur ->
+                cur.copy(settings = cur.settings.copy(
+                    cloudUrl = base, cloudKey = k, cloudEmail = em,
+                    cloudPassword = password,
+                    cloudAccessToken = auth.accessToken, cloudRefreshToken = auth.refreshToken,
+                    cloudSchoolId = mine.id, cloudInviteCode = mine.inviteCode,
+                    teacherCloudEnabled = true
+                ))
+            }
+
+            val (payload, perr) = CloudApi.pullBackup(base, k, auth.accessToken, mine.id)
+            if (payload.isEmpty()) {
+                onResult?.invoke(true,
+                    if (perr == "ok") "Signed in to ${mine.name}. No cloud backup yet, so this computer starts empty and will publish its own when you back up."
+                    else "Signed in to ${mine.name}, but the backup could not be downloaded: $perr")
+                return@guardedThread
+            }
+            try {
+                val restored = Json.decodeFromString(com.derycode.srs.core.model.SchoolData.serializer(), payload)
+                // The backup came from another machine and carries no account password
+                // (it never travels). Keep what this computer just signed in with.
+                val here = repo.data.settings
+                val data = restored.copy(settings = restored.settings.copy(
+                    cloudUrl = here.cloudUrl, cloudKey = here.cloudKey,
+                    cloudEmail = here.cloudEmail, cloudPassword = here.cloudPassword,
+                    cloudAccessToken = here.cloudAccessToken, cloudRefreshToken = here.cloudRefreshToken,
+                    cloudSchoolId = here.cloudSchoolId, cloudInviteCode = here.cloudInviteCode,
+                    teacherCloudEnabled = here.teacherCloudEnabled
+                ))
+                repo.mutate("cloud-restore", "settings") { data }
+                syncLinkedTeachers(repo)
+                onResult?.invoke(true, "Signed in to ${mine.name} and restored its cloud copy. School code ${mine.inviteCode} still works for teachers.")
+            } catch (e: Exception) {
+                onResult?.invoke(false, "Signed in to ${mine.name}, but the backup could not be read: ${e.message?.take(80)}")
+            }
+        }
+    }
+
+    fun pullNow(repo: SchoolRepository, onResult: (Boolean, String) -> Unit) {
         val s = repo.data.settings
         if (s.cloudSchoolId.isBlank()) { onResult(false, "Cloud not set up yet"); return }
         guardedThread(onResult) {

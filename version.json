@@ -1,9 +1,9 @@
 {
-  "console": "2.3.25",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.25.msi",
+  "console": "2.3.26",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.26.msi",
   "teacher": "1.20.1",
   "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.1.apk",
   "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.1.apk",
   "released": "2026-11-03",
-  "notes": "2.3.25 rebuilds the setup wizard: a branded side rail showing every step, a welcome screen with what setup covers and how long it takes, school-kind cards, a masked PIN with a show/hide eye and a strong-PIN hint, and a final screen summarising your school, online account, PIN and licence before you open the dashboard."
+  "notes": "2.3.25 rebuilds the setup wizard: a branded side rail showing every step, a welcome screen with what setup covers and how long it takes, school-kind cards, a masked PIN with a show/hide eye and a strong-PIN hint, and a final screen summarising your school, online account, PIN and licence before you open the dashboard. 2.3.26 lets a new or repaired computer sign in to the school account and pull that school's cloud copy instead of creating a second empty school, and shows the account password so it can be written down."
 }

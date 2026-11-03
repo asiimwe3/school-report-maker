@@ -911,27 +911,19 @@ fun CloudScreen(state: AppState) {
                     FieldLabel("Password"); PassField(pass, { pass = it })
                     Spacer(Modifier.height(12.dp))
                     Button({
-                        busy = true; say(false, "Connecting…")
-                        Thread {
-                            var em = email.trim().lowercase()
-                            var r = CloudApi.signUp(url, key, em, pass)
-                            if (!r.ok && r.error.contains("already", true)) r = CloudApi.login(url, key, em, pass)
-                            if (!r.ok) { busy = false; say(true, r.error); return@Thread }
-                            val code = (1..8).map { "ABCDEFGHJKLMNPQRSTUVWXYZ23456789".random() }.joinToString("")
-                            val sc = state.data.school
-                            val (sid, serr) = CloudApi.createSchool(url, key, r.accessToken, sc.name, sc.address, sc.address, sc.headTeacher, s.licencePlan.ifBlank { "Trial" }, s.licenceRef, state.data.students.size, code)
-                            if (sid.isBlank()) { busy = false; say(true, serr); return@Thread }
-                            state.repo.mutate("CLOUD_CONNECT", "Settings") { d -> d.copy(settings = d.settings.copy(
-                                cloudUrl = url, cloudKey = key, cloudEmail = em,
-                                // keep the password the head teacher typed, so this console can
-                                // show it later instead of locking the school out of its own cloud
-                                cloudPassword = pass,
-                                cloudAccessToken = r.accessToken, cloudRefreshToken = r.refreshToken,
-                                cloudSchoolId = sid, cloudInviteCode = code, teacherCloudEnabled = true)) }
+                        busy = true; say(false, "Signing in…")
+                        // One path: sign in (or create the account), then either attach to the
+                        // school this account already owns - a new or repaired computer - or
+                        // register the school here. This used to create a second school row and
+                        // leave the real one, and the teacher codes, unreachable.
+                        CloudSync.connectAccount(state.repo, email, pass) { ok, m ->
                             busy = false
-                            say(false, "✓ Cloud account connected")
-                        }.start()
-                    }, enabled = !busy && email.isNotBlank() && pass.length >= 6, shape = RoundedCornerShape(10.dp), colors = ButtonDefaults.buttonColors(containerColor = Theme.ACCENT), modifier = Modifier.height(42.dp)) { Text("Connect", fontSize = 13.sp) }
+                            say(!ok, m)
+                            if (ok) state.refresh()
+                        }
+                    }, enabled = !busy && email.isNotBlank() && pass.length >= 6, shape = RoundedCornerShape(10.dp), colors = ButtonDefaults.buttonColors(containerColor = Theme.ACCENT), modifier = Modifier.height(42.dp)) {
+                        Text(if (busy) "Signing in…" else if (s.cloudSchoolId.isBlank()) "Sign in or create" else "Reconnect this console", fontSize = 13.sp)
+                    }
                 }
             }
         }
