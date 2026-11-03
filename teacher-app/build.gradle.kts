@@ -15,8 +15,8 @@ android {
         applicationId = "com.derycode.srs.teacher"
         minSdk = 26
         targetSdk = 34
-        versionCode = 46
-        versionName = "1.20.1"
+        versionCode = 47
+        versionName = "1.20.2"
         // The reading model ships inside the APK so scanning works offline, but
         // only for the two processor types real phones use — that keeps the
         // download near 20MB instead of 47MB.
