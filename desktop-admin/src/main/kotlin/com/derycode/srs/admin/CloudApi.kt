@@ -196,6 +196,19 @@ object CloudApi {
     }
 
     /** Push full SchoolData JSON. Deletes previous cloud copy first (single-version cloud mirror). */
+    /**
+     * What actually leaves this console.
+     *
+     * The school account's password is kept on the console so a head teacher can
+     * get back in on a new PC, but it must never travel: it is not part of the
+     * school's data, and a cloud copy can be pulled, read or handed to support.
+     * Everything else goes unchanged, so a restore still brings the school back.
+     */
+    internal fun cloudPayload(data: com.derycode.srs.core.model.SchoolData): String {
+        val safe = data.copy(settings = data.settings.copy(cloudPassword = ""))
+        return Json.encodeToString(com.derycode.srs.core.model.SchoolData.serializer(), safe)
+    }
+
     fun pushBackup(url: String, key: String, token: String, schoolId: String, payload: String): Pair<Boolean, String> {
         http("DELETE", "$url/rest/v1/srs_backups?school_id=eq.$schoolId", key, token, null)
         val body = "{\"school_id\":\"$schoolId\",\"payload\":${kotlinx.serialization.json.JsonPrimitive(payload)},\"size\":${payload.length},\"version\":${System.currentTimeMillis()}}"
@@ -498,6 +511,7 @@ object CloudSync {
                 repo.mutate("cloud-signup", "settings") { cur ->
                     cur.copy(settings = cur.settings.copy(
                         cloudUrl = base, cloudKey = k, cloudEmail = acc.email,
+                        cloudPassword = acc.password,
                         cloudAccessToken = acc.accessToken, cloudRefreshToken = acc.refreshToken
                     ))
                 }
@@ -523,7 +537,7 @@ object CloudSync {
             }
 
             // Publish immediately so a teacher scanning the code sees the school.
-            val payload = Json.encodeToString(com.derycode.srs.core.model.SchoolData.serializer(), repo.data)
+            val payload = CloudApi.cloudPayload(repo.data)
             val pushed = CloudApi.pushBackup(base, k, token, sid, payload)
             if (pushed.first) markPushed(repo, payload.length)
             onResult?.invoke(
@@ -593,7 +607,7 @@ object CloudSync {
             repo.mutate("cloud-invite-rotated", "settings") { d -> d.copy(settings = d.settings.copy(cloudInviteCode = code)) }
 
             // Publish with the new code so the very first scan already has the school.
-            val payload = Json.encodeToString(com.derycode.srs.core.model.SchoolData.serializer(), repo.data)
+            val payload = CloudApi.cloudPayload(repo.data)
             CloudApi.pushBackup(base, k, repo.data.settings.cloudAccessToken, st.cloudSchoolId, payload)
 
             // Prove it: ask the server the same question a phone asks.
@@ -645,11 +659,12 @@ object CloudSync {
                 if (sid.isBlank()) { onResult?.invoke(false, err); return@guardedThread }
                 repo.mutate("cloud-republished", "settings") { cur ->
                     cur.copy(settings = cur.settings.copy(
-                        cloudEmail = acc.email, cloudAccessToken = acc.accessToken, cloudRefreshToken = acc.refreshToken,
+                        cloudEmail = acc.email, cloudPassword = acc.password,
+                        cloudAccessToken = acc.accessToken, cloudRefreshToken = acc.refreshToken,
                         cloudSchoolId = sid, cloudInviteCode = code, teacherCloudEnabled = true
                     ))
                 }
-                val payload = Json.encodeToString(com.derycode.srs.core.model.SchoolData.serializer(), repo.data)
+                val payload = CloudApi.cloudPayload(repo.data)
                 val (okPush, pushMsg) = CloudApi.pushBackup(base, k, acc.accessToken, sid, payload)
                 if (!okPush) { onResult?.invoke(false, "School restored but the upload failed: $pushMsg"); return@guardedThread }
                 onResult?.invoke(true, "School restored under the same code $code and all your data was uploaded. Teachers can scan it again now.")
@@ -711,6 +726,7 @@ object CloudSync {
             repo.mutate("cloud-moved", "settings") { cur ->
                 cur.copy(settings = cur.settings.copy(
                     cloudUrl = base, cloudKey = k, cloudEmail = acc.email,
+                    cloudPassword = acc.password,
                     cloudAccessToken = acc.accessToken, cloudRefreshToken = acc.refreshToken,
                     cloudSchoolId = sid, cloudInviteCode = code, teacherCloudEnabled = true
                 ))
@@ -731,7 +747,7 @@ object CloudSync {
     fun pushNow(repo: SchoolRepository, onResult: ((Boolean, String) -> Unit)? = null) {
         val s = repo.data.settings
         if (s.cloudSchoolId.isBlank()) { onResult?.invoke(false, "Cloud not set up yet"); return }
-        val payload = Json.encodeToString(com.derycode.srs.core.model.SchoolData.serializer(), repo.data)
+        val payload = CloudApi.cloudPayload(repo.data)
         guardedThread(onResult) {
             var res = CloudApi.pushBackup(url(s), key(s), s.cloudAccessToken, s.cloudSchoolId, payload)
             var okNow = res.first

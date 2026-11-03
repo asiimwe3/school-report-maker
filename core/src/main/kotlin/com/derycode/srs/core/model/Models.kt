@@ -492,6 +492,11 @@ data class AppSettings(
     val cloudUrl: String = "",
     val cloudKey: String = "",
     val cloudEmail: String = "",
+    // The generated school account's password. deviceSignUp invents one and used to
+    // throw it away, so a console that lost its session (new PC, reset, revoked
+    // token) could never reach its own cloud school again: the address is on a
+    // domain with no mailbox, so there is no "forgot password" to fall back on.
+    val cloudPassword: String = "",
     val cloudAccessToken: String = "",
     val cloudRefreshToken: String = "",
     val cloudSchoolId: String = "",

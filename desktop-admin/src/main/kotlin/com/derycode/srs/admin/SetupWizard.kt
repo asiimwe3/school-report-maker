@@ -416,6 +416,9 @@ fun CloudScreen(state: AppState) {
     var invMsg by remember { mutableStateOf("") }
     var invErr by remember { mutableStateOf(false) }
     var invBusy by remember { mutableStateOf(false) }
+    // The school account's password is the only way back to this school's cloud
+    // copy on another PC, so it can be revealed, copied and written down.
+    var showAccountPw by remember { mutableStateOf(false) }
 
     fun say(e: Boolean, m: String) { err = e; msg = m }
 
@@ -497,6 +500,32 @@ fun CloudScreen(state: AppState) {
                 if (s.cloudSchoolId.isNotBlank()) {
                     Text("● Connected as ${s.cloudEmail}", color = Theme.GOOD, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(8.dp))
+                    // The school account is what holds this school's cloud copy. It is
+                    // created with a generated password that used to be thrown away, so
+                    // show it here: on a new PC or after a reset this is the only way in
+                    // (the address has no mailbox, so "forgot password" cannot help).
+                    Text("School account (keep this safe)", color = Theme.TEXT, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(4.dp))
+                    Text(s.cloudEmail, color = Theme.MUTED, fontSize = 12.sp)
+                    if (s.cloudPassword.isNotBlank()) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(if (showAccountPw) s.cloudPassword else "•".repeat(s.cloudPassword.length.coerceIn(8, 18)),
+                                color = Theme.MUTED, fontSize = 12.sp)
+                            Text(if (showAccountPw) "hide" else "show", color = Theme.ACCENT, fontSize = 11.sp,
+                                modifier = Modifier.clickable { showAccountPw = !showAccountPw })
+                            Text("copy", color = Theme.ACCENT, fontSize = 11.sp, modifier = Modifier.clickable {
+                                try {
+                                    val sel = java.awt.datatransfer.StringSelection("${s.cloudEmail}\n${s.cloudPassword}")
+                                    java.awt.Toolkit.getDefaultToolkit().systemClipboard.setContents(sel, null)
+                                    say(false, "School account copied. Paste it somewhere safe — a notebook or your phone's notes.")
+                                } catch (e: Exception) { say(true, "Could not copy: ${e.message?.take(40)}") }
+                            })
+                        }
+                        Text("Write this down. It is how a new PC gets this school's cloud data back.", color = Theme.MUTED, fontSize = 11.sp)
+                    } else {
+                        Text("Password not stored for this account (created before this update). If you ever need to sign in on a new PC, use Cloud → Restore from Cloud on a console that still has this school, or ask support to re-link it.", color = Theme.WARN, fontSize = 11.sp)
+                    }
+                    Spacer(Modifier.height(10.dp))
                     Text("Teacher school code", color = Theme.MUTED, fontSize = 11.sp)
                     Text(s.cloudInviteCode, color = Theme.ACCENT, fontSize = 22.sp, fontWeight = FontWeight.Black)
                     Text("Share this code with your teachers for phone app access.", color = Theme.MUTED, fontSize = 11.sp)
@@ -714,7 +743,11 @@ fun CloudScreen(state: AppState) {
                             val (sid, serr) = CloudApi.createSchool(url, key, r.accessToken, sc.name, sc.address, sc.address, sc.headTeacher, s.licencePlan.ifBlank { "Trial" }, s.licenceRef, state.data.students.size, code)
                             if (sid.isBlank()) { busy = false; say(true, serr); return@Thread }
                             state.repo.mutate("CLOUD_CONNECT", "Settings") { d -> d.copy(settings = d.settings.copy(
-                                cloudUrl = url, cloudKey = key, cloudEmail = em, cloudAccessToken = r.accessToken, cloudRefreshToken = r.refreshToken,
+                                cloudUrl = url, cloudKey = key, cloudEmail = em,
+                                // keep the password the head teacher typed, so this console can
+                                // show it later instead of locking the school out of its own cloud
+                                cloudPassword = pass,
+                                cloudAccessToken = r.accessToken, cloudRefreshToken = r.refreshToken,
                                 cloudSchoolId = sid, cloudInviteCode = code, teacherCloudEnabled = true)) }
                             busy = false
                             say(false, "✓ Cloud account connected")
