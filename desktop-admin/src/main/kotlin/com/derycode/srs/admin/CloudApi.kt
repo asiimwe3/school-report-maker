@@ -411,7 +411,17 @@ object CloudApi {
     fun setInviteCode(url: String, key: String, token: String, schoolId: String, code: String): Pair<Boolean, String> {
         val body = "{\"invite_code\":\"${esc(code)}\"}"
         val r = http("PATCH", "$url/rest/v1/srs_schools?id=eq.$schoolId&select=id,invite_code", key, token, body)
-        return if (r.first in 200..299) Pair(true, code) else Pair(false, "Server error (${r.first}): ${r.second.take(140)}")
+        if (r.first !in 200..299) return Pair(false, "Server error (${r.first}): ${r.second.take(140)}")
+        // PostgREST answers 204 with an EMPTY body on success, and also 204 when
+        // the id matches nothing (deleted school). A status code proves nothing,
+        // so read the row back and check the code actually changed.
+        val after = http("GET", "$url/rest/v1/srs_schools?id=eq.$schoolId&select=invite_code", key, token, null)
+        if (after.first !in 200..299) return Pair(false, "Saved, but could not confirm it (server ${after.first}).")
+        val list = try { Json.parseToJsonElement(after.second) as? JsonArray } catch (_: Exception) { null }
+        if (list == null || list.isEmpty()) return Pair(false, "This school no longer exists on the server.")
+        val now = ((list.firstOrNull() as? JsonObject)?.get("invite_code") as? JsonPrimitive)?.content.orEmpty()
+        return if (now.equals(code, ignoreCase = true)) Pair(true, code)
+               else Pair(false, "The server kept the old code ($now). Check the connection and try again.")
     }
 
     private fun esc(s: String) = s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", " ").replace("\r", " ")
@@ -462,7 +472,7 @@ object CloudSync {
         val rnd = java.security.SecureRandom()
         val code = baseCode + (1..4).map { "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[rnd.nextInt(32)] }.joinToString("")
 
-        Thread {
+        guardedThread(onResult) {
             val base = url(st)
             val k = key(st)
 
@@ -471,7 +481,7 @@ object CloudSync {
             var email = st.cloudEmail
             if (token.isBlank() || email.isBlank() || !email.endsWith("@srs.derycode.online")) {
                 val acc = CloudApi.deviceSignUp(base, k)
-                if (!acc.ok) { onResult?.invoke(false, acc.error); return@Thread }
+                if (!acc.ok) { onResult?.invoke(false, acc.error); return@guardedThread }
                 token = acc.accessToken
                 email = acc.email
                 repo.mutate("cloud-signup", "settings") { cur ->
@@ -491,7 +501,7 @@ object CloudSync {
                 val hint = if (serr.contains("duplicate") || serr.contains("23505"))
                     "This console already has a school in the cloud. Use 'Restore From Cloud' or open Support."
                 else serr
-                onResult?.invoke(false, hint); return@Thread
+                onResult?.invoke(false, hint); return@guardedThread
             }
 
             repo.mutate("cloud-created", "settings") { cur ->
@@ -510,7 +520,7 @@ object CloudSync {
                 if (pushed.first) "Cloud is on. School code $code is ready for teachers."
                 else "Cloud is on and the school is registered, but the first backup failed: ${pushed.second}"
             )
-        }.start()
+}
     }
 
     /**
@@ -522,41 +532,120 @@ object CloudSync {
     fun regenerateInviteCode(repo: SchoolRepository, onResult: ((Boolean, String) -> Unit)? = null) {
         val st = repo.data.settings
         if (st.cloudSchoolId.isBlank() || st.cloudAccessToken.isBlank()) {
-            onResult?.invoke(false, "Turn on the cloud first — a code only means something online.")
+            onResult?.invoke(false, "Turn on the cloud first (Cloud & Online) — a code only means something online.")
             return
         }
-        Thread {
+        // guardedThread: an exception inside a bare Thread used to kill the
+        // worker silently, so the screen sat on "Creating a new code…" forever.
+        guardedThread(onResult) {
             val base = url(st); val k = key(st)
+
+            // Step 0: is the school still on the server? If it was deleted, a
+            // PATCH matches nothing and no code can ever work — restore first.
+            val alive = withFreshToken(repo, { exists -> if (exists) "" else "401" }) { token -> CloudApi.schoolExists(base, k, token, st.cloudSchoolId) }
+            if (!alive) {
+                republishNow(repo) { okRestore, mRestore ->
+                    if (!okRestore) { onResult?.invoke(false, "Could not restore the school on the server: $mRestore"); return@republishNow }
+                    onResult?.invoke(true, mRestore)
+                }
+                return@guardedThread
+            }
+
             val letters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
             val rnd = java.security.SecureRandom()
             val prefix = repo.data.school.name.uppercase().filter { it.isLetterOrDigit() }.take(4).padEnd(4, 'X')
 
-            val res = withFreshToken(repo, { it.second }) { token ->
+            val (code, err) = withFreshToken(repo, { it.second }) { token ->
                 var chosen = ""
                 var lastErr = ""
-                // up to 12 tries: every code is unique across all schools
-                repeat(12) {
-                    if (chosen.isNotEmpty()) return@repeat
+                var tries = 0
+                while (chosen.isEmpty() && tries < 12) {
+                    tries++
                     val candidate = prefix + (1..4).map { letters[rnd.nextInt(letters.length)] }.joinToString("")
-                    if (CloudApi.codeTaken(base, k, token, candidate)) return@repeat
+                    if (CloudApi.codeTaken(base, k, token, candidate)) continue
                     val (ok, msg) = CloudApi.setInviteCode(base, k, token, st.cloudSchoolId, candidate)
                     if (ok) chosen = candidate else lastErr = msg
                 }
                 Pair(chosen, lastErr)
             }
-            val (code, err) = res
+
             if (code.isBlank()) {
-                onResult?.invoke(false, err.ifBlank { "Could not create a new code — check the internet and try again." })
-                return@Thread
+                val reason = err.ifBlank { "Could not create a new code — check the internet and try again." }
+                if (reason.contains("no longer exists", ignoreCase = true)) {
+                    republishNow(repo) { okRestore, mRestore ->
+                        onResult?.invoke(okRestore, if (okRestore) mRestore else "Could not restore the school: $mRestore")
+                    }
+                } else onResult?.invoke(false, reason)
+                return@guardedThread
             }
-            repo.mutate("cloud-invite-rotated", "settings") { d ->
-                d.copy(settings = d.settings.copy(cloudInviteCode = code))
-            }
-            // Re-publish so the very first scan with the new code already has the school.
+
+            repo.mutate("cloud-invite-rotated", "settings") { d -> d.copy(settings = d.settings.copy(cloudInviteCode = code)) }
+
+            // Publish with the new code so the very first scan already has the school.
             val payload = Json.encodeToString(com.derycode.srs.core.model.SchoolData.serializer(), repo.data)
             CloudApi.pushBackup(base, k, repo.data.settings.cloudAccessToken, st.cloudSchoolId, payload)
-            onResult?.invoke(true, "New code $code is live. The old code stopped working.")
+
+            // Prove it: ask the server the same question a phone asks.
+            val (owner, _) = CloudApi.codeOwner(base, k, code)
+            if (owner.isBlank()) {
+                onResult?.invoke(false, "Code $code was saved but the server does not answer with it yet. Tap Verify code online in a minute.")
+            } else {
+                onResult?.invoke(true, "New code $code is live and opens $owner. The old code stopped working.")
+            }
+        }
+    }
+
+    /**
+     * Runs [body] on a background thread and guarantees the screen is told the
+     * outcome: any exception becomes a readable message instead of a spinner
+     * that never ends.
+     */
+    fun guardedThread(onResult: ((Boolean, String) -> Unit)?, body: () -> Unit) {
+        Thread {
+            try { body() } catch (e: Throwable) {
+                onResult?.invoke(false, "Cloud step failed: " + (e.message ?: e.javaClass.simpleName))
+            }
         }.start()
+    }
+
+    /** Recreates the school row under the SAME code and pushes the full backup. */
+    fun republishNow(repo: SchoolRepository, onResult: ((Boolean, String) -> Unit)? = null) {
+        // Keep the teacher-facing code whenever there is one (phones already
+        // have it). Only invent a code if this console never had one — e.g. an
+        // older build wiped it when the server copy went missing.
+        val saved = repo.data.settings.cloudInviteCode.trim().uppercase()
+        val code = if (saved.isNotBlank()) saved else run {
+            val letters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+            val rnd = java.security.SecureRandom()
+            repo.data.school.name.uppercase().filter { it.isLetterOrDigit() }.take(4).padEnd(4, 'X') +
+                (1..4).map { letters[rnd.nextInt(letters.length)] }.joinToString("")
+        }
+        guardedThread(onResult) {
+            try {
+                val base = url(repo.data.settings); val k = key(repo.data.settings)
+                val acc = CloudApi.deviceSignUp(base, k)
+                if (!acc.ok) { onResult?.invoke(false, acc.error); return@guardedThread }
+                val d = repo.data
+                val (sid, err) = CloudApi.createSchool(
+                    base, k, acc.accessToken, d.school.name, d.school.address, d.school.address,
+                    d.school.headTeacher, d.settings.licencePlan.ifBlank { "Trial" }, d.settings.licenceRef,
+                    d.students.size, code
+                )
+                if (sid.isBlank()) { onResult?.invoke(false, err); return@guardedThread }
+                repo.mutate("cloud-republished", "settings") { cur ->
+                    cur.copy(settings = cur.settings.copy(
+                        cloudEmail = acc.email, cloudAccessToken = acc.accessToken, cloudRefreshToken = acc.refreshToken,
+                        cloudSchoolId = sid, cloudInviteCode = code, teacherCloudEnabled = true
+                    ))
+                }
+                val payload = Json.encodeToString(com.derycode.srs.core.model.SchoolData.serializer(), repo.data)
+                val (okPush, pushMsg) = CloudApi.pushBackup(base, k, acc.accessToken, sid, payload)
+                if (!okPush) { onResult?.invoke(false, "School restored but the upload failed: $pushMsg"); return@guardedThread }
+                onResult?.invoke(true, "School restored under the same code $code and all your data was uploaded. Teachers can scan it again now.")
+            } catch (e: Throwable) {
+                onResult?.invoke(false, "Restore failed: " + (e.message ?: e.javaClass.simpleName))
+            }
+}
     }
 
     /**
@@ -567,29 +656,7 @@ object CloudSync {
      * push the full backup so a scan works again straight away.
      */
     fun republish(repo: SchoolRepository, onResult: ((Boolean, String) -> Unit)? = null) {
-        val st = repo.data.settings
-        val code = st.cloudInviteCode.trim().uppercase()
-        if (code.isBlank()) { onResult?.invoke(false, "No school code to restore."); return }
-        Thread {
-            val base = url(st); val k = key(st)
-            val acc = CloudApi.deviceSignUp(base, k)
-            if (!acc.ok) { onResult?.invoke(false, acc.error); return@Thread }
-            val d = repo.data
-            val (sid, err) = CloudApi.createSchool(
-                base, k, acc.accessToken, d.school.name, d.school.address, d.school.address,
-                d.school.headTeacher, d.settings.licencePlan.ifBlank { "Trial" }, d.settings.licenceRef,
-                d.students.size, code
-            )
-            if (sid.isBlank()) { onResult?.invoke(false, err); return@Thread }
-            repo.mutate("cloud-republished", "settings") { cur ->
-                cur.copy(settings = cur.settings.copy(
-                    cloudUrl = base, cloudKey = k, cloudEmail = acc.email,
-                    cloudAccessToken = acc.accessToken, cloudRefreshToken = acc.refreshToken,
-                    cloudSchoolId = sid, cloudInviteCode = code, teacherCloudEnabled = true
-                ))
-            }
-            pushNow(repo, onResult)
-        }.start()
+        republishNow(repo, onResult)
     }
 
     fun scheduleAutoPush(repo: SchoolRepository) {
@@ -603,7 +670,7 @@ object CloudSync {
         val s = repo.data.settings
         if (s.cloudSchoolId.isBlank()) { onResult?.invoke(false, "Cloud not set up yet"); return }
         val payload = Json.encodeToString(com.derycode.srs.core.model.SchoolData.serializer(), repo.data)
-        Thread {
+        guardedThread(onResult) {
             var res = CloudApi.pushBackup(url(s), key(s), s.cloudAccessToken, s.cloudSchoolId, payload)
             var okNow = res.first
             var msg = res.second
@@ -615,15 +682,15 @@ object CloudSync {
                         val cur = repo.data
                         repo.mutate("cloud-refresh", "settings") { d -> d.copy(settings = d.settings.copy(cloudAccessToken = r.accessToken, cloudRefreshToken = r.refreshToken)) }
                         val retry = CloudApi.pushBackup(url(s), key(s), r.accessToken, s.cloudSchoolId, payload)
-                        if (retry.first) { markPushed(repo, payload.length); onResult?.invoke(true, "ok"); return@Thread }
+                        if (retry.first) { markPushed(repo, payload.length); onResult?.invoke(true, "ok"); return@guardedThread }
                         msg = retry.second
                     }
                 }
-                onResult?.invoke(false, msg); return@Thread
+                onResult?.invoke(false, msg); return@guardedThread
             }
             if (okNow) { markPushed(repo, payload.length); syncLinkedTeachers(repo) }
             onResult?.invoke(okNow, if (okNow) "ok" else msg)
-        }.start()
+}
     }
 
     private fun markPushed(repo: SchoolRepository, size: Int) {
@@ -643,12 +710,12 @@ object CloudSync {
     fun syncLinkedTeachers(repo: SchoolRepository, onResult: ((Boolean, String) -> Unit)? = null) {
         val s = repo.data.settings
         if (s.cloudSchoolId.isBlank()) { onResult?.invoke(false, "Cloud not set up yet"); return }
-        Thread {
+        guardedThread(onResult) {
             val res = withFreshToken(repo, errorOf = { it.second }) { tok ->
                 CloudApi.listLinkedTeachers(url(s), key(s), tok, s.cloudSchoolId)
             }
             val linked = res.first
-            if (res.second != "ok" || linked.isEmpty()) { onResult?.invoke(false, res.second); return@Thread }
+            if (res.second != "ok" || linked.isEmpty()) { onResult?.invoke(false, res.second); return@guardedThread }
             var added = 0
             repo.mutate("TEACHERS_AUTO_CONNECTED", "Teacher", new = "${linked.size} linked") { d ->
                 var teachers = d.teachers
@@ -668,22 +735,22 @@ object CloudSync {
                 d.copy(teachers = teachers)
             }
             onResult?.invoke(true, "✓ $added new teacher(s) connected")
-        }.start()
+}
     }
 
         fun pullNow(repo: SchoolRepository, onResult: (Boolean, String) -> Unit) {
         val s = repo.data.settings
         if (s.cloudSchoolId.isBlank()) { onResult(false, "Cloud not set up yet"); return }
-        Thread {
+        guardedThread(onResult) {
             val r = CloudApi.pullBackup(url(s), key(s), s.cloudAccessToken, s.cloudSchoolId)
             val payload = r.first
-            if (payload.isEmpty()) { onResult(false, if (r.second == "ok") "No cloud backup found yet" else r.second); return@Thread }
+            if (payload.isEmpty()) { onResult(false, if (r.second == "ok") "No cloud backup found yet" else r.second); return@guardedThread }
             try {
                 val data = Json.decodeFromString(com.derycode.srs.core.model.SchoolData.serializer(), payload)
                 repo.mutate("cloud-restore", "settings") { data }
                 syncLinkedTeachers(repo)
                 onResult(true, "Cloud backup restored to this computer")
             } catch (e: Exception) { onResult(false, "Cloud backup could not be read: ${e.message}") }
-        }.start()
+}
     }
 }
