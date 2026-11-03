@@ -38,6 +38,8 @@ private val STEPS = listOf(
         listOf("Classes → pick your class → pick the subject",
             "Type each mark; ABS for absent, EXEMPT for exempted",
             "Saved instantly on the phone",
+            "Or download the marks sheet, fill it, and import it back",
+            "You can also photograph the filled class list — names and scores are matched for you",
             "Send everything to the school with one button (see Send school data)"),
         ""),
     Step("Daily attendance", "More → Attendance.",

@@ -103,15 +103,19 @@ fun EnterMarksScreen(state: TeacherState, classId: String, initialSubjectId: Str
                 ) { Text("Save & Continue", fontWeight = FontWeight.Bold); Spacer(Modifier.width(6.dp)); Icon(Icons.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp)) }
             }
             item {
-                CardBox {
-                    Cell("Options", MUTED, true)
-                    Spacer(Modifier.height(6.dp))
-                    OptionRow(Icons.Filled.UploadFile, "Import from Excel")
-                    Divider(color = STROKE, modifier = Modifier.padding(vertical = 4.dp))
-                    OptionRow(Icons.Filled.ContentCopy, "Use Existing Template")
-                    Divider(color = STROKE, modifier = Modifier.padding(vertical = 4.dp))
-                    OptionRow(Icons.Filled.Save, "Save as Draft")
-                }
+                SheetToolsCard(
+                    state = state,
+                    classId = classId,
+                    subjectId = subjectId,
+                    termId = termId,
+                    componentId = componentId,
+                    maxMarks = maxMarks.toIntOrNull() ?: 100,
+                    locked = locked,
+                    onMessage = { msg = it }
+                )
+            }
+            if (msg.isNotEmpty()) item {
+                CardBox { Cell(msg, GREEN, true) }
             }
         } else {
             item {
@@ -195,7 +199,7 @@ internal fun DarkTextField(value: String, onChange: (String) -> Unit) {
 }
 
 @Composable
-private fun DarkTextFieldSmall(value: String, onChange: (String) -> Unit, enabled: Boolean = true) {
+internal fun DarkTextFieldSmall(value: String, onChange: (String) -> Unit, enabled: Boolean = true) {
     androidx.compose.foundation.text.BasicTextField(
         value = value, onValueChange = onChange, singleLine = true, enabled = enabled,
         readOnly = !enabled,

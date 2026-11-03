@@ -12,8 +12,12 @@ android {
         applicationId = "com.derycode.srs.teacher"
         minSdk = 26
         targetSdk = 34
-        versionCode = 44
-        versionName = "1.19.5"
+        versionCode = 45
+        versionName = "1.20.0"
+        // The reading model ships inside the APK so scanning works offline, but
+        // only for the two processor types real phones use — that keeps the
+        // download near 20MB instead of 47MB.
+        ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
     }
 
     // v1.13.8 — ONE permanent signing key, checked into the repo.
@@ -70,4 +74,7 @@ dependencies {
     implementation("androidx.camera:camera-camera2:1.3.4")
     implementation("androidx.camera:camera-lifecycle:1.3.4")
     implementation("androidx.camera:camera-view:1.3.4")
+    // Reads a photo of a marks sheet on the phone itself: the model is bundled in
+    // the APK, so scanning works with no internet and no Google Play services.
+    implementation("com.google.mlkit:text-recognition:16.0.1")
 }
