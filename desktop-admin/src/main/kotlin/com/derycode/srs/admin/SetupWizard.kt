@@ -38,44 +38,13 @@ private val STEPS = listOf("Welcome", "School Profile", "Online Account", "Secur
 @Composable
 fun SetupWizard(state: AppState) {
     var step by remember { mutableStateOf(0) }
-    Box(Modifier.fillMaxSize().background(Theme.NAVY)) {
-        Column(Modifier.fillMaxSize().padding(40.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                val wizLogo = remember {
-                    try {
-                        val bytes = Thread.currentThread().contextClassLoader?.getResourceAsStream("icon.png")?.readBytes()
-                        if (bytes != null) androidx.compose.ui.graphics.painter.BitmapPainter(org.jetbrains.skia.Image.makeFromEncoded(bytes).toComposeImageBitmap()) else null
-                    } catch (_: Exception) { null }
-                }
-                if (wizLogo != null) {
-                    androidx.compose.foundation.Image(wizLogo, null, Modifier.size(40.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(11.dp)))
-                } else {
-                    Text("SRM", color = Theme.ACCENT, fontWeight = FontWeight.Black, fontSize = 26.sp)
-                }
-                Spacer(Modifier.width(10.dp))
-                Column { Text("School Report Maker", color = Theme.TEXT, fontWeight = FontWeight.Bold, fontSize = 16.sp); Text("First-time setup", color = Theme.MUTED, fontSize = 12.sp) }
-            }
+    fun go(i: Int) { if (i < step) step = i }
+    Row(Modifier.fillMaxSize().background(Theme.NAVY)) {
+        WizardRail(step, ::go)
+        Column(Modifier.weight(1f).fillMaxHeight().padding(26.dp)) {
+            WizardTopSteps(step, ::go)
             Spacer(Modifier.height(16.dp))
-            // Stepper (labels never wrap; row scrolls on narrow windows)
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.horizontalScroll(rememberScrollState())) {
-                STEPS.forEachIndexed { i, label ->
-                    val active = i == step
-                    val done = i < step
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable(enabled = done) { step = i }) {
-                        Box(Modifier.size(22.dp).background(
-                            when { active -> Theme.ACCENT; done -> Theme.GOOD; else -> Theme.LINE },
-                            RoundedCornerShape(11.dp)
-                        ), contentAlignment = Alignment.Center) {
-                            Text(if (done) "✓" else "${i + 1}", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                        }
-                        Spacer(Modifier.width(6.dp))
-                        Text(label, color = if (active) Theme.TEXT else Theme.MUTED, fontSize = 12.sp, softWrap = false, fontWeight = if (active) FontWeight.Bold else FontWeight.Normal)
-                    }
-                    if (i < STEPS.lastIndex) { Spacer(Modifier.width(6.dp)); Box(Modifier.width(28.dp).height(2.dp).background(Theme.LINE)) ; Spacer(Modifier.width(6.dp)) }
-                }
-            }
-            Spacer(Modifier.height(20.dp))
-            Box(Modifier.fillMaxWidth().weight(1f).background(Theme.CARD, RoundedCornerShape(14.dp)).padding(28.dp)
+            Box(Modifier.fillMaxWidth().weight(1f).background(Theme.CARD, RoundedCornerShape(16.dp)).padding(30.dp)
                 .verticalScroll(rememberScrollState())) {
                 when (step) {
                     0 -> StepWelcome(state) { step = 1 }
@@ -90,25 +59,174 @@ fun SetupWizard(state: AppState) {
     }
 }
 
+/** The branded rail: logo, the six steps down the page, the school slogan at the foot. */
+@Composable
+private fun WizardRail(step: Int, onGo: (Int) -> Unit) {
+    val light = Color.White
+    Column(Modifier.width(252.dp).fillMaxHeight().background(Theme.DEEP).padding(horizontal = 20.dp, vertical = 24.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(46.dp).background(Theme.CARD, RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
+                GradCapIcon(Modifier.size(28.dp), Theme.DEEP)
+            }
+            Spacer(Modifier.width(11.dp))
+            Column {
+                Text("DERYCODE", color = light, fontSize = 14.sp, fontWeight = FontWeight.Black, letterSpacing = 1.4.sp)
+                Text("SCHOOL REPORT SYSTEM", color = light.copy(alpha = 0.72f), fontSize = 9.sp, letterSpacing = 0.6.sp)
+                Text("Simple \u2022 Fast \u2022 Reliable", color = light.copy(alpha = 0.5f), fontSize = 9.5.sp)
+            }
+        }
+        Spacer(Modifier.height(30.dp))
+        STEPS.forEachIndexed { i, label ->
+            val done = i < step
+            val active = i == step
+            Row(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(9.dp))
+                    .clickable(enabled = done) { onGo(i) }
+                    .background(if (active) light.copy(alpha = 0.1f) else Color.Transparent)
+                    .padding(horizontal = 8.dp, vertical = 7.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    Modifier.size(24.dp).background(
+                        when { done -> Theme.GOOD; active -> Theme.GOLD; else -> Color.Transparent },
+                        RoundedCornerShape(12.dp)
+                    ).then(if (!done && !active) Modifier.border(1.dp, light.copy(alpha = 0.35f), RoundedCornerShape(12.dp)) else Modifier),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        if (done) "\u2713" else "${i + 1}",
+                        color = if (done || active) Color.White else light.copy(alpha = 0.6f),
+                        fontSize = 11.sp, fontWeight = FontWeight.Bold
+                    )
+                }
+                Spacer(Modifier.width(10.dp))
+                Text(
+                    label,
+                    color = when { active -> light; done -> light.copy(alpha = 0.85f); else -> light.copy(alpha = 0.5f) },
+                    fontSize = 12.5.sp,
+                    fontWeight = if (active) FontWeight.Bold else FontWeight.Normal
+                )
+            }
+            if (i < STEPS.lastIndex) {
+                Box(Modifier.padding(start = 19.dp).width(2.dp).height(14.dp).background(light.copy(alpha = 0.15f)))
+            }
+        }
+        Spacer(Modifier.weight(1f))
+        Text("Smart Schools", color = light.copy(alpha = 0.55f), fontSize = 10.5.sp, fontWeight = FontWeight.Bold)
+        Text("Stronger Communities", color = light.copy(alpha = 0.4f), fontSize = 10.sp)
+    }
+}
+
+/** Compact progress strip across the top of the working area. */
+@Composable
+private fun WizardTopSteps(step: Int, onGo: (Int) -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.horizontalScroll(rememberScrollState())) {
+        STEPS.forEachIndexed { i, label ->
+            val active = i == step
+            val done = i < step
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable(enabled = done) { onGo(i) }) {
+                Box(
+                    Modifier.size(22.dp).background(
+                        when { active -> Theme.ACCENT; done -> Theme.GOOD; else -> Theme.LINE },
+                        RoundedCornerShape(11.dp)
+                    ), contentAlignment = Alignment.Center
+                ) {
+                    Text(if (done) "\u2713" else "${i + 1}", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                }
+                Spacer(Modifier.width(6.dp))
+                Text(label, color = if (active) Theme.TEXT else Theme.MUTED, fontSize = 12.sp, softWrap = false,
+                    fontWeight = if (active) FontWeight.Bold else FontWeight.Normal)
+            }
+            if (i < STEPS.lastIndex) {
+                Spacer(Modifier.width(6.dp))
+                Box(Modifier.width(26.dp).height(2.dp).background(Theme.LINE))
+                Spacer(Modifier.width(6.dp))
+            }
+        }
+    }
+}
+
+/** One of the four "what this setup does" chips on the welcome screen. */
+@Composable
+private fun WelcomeCheck(label: String) {
+    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(Modifier.size(40.dp).background(Theme.ACCENT_SOFT, RoundedCornerShape(20.dp)), contentAlignment = Alignment.Center) {
+            Text("\u2713", color = Theme.ACCENT, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+        }
+        Spacer(Modifier.height(7.dp))
+        Text(label, color = Theme.MUTED, fontSize = 11.5.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+    }
+}
+
+/** An eye glyph for the PIN fields — drawn, so it needs no icon font. */
+@Composable
+private fun EyeGlyph(hidden: Boolean, tint: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        val w = size.width; val h = size.height
+        val stroke = w * 0.09f
+        val path = Path().apply {
+            moveTo(w * 0.08f, h * 0.5f)
+            quadraticBezierTo(w * 0.5f, h * 0.1f, w * 0.92f, h * 0.5f)
+            quadraticBezierTo(w * 0.5f, h * 0.9f, w * 0.08f, h * 0.5f)
+        }
+        drawPath(path, tint, style = androidx.compose.ui.graphics.drawscope.Stroke(stroke))
+        if (hidden) {
+            drawLine(tint, Offset(w * 0.1f, h * 0.9f), Offset(w * 0.9f, h * 0.1f), strokeWidth = stroke)
+        } else {
+            drawCircle(tint, radius = w * 0.14f, center = Offset(w * 0.5f, h * 0.5f))
+        }
+    }
+}
+
+/** PIN box: masked until the eye is tapped. */
+@Composable
+private fun PinField(value: String, onChange: (String) -> Unit) {
+    var shown by remember { mutableStateOf(false) }
+    androidx.compose.material3.OutlinedTextField(
+        value = value,
+        onValueChange = onChange,
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = true,
+        visualTransformation = if (shown) androidx.compose.ui.text.input.VisualTransformation.None
+        else androidx.compose.ui.text.input.PasswordVisualTransformation(),
+        placeholder = { Text("4\u20136 digits", color = Theme.MUTED, fontSize = 13.sp) },
+        textStyle = androidx.compose.ui.text.TextStyle(color = Theme.TEXT, fontSize = 15.sp),
+        trailingIcon = {
+            IconButton({ shown = !shown }, modifier = Modifier.size(34.dp)) {
+                EyeGlyph(hidden = !shown, tint = Theme.MUTED, modifier = Modifier.size(18.dp))
+            }
+        },
+        shape = RoundedCornerShape(9.dp)
+    )
+}
+
 @Composable
 private fun StepWelcome(state: AppState, next: () -> Unit) {
-    Column(Modifier.fillMaxWidth().padding(top = 10.dp)) {
+    Column(Modifier.fillMaxWidth().padding(top = 6.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            GradCapIcon(Modifier.size(30.dp), Theme.ACCENT)
-            Spacer(Modifier.width(10.dp))
-            Text("Welcome to School Report Maker", color = Theme.TEXT, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            GradCapIcon(Modifier.size(38.dp), Theme.ACCENT)
+            Spacer(Modifier.width(12.dp))
+            Text("Welcome to DeryCode School Report Maker", color = Theme.TEXT, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+        }
+        Spacer(Modifier.height(12.dp))
+        Text("This short setup creates your school's admin console. It takes about 3 minutes and is required before the dashboard opens.",
+            color = Theme.MUTED, fontSize = 13.sp, modifier = Modifier.width(640.dp))
+        Spacer(Modifier.height(30.dp))
+        Row(Modifier.fillMaxWidth().width(640.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            WelcomeCheck("School Profile")
+            WelcomeCheck("Online Account")
+            WelcomeCheck("Security PIN")
+            WelcomeCheck("Licence")
+        }
+        Spacer(Modifier.height(32.dp))
+        Button({ next() }, shape = RoundedCornerShape(10.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Theme.GOOD, contentColor = Color.White),
+            modifier = Modifier.height(48.dp).width(230.dp)) {
+            Text("Get Started  \u203A", fontSize = 15.sp, fontWeight = FontWeight.Bold)
         }
         Spacer(Modifier.height(10.dp))
-        Text("This short setup creates your school's admin console. It takes about 3 minutes and is required before the dashboard opens.", color = Theme.MUTED, fontSize = 13.sp)
-        Spacer(Modifier.height(18.dp))
-        WizardInfo("1", "School profile", "Name, district and head teacher details — printed on every report.")
-        WizardInfo("2", "Online account", "Cloud backups + teacher phone login with your school code.")
-        WizardInfo("3", "Security PIN", "Locks this console so only you can open it.")
-        WizardInfo("4", "Licence", "Activate a paid plan or start a 30-day trial.")
-        Spacer(Modifier.height(24.dp))
-        Button({ next() }, shape = RoundedCornerShape(10.dp), colors = ButtonDefaults.buttonColors(containerColor = Theme.ACCENT), modifier = Modifier.height(46.dp).width(220.dp)) {
-            Text("Get Started", fontSize = 14.sp, fontWeight = FontWeight.Bold)
-        }
+        Text("Only the online account needs internet. School profile, PIN and licence can be changed later in Settings.",
+            color = Theme.MUTED, fontSize = 11.sp, modifier = Modifier.width(640.dp))
     }
 }
 
@@ -278,12 +396,16 @@ private fun StepPin(state: AppState, next: () -> Unit) {
         Text("Locks this console. You will type this PIN every time you open the app.", color = Theme.MUTED, fontSize = 12.sp)
         Spacer(Modifier.height(16.dp))
         Row(Modifier.fillMaxWidth()) {
-            Column(Modifier.weight(1f)) { FieldLabel("PIN (4–6 digits)"); TextField(pin, { pin = it.filter { c -> c.isDigit() }.take(6) }, Modifier.fillMaxWidth(), "digits only") }
+            Column(Modifier.weight(1f)) { FieldLabel("PIN (4–6 digits)"); PinField(pin, { pin = it.filter { c -> c.isDigit() }.take(6) }) }
             Spacer(Modifier.width(10.dp))
-            Column(Modifier.weight(1f)) { FieldLabel("Confirm PIN"); TextField(pin2, { pin2 = it.filter { c -> c.isDigit() }.take(6) }, Modifier.fillMaxWidth(), "repeat") }
+            Column(Modifier.weight(1f)) { FieldLabel("Confirm PIN"); PinField(pin2, { pin2 = it.filter { c -> c.isDigit() }.take(6) }) }
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(10.dp))
         if (msg.isNotEmpty()) Text(msg, color = if (err) Color(0xFFFF6B6B) else Theme.MUTED, fontSize = 12.sp)
+        Box(Modifier.width(560.dp).background(Theme.ACCENT_SOFT, RoundedCornerShape(9.dp)).padding(11.dp)) {
+            Text("Use a PIN that is easy for you to remember but hard for others to guess. Avoid simple numbers like 1234 or 0000.",
+                color = Theme.MUTED, fontSize = 11.5.sp)
+        }
         Spacer(Modifier.height(16.dp))
         Row {
             Button({
@@ -337,41 +459,98 @@ private fun StepLicence(state: AppState, next: () -> Unit) {
 @Composable
 private fun StepDone(state: AppState) {
     val s = state.data.settings
-    Column(Modifier.fillMaxWidth().padding(top = 10.dp)) {
+    val school = state.data.school
+    val online = s.cloudSchoolId.isNotBlank()
+    val pinSet = s.adminPinHash.isNotBlank()
+    val licensed = s.licencePlan.isNotBlank() && s.licencePlan != "None"
+    Column(Modifier.fillMaxWidth().padding(top = 4.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Filled.CheckCircle, "Complete", Modifier.size(28.dp), tint = Theme.GOOD)
+            GradCapIcon(Modifier.size(38.dp), Theme.ACCENT)
+            Spacer(Modifier.width(12.dp))
+            Text("Setup complete!", color = Theme.TEXT, fontSize = 24.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.width(10.dp))
-            Text("Setup complete", color = Theme.TEXT, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            Box(Modifier.size(26.dp).background(Theme.GOOD, RoundedCornerShape(13.dp)), contentAlignment = Alignment.Center) {
+                Text("\u2713", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            }
         }
         Spacer(Modifier.height(10.dp))
-        Box(Modifier.fillMaxWidth().background(Theme.ACCENT_SOFT, RoundedCornerShape(10.dp)).padding(16.dp)) {
+        Text("Your DeryCode School Report Maker is ready to use. You can now open your dashboard and start managing your school reports.",
+            color = Theme.MUTED, fontSize = 13.sp, modifier = Modifier.width(660.dp))
+        Spacer(Modifier.height(22.dp))
+
+        // ── School Profile Summary ───────────────────────────────────────────
+        Box(Modifier.width(520.dp).background(Theme.ACCENT_SOFT, RoundedCornerShape(14.dp)).padding(18.dp)) {
             Column {
-                Text("School: ${state.data.school.name}", color = Theme.TEXT, fontSize = 13.sp)
-                Text("Plan: ${s.licencePlan}  (expires ${s.licenceExpiry})", color = Theme.MUTED, fontSize = 12.sp)
-                if (s.teacherCloudEnabled && s.cloudInviteCode.isNotBlank()) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Column {
-                            Text("Teacher school code: ", color = Theme.MUTED, fontSize = 12.sp)
-                            Text(s.cloudInviteCode, color = Theme.ACCENT, fontSize = 18.sp, fontWeight = FontWeight.Black)
-                            Spacer(Modifier.height(4.dp))
-                            Text("Every teacher scans this one code with the SRM Teacher app — they are connected instantly and their marks sync automatically.", color = Theme.MUTED, fontSize = 11.sp, modifier = Modifier.width(300.dp))
-                        }
-                        InviteQr(s.cloudInviteCode, size = 132)
-                    }
-                } else {
-                    Text("Offline mode — cloud backup can be enabled later under Sync & Backup.", color = Theme.MUTED, fontSize = 12.sp)
-                }
+                Text("School Profile Summary", color = Theme.TEXT, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(10.dp))
+                SummaryRow("School name", school.name.ifBlank { "—" })
+                SummaryRow("District / Town", school.address.ifBlank { "—" })
+                SummaryRow("Head teacher", school.headTeacher.ifBlank { "—" })
+                SummaryRow("Phone", school.phone.ifBlank { "—" })
+                SummaryRow("School email", school.email.ifBlank { "—" }, last = true)
             }
         }
         Spacer(Modifier.height(18.dp))
+
+        // ── What is connected ────────────────────────────────────────────────
+        Column(Modifier.width(520.dp)) {
+            StatusRow("Online Account", if (online) "Connected" else "Offline mode", online)
+            StatusRow("Security PIN", if (pinSet) "Set" else "Not set", pinSet)
+            StatusRow("Licence", if (licensed) "${s.licencePlan} · Active" else "Not activated", licensed)
+        }
+
+        if (online && s.cloudInviteCode.isNotBlank()) {
+            Spacer(Modifier.height(18.dp))
+            Box(Modifier.width(520.dp).background(Theme.CARD, RoundedCornerShape(12.dp)).border(1.dp, Theme.LINE, RoundedCornerShape(12.dp)).padding(16.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Teacher school code", color = Theme.MUTED, fontSize = 11.sp)
+                        Text(s.cloudInviteCode, color = Theme.ACCENT, fontSize = 20.sp, fontWeight = FontWeight.Black)
+                        Spacer(Modifier.height(4.dp))
+                        Text("Every teacher scans this one code with the SRS Teacher app — they are connected instantly and their marks sync automatically.",
+                            color = Theme.MUTED, fontSize = 11.sp, modifier = Modifier.width(300.dp))
+                    }
+                    Spacer(Modifier.width(14.dp))
+                    InviteQr(s.cloudInviteCode, size = 118)
+                }
+            }
+        }
+        Spacer(Modifier.height(24.dp))
         Button({
             state.repo.mutate("SETUP_COMPLETE", "Settings") { d -> d.copy(settings = d.settings.copy(setupComplete = true)) }
             state.refresh()   // without this the first-run gate never lifted — v2.2.1 fix
             state.screen = "dashboard"
             state.unlocked = true
-            // initial cloud backup if account exists
             if (s.cloudSchoolId.isNotBlank()) CloudSync.pushNow(state.repo)
-        }, shape = RoundedCornerShape(10.dp), colors = ButtonDefaults.buttonColors(containerColor = Theme.GOOD, contentColor = Color.White), modifier = Modifier.height(48.dp).width(240.dp)) { Text("Open Dashboard", fontSize = 15.sp, fontWeight = FontWeight.Bold) }
+        }, shape = RoundedCornerShape(10.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Theme.GOOD, contentColor = Color.White),
+            modifier = Modifier.height(48.dp).width(250.dp)) {
+            Text("Open Dashboard  \u203A", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+@Composable
+private fun SummaryRow(label: String, value: String, last: Boolean = false) {
+    Column {
+        Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(label, color = Theme.MUTED, fontSize = 11.5.sp, modifier = Modifier.width(130.dp))
+            Text(value, color = Theme.TEXT, fontSize = 12.5.sp, fontWeight = FontWeight.Medium)
+        }
+        if (!last) Box(Modifier.fillMaxWidth().height(1.dp).background(Theme.LINE.copy(alpha = 0.5f)))
+    }
+}
+
+@Composable
+private fun StatusRow(label: String, value: String, ok: Boolean) {
+    Row(Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            Modifier.size(18.dp).background(if (ok) Theme.GOOD else Theme.LINE, RoundedCornerShape(9.dp)),
+            contentAlignment = Alignment.Center
+        ) { Text(if (ok) "\u2713" else "!", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold) }
+        Spacer(Modifier.width(10.dp))
+        Text(label, color = Theme.TEXT, fontSize = 12.5.sp, modifier = Modifier.weight(1f))
+        Text(value, color = if (ok) Theme.GOOD else Theme.WARN, fontSize = 12.sp, fontWeight = FontWeight.Bold)
     }
 }
 
