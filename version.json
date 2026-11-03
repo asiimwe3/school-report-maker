@@ -1,7 +1,7 @@
 {
-  "console": "2.3.17",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.17.msi",
+  "console": "2.3.18",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.18.msi",
   "teacher": "1.19.4",
   "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.19.4.apk",
-  "notes": "Report cards now list compulsory subjects first and optional ones after them, in every design. The A1-A3 card is named Standard."
+  "notes": "Printed report cards now follow the compulsory-first subject order too (the print and PDF path was still using the setup order). Console 2.3.18."
 }

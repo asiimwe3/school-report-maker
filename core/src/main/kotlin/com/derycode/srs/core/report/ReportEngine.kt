@@ -28,9 +28,11 @@ object ReportEngine {
             .flatMap { y -> y.terms.asSequence().map { t -> y to t } }
             .firstOrNull { it.second.id == result.termId }
 
-        val subjectRows = data.subjects.filter { s -> result.subjectResults.any { it.subjectId == s.id } }
-            .joinToString("") { s ->
-                val r = result.subjectResults.first { it.subjectId == s.id }
+        val subjectsById = data.subjects.associateBy { it.id }
+        // Follow the result's own order (compulsory subjects first, then electives)
+        // instead of the order the subjects happen to sit in school setup.
+        val subjectRows = result.subjectResults.mapNotNull { r -> subjectsById[r.subjectId]?.let { s -> s to r } }
+            .joinToString("") { (s, r) ->
                 """
                 <tr>
                     <td class="name">${escape(s.name)}</td>
@@ -166,9 +168,10 @@ object ReportEngine {
                     it.subjectId == subjectId && it.type == CommentType.SUBJECT
             }?.text ?: ""
 
-        val subjectsInOrder = data.subjects.filter { s -> result.subjectResults.any { it.subjectId == s.id } }
-        val rows = subjectsInOrder.joinToString("") { subj ->
-            val r = result.subjectResults.first { it.subjectId == subj.id }
+        // Compulsory subjects first, then the electives — the order completed in
+        // ResultEngine.classResults, kept by every renderer.
+        val subjectsInOrder = result.subjectResults.mapNotNull { r -> data.subjects.firstOrNull { it.id == r.subjectId }?.let { it to r } }
+        val rows = subjectsInOrder.joinToString("") { (subj, r) ->
             fun dash(v: Double) = if (v < 0) "" else fmt(v)
             val a = r.assessments
             """
