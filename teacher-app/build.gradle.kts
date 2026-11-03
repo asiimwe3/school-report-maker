@@ -1,3 +1,6 @@
+import java.io.File
+import java.util.Base64
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -34,12 +37,12 @@ android {
             // builds and existing CI keep working unchanged.
             val pathFromEnv = System.getenv("SRS_KEYSTORE_PATH")
             val b64 = System.getenv("SRS_KEYSTORE_B64")
-            val keystoreFile: java.io.File = when {
+            val keystoreFile: File = when {
                 !pathFromEnv.isNullOrBlank() -> file(pathFromEnv)
                 !b64.isNullOrBlank() -> {
-                    val out = java.io.File(rootProject.projectDir, "keys/teacher-upload.keystore")
+                    val out = File(rootProject.projectDir, "keys/teacher-upload.keystore")
                     out.parentFile?.mkdirs()
-                    out.writeBytes(java.util.Base64.getDecoder().decode(b64))
+                    out.writeBytes(Base64.getDecoder().decode(b64))
                     out
                 }
                 else -> rootProject.file("keys/teacher-upload.keystore")
