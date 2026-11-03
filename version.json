@@ -1,7 +1,7 @@
 {
   "console": "2.3.11",
   "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.11.msi",
-  "teacher": "1.18.3",
-  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.18.3.apk",
-  "notes": "Reports screen now shows the real report card inline: actual marks, grades, division and comments for each learner, page through the class, print that card, or open the whole class on one page."
+  "teacher": "1.19.0",
+  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.19.0.apk",
+  "notes": "Teacher app 1.19.0: Report Preview on the phone. See the real report card exactly as it prints, learner by learner or the whole class, from the marks on that phone."
 }

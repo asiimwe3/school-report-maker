@@ -512,6 +512,7 @@ sealed class Route {
     object Themes : Route()
     object Insights : Route()
     object Results : Route()
+    object ReportPreview : Route()
     object Calendar : Route()
     object Profile : Route()
 }
@@ -554,7 +555,7 @@ fun TeacherApp(state: TeacherState) {
         is Route.Classes, is Route.ClassDetail, is Route.EnterMarks -> Tab.CLASSES
         is Route.Assessments -> Tab.ASSESSMENTS
         is Route.Students, is Route.StudentDetail -> Tab.STUDENTS
-        is Route.More, is Route.Comments, is Route.Sync, is Route.Duty, is Route.Register, is Route.Attendance, is Route.Support, is Route.Cloud, is Route.ScanCode, is Route.Timetable, is Route.Tutorial, is Route.Themes, is Route.Insights, is Route.Results, is Route.Calendar, is Route.Profile -> Tab.MORE
+        is Route.More, is Route.Comments, is Route.Sync, is Route.Duty, is Route.Register, is Route.Attendance, is Route.Support, is Route.Cloud, is Route.ScanCode, is Route.Timetable, is Route.Tutorial, is Route.Themes, is Route.Insights, is Route.Results, is Route.ReportPreview, is Route.Calendar, is Route.Profile -> Tab.MORE
     }
 
     // ── Side menu (drawer): every section reachable in one tap ──
@@ -584,6 +585,7 @@ fun TeacherApp(state: TeacherState) {
                 DrawerItem(Icons.Filled.EventAvailable, "Attendance", current is Route.Attendance) { switchTab(Route.Attendance); scope.launch { drawerState.close() } }
                 DrawerItem(Icons.Filled.Insights, "Term Insight", current is Route.Insights) { switchTab(Route.Insights); scope.launch { drawerState.close() } }
                 DrawerItem(Icons.Filled.EmojiEvents, "Ranked Results", current is Route.Results) { switchTab(Route.Results); scope.launch { drawerState.close() } }
+                DrawerItem(Icons.Filled.Description, "Report Preview", current is Route.ReportPreview) { switchTab(Route.ReportPreview); scope.launch { drawerState.close() } }
                 DrawerItem(Icons.Filled.Event, "Calendar", current is Route.Calendar) { switchTab(Route.Calendar); scope.launch { drawerState.close() } }
                 DrawerItem(Icons.Filled.Palette, "Themes", current is Route.Themes) { switchTab(Route.Themes); scope.launch { drawerState.close() } }
                 DrawerItem(Icons.Filled.Badge, "My Profile", current is Route.Profile) { switchTab(Route.Profile); scope.launch { drawerState.close() } }
@@ -628,6 +630,7 @@ fun TeacherApp(state: TeacherState) {
                     is Route.Themes -> ThemeScreen(state)
                     is Route.Insights -> InsightsScreen(state, onOpenClass = { push(Route.ClassDetail(it)) })
                     is Route.Results -> ResultsScreen(state, onOpenStudent = { push(Route.StudentDetail(it)) })
+                    is Route.ReportPreview -> ReportPreviewScreen(state)
                     is Route.Calendar -> CalendarScreen(state)
                     is Route.Profile -> ProfileScreen(state, onOpenThemes = { push(Route.Themes) })
                     is Route.ScanCode -> QrScannerScreen(
@@ -719,6 +722,7 @@ private fun titleFor(state: TeacherState, route: Route): Pair<String, Boolean> =
     is Route.Themes -> "Themes" to true
     is Route.Insights -> "Term Insight" to true
     is Route.Results -> "Ranked Results" to true
+    is Route.ReportPreview -> "Report Preview" to true
     is Route.Calendar -> "Calendar" to true
     is Route.Profile -> "My Profile" to true
 }
