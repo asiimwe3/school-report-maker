@@ -35,6 +35,31 @@ fun HomeScreen(state: TeacherState, onOpenClass: (String) -> Unit, onQuickAction
     val greeting = greetingWord()
 
     LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        if (state.staffNote.isNotBlank()) {
+            item {
+                CardBox {
+                    Text("We fixed your access", color = NAVY, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(4.dp))
+                    Cell(state.staffNote, MUTED)
+                    Spacer(Modifier.height(8.dp))
+                    TextButton({ state.staffNote = "" }) { Text("OK", color = BLUE, fontWeight = FontWeight.Bold) }
+                }
+            }
+        }
+        if (state.me == null) {
+            item {
+                CardBox {
+                    Text("Who are you?", color = NAVY, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(4.dp))
+                    Cell("This phone does not know which teacher it belongs to, so no classes can be shown. Tap your name on the staff list, or join the school again with its code.", MUTED)
+                    Spacer(Modifier.height(8.dp))
+                    Button(
+                        onClick = { state.resolveMe() },
+                        colors = ButtonDefaults.buttonColors(containerColor = BLUE)
+                    ) { Text("Find my staff record", color = Color.White, fontSize = 14.sp) }
+                }
+            }
+        }
         item {
             GreetingCard(
                 greeting = greeting,

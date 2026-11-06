@@ -642,6 +642,38 @@ fun CloudScreen(state: TeacherState, onScan: () -> Unit = {}) {
             }
         }
 
+        // Works with no account at all: the file goes to WhatsApp, and the head
+        // teacher imports it on the console. This is the route for the teachers who
+        // could not send their marks because their phone never joined the cloud.
+        CardBox {
+            Cell("Send marks without an account", MUTED, true)
+            Spacer(Modifier.height(4.dp))
+            Cell("Your marks leave as one small file. Send it to the head teacher on WhatsApp; they import it with one tap. Nothing is uploaded anywhere.", MUTED)
+            Spacer(Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = {
+                    val file = state.marksBundleFile()
+                    if (file == null) { report(false, "No marks on this phone yet"); return@Button }
+                    val ctx2 = ctx
+                    val ok = runCatching {
+                        val uri = androidx.core.content.FileProvider.getUriForFile(ctx2, "${ctx2.packageName}.fileprovider", file)
+                        val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                            type = "application/json"
+                            putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                            putExtra(android.content.Intent.EXTRA_SUBJECT, file.name)
+                            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+                        ctx2.startActivity(android.content.Intent.createChooser(send, "Send marks to the head teacher")
+                            .apply { addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK) })
+                        true
+                    }.getOrDefault(false)
+                    report(ok, if (ok) "Marks file ready: choose WhatsApp and send it" else "No app on this phone can send the file")
+                }, colors = ButtonDefaults.buttonColors(containerColor = BLUE)) {
+                    Text("Send marks file", color = Color.White, fontSize = 15.sp)
+                }
+            }
+        }
+
         if (msg.isNotEmpty()) {
             CardBox {
                 Text(msg, color = if (msgGood) GOOD else ORANGE, fontSize = 16.sp)

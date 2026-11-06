@@ -132,7 +132,8 @@ data class Student(
     val address: String = "",
     val status: StudentStatus = StudentStatus.ACTIVE
 ) {
-    val fullName: String get() = listOfNotNull(firstName, middleName, lastName).joinToString(" ")
+    val fullName: String get() = listOf(firstName, middleName, lastName)
+        .filter { it.isNotBlank() }.joinToString(" ")   // a blank middle name must not print a gap
 }
 
 /** Enrollment keeps history: a student belongs to a class only for a given year (Section 33). */

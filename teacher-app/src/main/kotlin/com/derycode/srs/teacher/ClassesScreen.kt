@@ -62,7 +62,17 @@ fun ClassesListScreen(state: TeacherState, onOpenClass: (String) -> Unit) {
         }
         Spacer(Modifier.height(10.dp))
         if (shown.isEmpty()) {
-            EmptyHint(if (classes.isEmpty()) "No classes assigned to you yet.\nImport school data from More \u2192 Sync." else "No classes match your search.")
+            if (classes.isEmpty()) {
+                Column(Modifier.fillMaxWidth()) {
+                    EmptyHint("No classes assigned to you yet.\nImport school data from More \u2192 Sync, or let the app find your staff record again.")
+                    Spacer(Modifier.height(10.dp))
+                    Button(
+                        onClick = { state.resolveMe() },
+                        colors = ButtonDefaults.buttonColors(containerColor = BLUE),
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Find my classes", color = Color.White, fontSize = 15.sp) }
+                }
+            } else EmptyHint("No classes match your search.")
         } else {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 items(shown) { c -> ClassCard(state, c) { onOpenClass(c.id) } }

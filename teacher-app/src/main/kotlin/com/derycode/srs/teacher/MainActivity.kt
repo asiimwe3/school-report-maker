@@ -195,6 +195,7 @@ class TeacherState(private val context: Context) {
                 // school's row: drop it here so it can never surface or be sent
                 data = SchoolIsolation.prune(merged).first
                 save()
+                resolveMe()
                 "✓ Connected to ${data.school.name.ifBlank { "your school" }} — imported ${data.classes.size} classes, ${data.students.size} students, ${data.subjects.size} subjects. Your marks were kept."
             }
         } catch (_: Exception) { "Import failed — file unreadable or wrong format." }
@@ -227,6 +228,43 @@ class TeacherState(private val context: Context) {
             if (pendingSchoolName != null) Pair(false, msg)
             else Pair(true, msg)
         } catch (_: Exception) { Pair(false, "Import failed — wrong data format") }
+    }
+
+    /** Set when the phone has just put this teacher back on the staff list. */
+    var staffNote by mutableStateOf("")
+
+    /**
+     * Field bug, November 2026: some teachers opened the app and found no classes
+     * and no learners. Their teacher id had gone stale when a fresh setup arrived
+     * from the console (or they were joined under a different record), and nothing
+     * ever put them back on staff. This does, every time the app comes up and every
+     * time a school file is imported.
+     */
+    fun resolveMe(): String? {
+        val p = myJoin
+        val r = com.derycode.srs.core.model.StaffLink.resolve(
+            data, meId,
+            name = p?.name ?: "",
+            phone = p?.phone ?: "",
+            cloudUid = p?.cloudUid ?: "",
+            classIds = p?.classIds ?: emptyList(),
+            subjectIds = p?.subjectIds ?: emptyList()
+        )
+        if (r.data !== data) { data = r.data; save() }
+        if (r.teacherId != null && r.teacherId != meId) setMe(r.teacherId)
+        staffNote = r.note
+        return r.teacherId
+    }
+
+    /** A file the head teacher can open on the console: no cloud account needed. */
+    fun marksBundleFile(): File? {
+        val payload = buildMarksBundle() ?: return null
+        val dir = File(context.cacheDir, "reports").apply { mkdirs() }
+        val stamp = java.text.SimpleDateFormat("yyyy-MM-dd-HHmm", java.util.Locale.US).format(java.util.Date())
+        val who = (me?.name ?: "teacher").replace(Regex("[^A-Za-z0-9]+"), "-")
+        val f = File(dir, "marks-$who-$stamp.json")
+        f.writeText(payload)
+        return f
     }
 
     /** Build the same marks bundle the USB export creates, as a JSON string for the cloud. */
@@ -359,6 +397,7 @@ class TeacherState(private val context: Context) {
             setMe(rejoined.teacherId)
         }
         save()
+        resolveMe()
         codeFile.writeText(code.trim().uppercase())
         schoolCode = code.trim().uppercase()
         if (switching) lastSwitchNote = "Replaced " + previous.school.name + " (" + previous.marks.size + " marks archived on this phone)."
@@ -614,6 +653,9 @@ fun TeacherApp(state: TeacherState) {
     // Live theme: whenever the school setup (from the console) carries a theme,
     // the WHOLE phone app restyles — background, cards, text, buttons, badges.
     LaunchedEffect(state.phoneTheme) { applyPhoneTheme(state.phoneTheme) }
+    // A stale teacher id must never leave someone staring at an empty app.
+    LaunchedEffect(Unit) { state.resolveMe() }
+
     val stack = remember { mutableStateListOf<Route>(Route.Home) }
     val current = stack.last()
     fun push(r: Route) { stack.add(r) }
