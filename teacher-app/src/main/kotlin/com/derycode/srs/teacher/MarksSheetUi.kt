@@ -29,6 +29,7 @@ import com.derycode.srs.core.model.*
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import com.derycode.srs.core.report.DocxReport
 import java.io.File
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -194,6 +195,24 @@ internal fun SheetToolsCard(
         }
         Divider(color = STROKE, modifier = Modifier.padding(vertical = 4.dp))
         OptionRowAction(Icons.Filled.PhotoCamera, "Scan to upload marks (photo)") { photographSheet() }
+        Divider(color = STROKE, modifier = Modifier.padding(vertical = 4.dp))
+        OptionRowAction(Icons.Filled.Description, "Send the class marksheet (Word)") {
+            val headers = listOf("No.", "NAME") + assessmentHeaders(d, cls?.level ?: Level.O_LEVEL) +
+                listOf("X/20", "X/80", "X/100")
+            val names = students.map { it.fullName }
+            val file = ShareAsWord.safe("Marksheet-${cls?.name ?: "Class"}-${subject?.name ?: "Subject"}-${MarksSheet.termLabel(d, termId)}") + ".docx"
+            val ok = ShareAsWord.share(ctx, file) { target ->
+                DocxReport.writeMarkSheet(
+                    target, d,
+                    classLabel = cls?.name ?: "Class",
+                    subjectName = subject?.name ?: "Subject",
+                    termLabel = MarksSheet.termLabel(d, termId),
+                    headers = headers,
+                    names = names
+                )
+            }
+            onMessage(if (ok) "Marksheet ready to send" else "No app on this phone can receive the file")
+        }
         if (busy) {
             Spacer(Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -333,4 +352,12 @@ private fun OptionRowAction(
         Text(label, color = NAVY, fontSize = 16.sp, modifier = Modifier.weight(1f))
         Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = MUTED, modifier = Modifier.size(16.dp))
     }
+}
+
+/** The assessment columns the school actually keeps, in the order the paper prints them. */
+internal fun assessmentHeaders(d: com.derycode.srs.core.model.SchoolData, level: com.derycode.srs.core.model.Level): List<String> {
+    val active = d.components.filter { it.active && (it.levels.isEmpty() || level in it.levels) }
+    val wanted = listOf("A1", "A2", "A3")
+    val found = wanted.mapNotNull { code -> active.firstOrNull { it.code.equals(code, ignoreCase = true) }?.code }
+    return found.ifEmpty { active.take(3).map { it.code } }
 }

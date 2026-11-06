@@ -32,9 +32,12 @@ object DocxReport {
         fun logo(bytes: ByteArray, ext: String) {
             logoBytes = bytes
             logoExt = if (ext.lowercase() in listOf("png", "jpg", "jpeg")) ext.lowercase() else "png"
-            val img = try { javax.imageio.ImageIO.read(java.io.ByteArrayInputStream(bytes)) } catch (_: Exception) { null }
+            // Read the picture's size from its own header. ImageIO is a desktop
+            // library: on a phone it does not exist, so reaching for it here made
+            // the Android build fail and would have crashed a teacher's export.
+            val (imgW, imgH) = imageSize(bytes)
             val targetHeightPx = 72
-            val widthPx = if (img != null && img.height > 0) (img.width.toDouble() / img.height * targetHeightPx).toInt().coerceAtLeast(1) else targetHeightPx
+            val widthPx = if (imgH > 0) (imgW.toDouble() / imgH * targetHeightPx).toInt().coerceAtLeast(1) else targetHeightPx
             val emuW = widthPx.toLong() * 9525L
             val emuH = targetHeightPx.toLong() * 9525L
             body.append("""<w:p><w:pPr><w:jc w:val="center"/><w:spacing w:after="80"/></w:pPr><w:r><w:drawing>""")
@@ -535,4 +538,30 @@ object DocxReport {
 
     private fun fmt(d: Double): String =
         if (d == d.toLong().toDouble()) d.toLong().toString() else String.format("%.1f", d)
+}
+
+/** Width and height straight from a PNG or JPEG header, no platform libraries. */
+internal fun imageSize(b: ByteArray): Pair<Int, Int> {
+    fun be(i: Int) = ((b[i].toInt() and 0xFF) shl 24) or ((b[i + 1].toInt() and 0xFF) shl 16) or
+        ((b[i + 2].toInt() and 0xFF) shl 8) or (b[i + 3].toInt() and 0xFF)
+    // PNG: 8-byte signature, then IHDR with width and height as big-endian ints.
+    if (b.size >= 24 && b[0] == 0x89.toByte() && b[1] == 'P'.code.toByte() && b[2] == 'N'.code.toByte()) {
+        return be(16) to be(20)
+    }
+    // JPEG: walk the segments until a start-of-frame carries the size.
+    if (b.size > 4 && b[0] == 0xFF.toByte() && b[1] == 0xD8.toByte()) {
+        var i = 2
+        while (i + 9 < b.size) {
+            if (b[i] != 0xFF.toByte()) { i++; continue }
+            val marker = b[i + 1].toInt() and 0xFF
+            if (marker in 0xC0..0xCF && marker != 0xC4 && marker != 0xC8 && marker != 0xCC) {
+                val h = ((b[i + 5].toInt() and 0xFF) shl 8) or (b[i + 6].toInt() and 0xFF)
+                val w = ((b[i + 7].toInt() and 0xFF) shl 8) or (b[i + 8].toInt() and 0xFF)
+                return w to h
+            }
+            val len = ((b[i + 2].toInt() and 0xFF) shl 8) or (b[i + 3].toInt() and 0xFF)
+            i += if (len > 0) len + 2 else 2
+        }
+    }
+    return 0 to 0
 }

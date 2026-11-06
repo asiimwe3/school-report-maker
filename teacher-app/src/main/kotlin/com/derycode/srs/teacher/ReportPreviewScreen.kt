@@ -6,15 +6,21 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.derycode.srs.core.entry.MarksSheet
+import com.derycode.srs.core.report.DocxReport
 import com.derycode.srs.core.results.ResultEngine
 import com.derycode.srs.core.model.*
 
@@ -68,6 +74,41 @@ fun ReportPreviewScreen(state: TeacherState) {
                             }
                         }
                     }
+                }
+                if (results.isNotEmpty()) {
+                    Spacer(Modifier.height(12.dp))
+                    val ctx = LocalContext.current
+                    var note by remember { mutableStateOf("") }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = {
+                            val one = !showAll && results.size > 1
+                            val name = if (one) results[studentIndex.coerceAtMost(results.lastIndex)].studentId else classId
+                            val label = ShareAsWord.safe(
+                                (if (one) "Report-${cls?.name ?: "Class"}" else "Class-reports-${cls?.name ?: "Class"}") +
+                                    "-${MarksSheet.termLabel(d, termId)}"
+                            ) + ".docx"
+                            val ok = ShareAsWord.share(ctx, label) { target ->
+                                if (one) DocxReport.writeStudentReport(target, d, results[studentIndex.coerceAtMost(results.lastIndex)])
+                                else DocxReport.writeClassReport(target, d, results)
+                            }
+                            note = if (ok) "Ready to send" else "No app on this phone can receive the file"
+                        }, colors = ButtonDefaults.buttonColors(containerColor = BLUE)) { Text("Send as Word", fontSize = 13.sp) }
+                        OutlinedButton(onClick = {
+                            val one = !showAll && results.size > 1
+                            val label = ShareAsWord.safe((if (one) "Report" else "Class-reports") + "-${cls?.name ?: "Class"}-${MarksSheet.termLabel(d, termId)}") + ".docx"
+                            val ok = ShareAsWord.save(ctx, label) { target ->
+                                if (one) DocxReport.writeStudentReport(target, d, results[studentIndex.coerceAtMost(results.lastIndex)])
+                                else DocxReport.writeClassReport(target, d, results)
+                            }
+                            note = if (ok) "Choose where to keep it" else "No file manager on this phone"
+                        }) { Text("Keep on phone", fontSize = 13.sp) }
+                    }
+                    if (note.isNotBlank()) {
+                        Spacer(Modifier.height(6.dp))
+                        Text(note, color = MUTED, fontSize = 12.sp)
+                    }
+                    Text("Word files print at any cybercafé, or go straight to the class WhatsApp group.",
+                        color = MUTED, fontSize = 12.sp)
                 }
                 if (results.size > 1) {
                     Spacer(Modifier.height(10.dp))

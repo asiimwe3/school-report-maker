@@ -3,4 +3,6 @@
     <files-path name="updates" path="updates/" />
     <!-- Photos of a marks sheet, taken for reading and deleted straight after. -->
     <cache-path name="sheets" path="sheets/" />
+    <!-- Word files built for sharing: marksheets, report cards, merit lists. -->
+    <cache-path name="reports" path="reports/" />
 </paths>
