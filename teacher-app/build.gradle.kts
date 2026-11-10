@@ -13,10 +13,10 @@ android {
 
     defaultConfig {
         applicationId = "com.derycode.srs.teacher"
-        minSdk = 26
+        minSdk = 24
         targetSdk = 34
-        versionCode = 54
-        versionName = "1.20.9"
+        versionCode = 55
+        versionName = "1.20.10"
         // The reading model ships inside the APK so scanning works offline, but
         // only for the two processor types real phones use — that keeps the
         // download near 20MB instead of 47MB.
@@ -51,6 +51,12 @@ android {
             storePassword = System.getenv("SRS_KEYSTORE_PASSWORD") ?: "derycode-teacher"
             keyAlias = System.getenv("SRS_KEY_ALIAS") ?: "teacher-upload"
             keyPassword = System.getenv("SRS_KEY_PASSWORD") ?: "derycode-teacher"
+            // All three schemes on purpose. v2 alone is enough for Android 8+, but
+            // several OEM installers on Android 7 still want the JAR (v1) signature
+            // and refuse the file as "invalid" without it. v3 covers key rotation.
+            enableV1Signing = true
+            enableV2Signing = true
+            enableV3Signing = true
         }
     }
 

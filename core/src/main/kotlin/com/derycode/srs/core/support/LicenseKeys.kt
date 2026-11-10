@@ -50,7 +50,13 @@ object LicenseKeys {
         return plan to expiry
     }
 
-    fun todayCompact(): String = java.time.LocalDate.now().toString().replace("-", "")
+    /**
+     * Today as yyyyMMdd. Deliberately SimpleDateFormat and not java.time: the
+     * teacher app now runs on Android 7 (minSdk 24), where java.time needs
+     * desugaring this build does not enable.
+     */
+    fun todayCompact(): String =
+        java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.US).format(java.util.Date())
 
     /** Student limit for a plan display name ("Trial" → 100 students, "Starter" → 100, …). */
     fun limitFor(planName: String): Int = when {

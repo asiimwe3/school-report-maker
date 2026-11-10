@@ -1,12 +1,12 @@
 {
   "console": "2.3.28",
   "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.28.msi",
-  "teacher": "1.20.9",
-  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.9.apk",
-  "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.9.apk",
+  "teacher": "1.20.10",
+  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.10.apk",
+  "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.10.apk",
   "teacherDesktop": "1.0.0",
   "teacherDesktopDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMakerTeacher-1.0.0.msi",
   "released": "2026-11-10",
-  "notes": "Teacher 1.20.9, console 2.3.28, teacher laptop 1.0.0.\n- Classes now open the way teachers are used to: your class list, then the learners in the class, then their marks\n- The class list shows each class with its learners, your subjects and how many marks are still to be entered this term\n- Inside a class, the first tab is Students: search any learner and tap straight into their detail\n- Teachers are never left with an empty app: if the phone cannot match you to a staff record, you still see the school's classes with a clear message, and 'Find my classes' fixes the link\n- Learners still appear when a class was recreated for a new year, so a promoted class no longer shows as empty\n- Sending marks works without a cloud account: write the bundle and share it on WhatsApp for the head teacher to import\n",
+  "notes": "Teacher 1.20.10, console 2.3.28, teacher laptop 1.0.0.\n- Installs on Android 7.0 and newer (1.20.9 required Android 8 and was rejected as an invalid package on older phones)\n- APK now carries both the v2 and v3 signatures, so strict phone installers accept it\n- Classes open the way teachers know them: your class list, then the learners, then their marks\n- A teacher is never left with an empty app: unmatched phones see the school's classes with a clear banner and Find my classes\n- Learners still appear after a class is recreated for a new year\n- Sending marks works without a cloud account (file/WhatsApp bundle for the head teacher)",
   "consoleVersion": "2.3.28"
 }
