@@ -259,6 +259,20 @@ fun FeesScreen(state: AppState) {
                         cur, rows, listOf(expected.toLong().toString(), totalPaid.toLong().toString(), outstanding.toLong().toString()))
                     try { java.awt.Desktop.getDesktop().open(f.toFile()) } catch (e: Exception) { e.printStackTrace() }
                 })
+                Spacer(Modifier.height(6.dp))
+                Btn("Print statement of fees (Word)", primary = false, onClick = {
+                    val rows = students.map { s ->
+                        val paid = d.feePayments.filter { it.studentId == s.id && it.termId == term?.id && it.category == feeCategory }.sumOf { it.amount }
+                        val bal = structure.amount - paid
+                        listOf(s.fullName, structure.amount.toLong().toString(), paid.toLong().toString(),
+                            bal.coerceAtLeast(0.0).toLong().toString(), if (bal <= 0) "Cleared" else "Due")
+                    }
+                    val label = cls?.let { if (it.stream.isBlank()) it.name else "${it.name} ${it.stream}" } ?: "Class"
+                    val f = dataDir.resolve("reports").resolve("fees-statement-${feeCategory.name.lowercase()}-${label.replace(" ", "")}-term${term?.number}.docx")
+                    DocxReport.writeFeeStatement(f, d, label, "${feeCategory.label} · Term ${term?.number} ${year?.year ?: ""}",
+                        cur, rows, listOf(expected.toLong().toString(), totalPaid.toLong().toString(), outstanding.toLong().toString()))
+                    try { java.awt.Desktop.getDesktop().open(f.toFile()) } catch (e: Exception) { e.printStackTrace() }
+                })
             }
         }
     }

@@ -1,12 +1,12 @@
 {
-  "console": "2.3.31",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.31.msi",
+  "console": "2.3.32",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.32.msi",
   "teacher": "1.20.13",
   "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.13.apk",
   "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.13.apk",
   "teacherDesktop": "1.0.0",
   "teacherDesktopDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMakerTeacher-1.0.0.msi",
   "released": "2026-11-10",
-  "notes": "Teacher 1.20.13, console 2.3.31, teacher laptop 1.0.0.\n- Marks sent from a phone now land on the marks grid: each sent mark is matched to the console's own learner (by admission number), subject and assessment (by code) and the term now running\n- The import message says how many marks had to be matched and how many belonged to learners this school does not have\n- Another school's bundle is never matched onto your learners, even when admission numbers are the same\n- Sent bundles also carry your remarks, subjects and assessment setup\n- Carries the newest-wins marks fix and the text comment box",
-  "consoleVersion": "2.3.31"
+  "notes": "Console 2.3.32, teacher 1.20.13, teacher laptop 1.0.0.\n- New: statement of school fees for a whole class, printed from School Fees (every learner, not only defaulters)\n- New: official fee receipt for money received, with receipt number, amount, method, reference and balance\n- New: audit log exports to CSV so the head teacher can file or inspect every change\n- Carries the marks and comment fixes from teacher 1.20.11 to 1.20.13",
+  "consoleVersion": "2.3.32"
 }

@@ -712,6 +712,13 @@ fun AuditScreen(state: AppState) {
                 Text("Filter:", color = Theme.MUTED, fontSize = 14.sp)
                 TextField(filter, { filter = it }, Modifier.width(260.dp), "action / entity / id / value")
                 Text("${entries.size} of ${d.auditLog.size} entries", color = Theme.MUTED, fontSize = 14.sp)
+                Spacer(Modifier.weight(1f))
+                Btn("Export audit log (CSV)", primary = false) {
+                    val outDir = dataDir.resolve("reports").also { it.toFile().mkdirs() }
+                    val f = outDir.resolve("audit-log.csv")
+                    DocxReport.writeAuditCsv(f, state.data)
+                    try { java.awt.Desktop.getDesktop().open(f.toFile()) } catch (e: Exception) { e.printStackTrace() }
+                }
             }
         }
         CardBox {

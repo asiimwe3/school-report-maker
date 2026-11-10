@@ -265,6 +265,95 @@ object DocxReport {
         return out
     }
 
+    /**
+     * Statement of fees for one class and term — the invoice side of the fees
+     * module. Lists every learner, not only the defaulters, so the bursar can
+     * hand a parent a printed statement instead of a defaulter notice.
+     */
+    fun writeFeeStatement(out: Path, data: SchoolData, classLabel: String, termLabel: String,
+                          currency: String, rows: List<List<String>>, totals: List<String>): Path {
+        val doc = Doc()
+        val s = data.school
+        readLogo(s)?.let { (bytes, ext) -> doc.logo(bytes, ext) }
+        doc.p(s.name, bold = true, size = 32, align = "center", spacingAfter = 20)
+        val contact = listOf(s.address, s.phone).filter { it.isNotBlank() }.joinToString(" • ")
+        if (contact.isNotBlank()) doc.p(contact, size = 18, align = "center", color = "666666", spacingAfter = 20)
+        doc.p("STATEMENT OF SCHOOL FEES", bold = true, size = 26, align = "center", spacingAfter = 40)
+        doc.p("$classLabel — $termLabel", size = 20, align = "center", color = "444444", spacingAfter = 200)
+        if (rows.isEmpty()) {
+            doc.p("No learners in this class yet.", size = 22, align = "center", color = "666666")
+        } else {
+            doc.table(listOf("Student", "Term fee ($currency)", "Paid ($currency)", "Balance ($currency)", "Status"), rows)
+            doc.p("Learners: ${rows.size}    Expected: $currency ${totals[0]}    Collected: $currency ${totals[1]}    Outstanding: $currency ${totals[2]}",
+                bold = true, size = 20, spacingAfter = 60)
+            doc.p("Signature (Bursar): ..............................        Date: ..............................",
+                size = 18, color = "666666", spacingAfter = 0)
+        }
+        Files.createDirectories(out.toAbsolutePath().parent)
+        Files.write(out, doc.toBytes())
+        return out
+    }
+
+    /**
+     * An official receipt for money received. Schools hand these to parents, and
+     * until now the console could not print one at all.
+     */
+    fun writeFeeReceipt(out: Path, data: SchoolData, student: Student, classLabel: String, termLabel: String,
+                        receiptNo: String, amount: Double, method: String, reference: String,
+                        termFee: Double, paidToDate: Double, currency: String, receivedBy: String): Path {
+        val doc = Doc()
+        val s = data.school
+        readLogo(s)?.let { (bytes, ext) -> doc.logo(bytes, ext) }
+        doc.p(s.name, bold = true, size = 32, align = "center", spacingAfter = 20)
+        val contact = listOf(s.address, s.phone).filter { it.isNotBlank() }.joinToString(" • ")
+        if (contact.isNotBlank()) doc.p(contact, size = 18, align = "center", color = "666666", spacingAfter = 20)
+        doc.p("OFFICIAL RECEIPT", bold = true, size = 26, align = "center", spacingAfter = 40)
+        doc.p("Receipt No: $receiptNo        $termLabel", size = 20, align = "center", color = "444444", spacingAfter = 200)
+        doc.table(
+            listOf("Item", "Details"),
+            listOf(
+                listOf("Received from", student.fullName),
+                listOf("Admission No", student.admissionNo),
+                listOf("Class", classLabel),
+                listOf("Term", termLabel),
+                listOf("Amount received", "$currency ${amount.toLong()}"),
+                listOf("Payment method", if (method.isBlank()) "-" else method),
+                listOf("Reference", if (reference.isBlank()) "-" else reference),
+                listOf("Term fee", "$currency ${termFee.toLong()}"),
+                listOf("Paid to date", "$currency ${paidToDate.toLong()}"),
+                listOf("Balance", "$currency ${(termFee - paidToDate).coerceAtLeast(0.0).toLong()}")
+            ),
+            widths = listOf(3200, 5200)
+        )
+        doc.p("Received by: ${receivedBy.ifBlank { "________" }}        Signature: ..............................",
+            size = 18, color = "666666", spacingAfter = 40)
+        doc.p("Thank you. Keep this receipt; it is proof of payment for this term.", size = 16,
+            align = "center", color = "666666", italic = true, spacingAfter = 0)
+        Files.createDirectories(out.toAbsolutePath().parent)
+        Files.write(out, doc.toBytes())
+        return out
+    }
+
+    /** Audit trail as CSV, so the head teacher can file or inspect it outside the app. */
+    fun writeAuditCsv(out: Path, data: SchoolData): Path {
+        fun q(v: String): String {
+            val clean = v.replace("\r", " ").replace("\n", " ")
+            return if (clean.contains(',') || clean.contains('"')) "\"" + clean.replace("\"", "\"\"") + "\"" else clean
+        }
+        val stamp = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US)
+        val sb = StringBuilder("timestamp,date,action,entity,entity_id,old_value,new_value,device,user\n")
+        data.auditLog.sortedByDescending { it.timestamp }.forEach { e ->
+            sb.append(q(e.timestamp.toString())).append(',')
+            sb.append(q(if (e.timestamp > 0) stamp.format(java.util.Date(e.timestamp)) else "")).append(',')
+            sb.append(q(e.action)).append(',').append(q(e.entity)).append(',').append(q(e.entityId)).append(',')
+            sb.append(q(e.oldValue)).append(',').append(q(e.newValue)).append(',')
+            sb.append(q(e.device)).append(',').append(q(e.userId ?: "")).append('\n')
+        }
+        Files.createDirectories(out.toAbsolutePath().parent)
+        Files.writeString(out, sb.toString(), StandardCharsets.UTF_8)
+        return out
+    }
+
     // ── report card content ────────────────────────────────────────────────
 
     fun writeStudentReport(out: Path, data: SchoolData, result: TermResult, layout: TemplateLayout = TemplateLayout.CLASSIC, accentHex: String? = null): Path {
