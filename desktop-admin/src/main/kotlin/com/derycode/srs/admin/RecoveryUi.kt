@@ -3,6 +3,8 @@ package com.derycode.srs.admin
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -26,6 +28,7 @@ import java.util.Date
 @Composable
 fun RestoreSchoolPanel(state: AppState, onRestored: (String) -> Unit = {}) {
     val home = Path.of(System.getProperty("user.home"))
+    fun isDir(p: Path) = try { Files.isDirectory(p) } catch (_: Throwable) { false }
     val roots = listOf(
         dataDir,
         dataDir.resolve("backups"),
@@ -34,10 +37,19 @@ fun RestoreSchoolPanel(state: AppState, onRestored: (String) -> Unit = {}) {
         home.resolve("Desktop"),
         home.resolve("Documents"),
         home.resolve("Downloads")
-    ).filter { Files.isDirectory(it) }
+    ).filter { isDir(it) }
 
-    var candidates by remember(state.refreshTick) { mutableStateOf(SchoolRecovery.scan(roots)) }
-    var msg by remember(state.refreshTick) { mutableStateOf("") }
+    // Never read a folder on the drawing thread: a big folder or an unreadable
+    // OneDrive placeholder made the console look frozen. Scan in the background.
+    var candidates by remember { mutableStateOf<List<SchoolRecovery.Candidate>>(emptyList()) }
+    var scanning by remember { mutableStateOf(true) }
+    var rescan by remember { mutableStateOf(0) }
+    var msg by remember { mutableStateOf("") }
+    LaunchedEffect(state.refreshTick, rescan) {
+        scanning = true
+        candidates = withContext(Dispatchers.IO) { runCatching { SchoolRecovery.scan(roots, setOf(dataFile)) }.getOrDefault(emptyList()) }
+        scanning = false
+    }
     val fmt = SimpleDateFormat("MMM d, yyyy HH:mm")
     val hint = state.data.school.name.takeIf { it.isNotBlank() && it != "Your School" } ?: ""
 
@@ -45,7 +57,8 @@ fun RestoreSchoolPanel(state: AppState, onRestored: (String) -> Unit = {}) {
         val ok = state.repo.restore(file)
         if (ok) {
             state.refresh()
-            candidates = SchoolRecovery.scan(roots)
+            state.refresh()
+            rescan++
             val name = state.data.school.name.ifBlank { "your school" }
             msg = "Restored $name. Check Students and Classes to confirm everything is back."
             onRestored(name)
@@ -56,9 +69,11 @@ fun RestoreSchoolPanel(state: AppState, onRestored: (String) -> Unit = {}) {
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("Found ${candidates.size} saved cop${if (candidates.size == 1) "y" else "ies"} on this computer",
-                color = if (candidates.isEmpty()) Theme.WARN else Theme.GOOD, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-            Btn("Look again", primary = false) { candidates = SchoolRecovery.scan(roots); msg = "Scan finished." }
+            Text(if (scanning) "Searching this computer for saved copies…" else
+                 "Found ${candidates.size} saved cop${if (candidates.size == 1) "y" else "ies"} on this computer",
+                color = if (scanning) Theme.MUTED else if (candidates.isEmpty()) Theme.WARN else Theme.GOOD,
+                fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Btn("Look again", primary = false) { rescan++ }
         }
         SchoolRecovery.best(candidates, hint)?.let { best ->
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -88,7 +103,7 @@ fun RestoreSchoolPanel(state: AppState, onRestored: (String) -> Unit = {}) {
                     Btn("Restore", primary = false) { restore(c.file) }
                 }
             }
-        } else {
+        } else if (!scanning) {
             Text("No saved copy with learners was found here. On the school's own computer, a copy is created after every change; if this is a new machine, copy the school-data.json (or a backup) from the old one into ${dataDir} and press Look again.",
                 color = Theme.MUTED, fontSize = 12.sp)
         }

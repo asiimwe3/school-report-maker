@@ -1,12 +1,12 @@
 {
-  "console": "2.3.35",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.35.msi",
+  "console": "2.3.36",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.36.msi",
   "teacher": "1.20.14",
   "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.14.apk",
   "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.14.apk",
   "teacherDesktop": "1.0.0",
   "teacherDesktopDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMakerTeacher-1.0.0.msi",
   "released": "2026-11-10",
-  "notes": "Console 2.3.35, teacher 1.20.14, teacher laptop 1.0.0.\n- New: find a school that looks lost. The Setup screen and Backup History now scan this computer (data folder, backups, laptop teacher app, Desktop, Documents, Downloads) and list every saved copy with its school name, classes, learners, marks and date, with a one-click Restore\n- The setup wizard can no longer trap a school that already exists on the machine: it offers the saved copy instead of forcing a fresh setup\n- Restores always take a safety backup of the current file first",
-  "consoleVersion": "2.3.35"
+  "notes": "Console 2.3.36, teacher 1.20.14, teacher laptop 1.0.0.\n- Fixed: the Backup screen could freeze or close the console. The found-copies scan no longer runs on the drawing thread, never reads a folder it cannot open (OneDrive, a disconnected drive), skips files that are not school files or are too large, and caps how many files it looks at\n- Backup History no longer crashes on a file it cannot read: it shows the row and says the restore failed\n- If a crash ever does happen, the message is written to crash-log.txt in the SchoolReportMaker folder",
+  "consoleVersion": "2.3.36"
 }

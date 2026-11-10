@@ -75,3 +75,35 @@ class SchoolRecoveryTest {
         assertEquals(1, found[0].classes)
     }
 }
+
+class SchoolRecoveryRobustnessTest {
+
+    @Test fun `a folder that does not exist or a file passed as a root never throws`() {
+        val missing = java.nio.file.Path.of("/no/such/folder/on/this/machine")
+        val aFile = Files.createTempFile("not-a-folder", ".json")
+        assertTrue(SchoolRecovery.scan(listOf(missing, aFile)).isEmpty())
+    }
+
+    @Test fun `a broken or unreadable candidate is skipped instead of crashing the console`() {
+        val dir = Files.createTempDirectory("srs-robust")
+        Files.writeString(dir.resolve("broken.json"), "{\"classes\":[")
+        Files.writeString(dir.resolve("weird.json"), "{\"students\":\"not a list\"}")
+        Files.writeString(dir.resolve("tiny.json"), "{}")
+        assertTrue(SchoolRecovery.scan(listOf(dir)).isEmpty())
+        assertTrue(SchoolRecovery.read(dir.resolve("broken.json")) == null)
+    }
+
+    @Test fun `the live data file can be excluded so an open console is never re-read`() {
+        val dir = Files.createTempDirectory("srs-live")
+        val store = JsonStore()
+        val live = dir.resolve("school-data.json")
+        val full = SchoolData(school = School(name = "Tooro Royal College"),
+            classes = listOf(SchoolClass(id = "c1", name = "S.1")))
+        store.save(live, full)
+        store.save(dir.resolve("backups").also { Files.createDirectories(it) }.resolve("backup-1800000000000.json"), full)
+        assertEquals(2, SchoolRecovery.scan(listOf(dir)).size)
+        val withoutLive = SchoolRecovery.scan(listOf(dir), skip = setOf(live))
+        assertEquals(1, withoutLive.size)
+        assertEquals("Backup", withoutLive[0].origin)
+    }
+}

@@ -19,6 +19,19 @@ object SchoolRecovery {
 
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
+    /** A school file bigger than this is not a school file we wrote; do not try to parse it. */
+    private const val MAX_FILE_BYTES = 60L * 1024 * 1024
+
+    /** Enough to find the school without walking a whole hard disk. */
+    private const val MAX_FILES_PER_ROOT = 300
+
+    /** Never let a folder we cannot read (OneDrive, a disconnected drive) take the console down. */
+    private fun safeList(dir: Path): List<Path> = try {
+        Files.list(dir).use { stream -> stream.toList() }
+    } catch (_: Throwable) { emptyList() }
+
+    private fun safeSize(file: Path): Long = try { Files.size(file) } catch (_: Throwable) { -1 }
+
     /** One file that holds a school, with enough detail to recognise it. */
     data class Candidate(
         val file: Path,
@@ -43,6 +56,8 @@ object SchoolRecovery {
         val name = file.fileName.toString().lowercase()
         if (!name.endsWith(".json")) return false
         if (name.contains("version")) return false
+        val size = safeSize(file)
+        if (size <= 0 || size > MAX_FILE_BYTES) return false
         // kotlinx skips default values, so a real school file can be surprisingly
         // small (a name and a couple of classes is ~150 bytes). Only tiny scraps
         // and obvious non-school files are skipped here.
@@ -66,7 +81,7 @@ object SchoolRecovery {
                 origin = origin
             )
         }
-    } catch (_: Exception) { null }
+    } catch (_: Throwable) { null }
 
     private fun stampOf(file: Path): Long {
         val fromName = file.fileName.toString().removeSuffix(".json")
@@ -79,21 +94,26 @@ object SchoolRecovery {
      * searched one level deep (plus their own `backups` folder), which covers the
      * data folder, the backups folder and a folder copied off a USB stick.
      */
-    fun scan(roots: List<Path>): List<Candidate> {
+    fun scan(roots: List<Path>, skip: Set<Path> = emptySet()): List<Candidate> {
         val paths = mutableListOf<Path>()
         for (root in roots) {
-            if (!Files.isDirectory(root)) continue
-            val children = mutableListOf<Path>()
-            Files.list(root).use { stream -> stream.forEach { child -> children.add(child) } }
+            try {
+                if (!Files.isDirectory(root)) continue
+            } catch (_: Throwable) { continue }
+            val children = safeList(root).take(MAX_FILES_PER_ROOT)
             for (child in children) {
-                if (Files.isDirectory(child)) {
-                    Files.list(child).use { stream -> stream.forEach { file -> if (!Files.isDirectory(file)) paths.add(file) } }
+                val isDir = try { Files.isDirectory(child) } catch (_: Throwable) { false }
+                if (isDir) {
+                    safeList(child).take(MAX_FILES_PER_ROOT).forEach { file ->
+                        val dir2 = try { Files.isDirectory(file) } catch (_: Throwable) { false }
+                        if (!dir2) paths.add(file)
+                    }
                 } else {
                     paths.add(child)
                 }
             }
         }
-        val seen = mutableSetOf<Path>()
+        val seen = skip.map { it.toAbsolutePath().normalize() }.toMutableSet()
         return paths
             .filter { isSchoolFile(it) }
             .filter { seen.add(it.toAbsolutePath().normalize()) }

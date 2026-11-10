@@ -816,12 +816,12 @@ fun BackupHistoryScreen(state: AppState) {
             LazyColumn(Modifier.height(380.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 items(backups) { b ->
                     val stamp = b.fileName.toString().removePrefix("backup-").removeSuffix(".json").toLongOrNull() ?: 0L
-                    val size = Files.size(b)
+                    val size = runCatching { Files.size(b) }.getOrDefault(0L)
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text(fmt.format(Date(stamp)), color = Theme.TEXT, fontSize = 14.sp, modifier = Modifier.width(220.dp))
                         Text(String.format("%.1f KB", size / 1024.0), color = Theme.MUTED, fontSize = 14.sp, modifier = Modifier.width(100.dp))
                         if (stamp > 0) Btn("Restore", primary = false, onClick = {
-                            val ok = state.repo.restore(b)
+                            val ok = runCatching { state.repo.restore(b) }.getOrDefault(false)
                             msg = if (ok) "Restored ✓ (a safety backup was taken first)" else "Restore failed — file unreadable"
                             state.refresh()
                         })
