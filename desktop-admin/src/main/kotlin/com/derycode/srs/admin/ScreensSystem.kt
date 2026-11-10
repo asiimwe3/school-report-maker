@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.derycode.srs.core.access.AdminInvites
 import com.derycode.srs.core.model.*
 import com.derycode.srs.core.report.DocxReport
 import com.derycode.srs.core.results.ResultEngine
@@ -839,6 +840,7 @@ fun UsersScreen(state: AppState) {
 
     ScreenTitle("User Management", "Accounts for the admin console and teacher app. Roles decide what each user can do.")
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        AdminInviteCard(state)
         CardBox {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                 TextField(name, { name = it }, Modifier.width(160.dp), "Full name")
@@ -886,6 +888,144 @@ fun UsersScreen(state: AppState) {
                         }
                         state.refresh()
                     })
+                }
+            }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Invite a school admin — a code the colleague redeems once on this school
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun AdminInviteCard(state: AppState) {
+    val d = state.data
+    val now = System.currentTimeMillis()
+    val fmt = SimpleDateFormat("MMM d, yyyy")
+    val device = System.getenv("COMPUTERNAME")?.ifBlank { null } ?: "this console"
+
+    var name by remember { mutableStateOf("") }
+    var phone by remember { mutableStateOf("") }
+    var role by remember { mutableStateOf(Role.SCHOOL_ADMIN) }
+    var days by remember { mutableStateOf("7") }
+    var lastCode by remember { mutableStateOf("") }
+    var message by remember { mutableStateOf("") }
+
+    var redeemCode by remember { mutableStateOf("") }
+    var redeemPin by remember { mutableStateOf("") }
+    var redeemUser by remember { mutableStateOf("") }
+
+    fun copy(text: String) {
+        try {
+            java.awt.Toolkit.getDefaultToolkit().systemClipboard
+                .setContents(java.awt.datatransfer.StringSelection(text), null)
+            message = "Code copied. Send it to your colleague."
+        } catch (e: Exception) { message = "Could not copy — read the code out instead." }
+    }
+
+    CardBox {
+        Text("Invite a school admin", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(4.dp))
+        Text("A code lets one colleague set up their own admin account on this school's console. It works once and then stops working.",
+            color = Theme.MUTED, fontSize = 13.sp)
+        Spacer(Modifier.height(8.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            TextField(name, { name = it }, Modifier.width(180.dp), "Their full name")
+            TextField(phone, { phone = it }, Modifier.width(140.dp), "Phone (optional)")
+            TextField(days, { days = it.filter { c -> c.isDigit() } }, Modifier.width(80.dp), "Days valid")
+            AdminInvites.INVITEABLE.filter { it != Role.TEACHER }.forEach { r ->
+                FilterChip(selected = role == r, onClick = { role = r }, label = { Text(roleLabel(r), fontSize = 9.sp) })
+            }
+            Btn("Create invite code") {
+                if (name.isBlank()) { message = "Type the colleague's name first, so the list says who the code is for."; return@Btn }
+                val inv = AdminInvites.create(state.repo.nextId(), name, phone, role, days.toIntOrNull() ?: 7)
+                state.repo.mutate("ADMIN_INVITED", "AdminInvite", inv.id, new = "${inv.name} as ${roleLabel(inv.role)} (${inv.code})") { dd ->
+                    dd.copy(adminInvites = dd.adminInvites + inv)
+                }
+                lastCode = inv.code
+                message = "Invite for ${inv.name} created. It works for ${days.toIntOrNull() ?: 7} days."
+                name = ""; phone = ""
+                state.refresh()
+            }
+        }
+        if (lastCode.isNotBlank()) {
+            Spacer(Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(lastCode, color = Theme.ACCENT, fontSize = 30.sp, fontWeight = FontWeight.Bold)
+                Btn("Copy code", primary = false) { copy(lastCode) }
+                InviteQr(lastCode, size = 132, caption = "Scan to join")
+            }
+        }
+        if (message.isNotBlank()) {
+            Spacer(Modifier.height(6.dp))
+            Text(message, color = Theme.GOOD, fontSize = 13.sp)
+        }
+    }
+
+    CardBox {
+        Text("Invite codes (${d.adminInvites.size})", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(6.dp))
+        if (d.adminInvites.isEmpty()) {
+            Text("No invites yet. Create one above when a colleague is joining.", color = Theme.MUTED, fontSize = 13.sp)
+        } else {
+            d.adminInvites.sortedByDescending { it.createdAt }.forEach { inv ->
+                val st = AdminInvites.state(inv, now)
+                val colour = when (st) { "Active" -> Theme.GOOD; "Used" -> Theme.MUTED; else -> Theme.WARN }
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    modifier = Modifier.padding(vertical = 4.dp)) {
+                    Text(inv.code, color = Theme.TEXT, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.width(160.dp))
+                    Text(inv.name.ifBlank { "—" }, color = Theme.TEXT, fontSize = 14.sp, modifier = Modifier.width(150.dp))
+                    Text(roleLabel(inv.role), color = Theme.MUTED, fontSize = 13.sp, modifier = Modifier.width(120.dp))
+                    Text(st, color = colour, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.width(80.dp))
+                    Text("until ${fmt.format(Date(inv.expiresAt))}", color = Theme.MUTED, fontSize = 12.sp, modifier = Modifier.width(140.dp))
+                    if (st == "Active") {
+                        Btn("Copy", primary = false) { copy(inv.code) }
+                        Btn("Cancel", primary = false) {
+                            state.repo.mutate("ADMIN_INVITE_CANCELLED", "AdminInvite", inv.id) { dd ->
+                                dd.copy(adminInvites = dd.adminInvites.map { if (it.id == inv.id) it.copy(revoked = true) else it })
+                            }
+                            state.refresh()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    CardBox {
+        Text("Redeem a code", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(4.dp))
+        Text("The colleague types the code here, chooses a username and a 4-digit PIN, and their admin account is created.",
+            color = Theme.MUTED, fontSize = 13.sp)
+        Spacer(Modifier.height(8.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            TextField(redeemCode, { redeemCode = it.uppercase() }, Modifier.width(200.dp), "ADM-XXXX-XXXX")
+            TextField(redeemUser, { redeemUser = it.lowercase() }, Modifier.width(140.dp), "username")
+            TextField(redeemPin, { redeemPin = it.filter { c -> c.isDigit() }.take(4) }, Modifier.width(90.dp), "PIN")
+            Btn("Join as admin") {
+                when (val check = AdminInvites.check(d.adminInvites, redeemCode)) {
+                    is AdminInvites.Check.No -> message = check.message
+                    is AdminInvites.Check.Ok -> {
+                        if (redeemPin.length != 4) { message = "Choose a 4-digit PIN for this account."; return@Btn }
+                        val inv = check.invite
+                        val user = AdminInvites.uniqueUsername(redeemUser.ifBlank { inv.name }, d.teachers.map { it.username })
+                        val id = state.repo.nextId()
+                        state.repo.mutate("ADMIN_JOINED", "User", id, new = "${inv.name.ifBlank { user }} as ${roleLabel(inv.role)} with code ${inv.code}") { dd ->
+                            dd.copy(
+                                teachers = dd.teachers + Teacher(
+                                    id = id, name = inv.name.ifBlank { user }, phone = inv.phone,
+                                    role = inv.role, username = user, pinHash = redeemPin.hashCode().toString()
+                                ),
+                                adminInvites = dd.adminInvites.map {
+                                    if (it.id == inv.id) AdminInvites.redeem(it, id, device) else it
+                                }
+                            )
+                        }
+                        message = "${inv.name.ifBlank { user }} is now ${roleLabel(inv.role)}. Username: $user"
+                        redeemCode = ""; redeemUser = ""; redeemPin = ""
+                        state.refresh()
+                    }
                 }
             }
         }

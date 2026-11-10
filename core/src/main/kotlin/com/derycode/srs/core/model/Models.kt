@@ -165,6 +165,28 @@ data class Teacher(
     val cloudUid: String = ""
 )
 
+/**
+ * An invitation for someone to join this school as an admin user. The head teacher
+ * creates the code on the console, hands it over (or the colleague scans the QR),
+ * and the code is redeemed once on a console that holds this school's data.
+ */
+@Serializable
+data class AdminInvite(
+    val id: String,
+    val code: String,
+    val name: String = "",
+    val phone: String = "",
+    val role: Role = Role.SCHOOL_ADMIN,
+    val createdAt: Long = 0,
+    val expiresAt: Long = 0,
+    /** 0 until the code is redeemed; then the moment it was, and where. */
+    val usedAt: Long = 0,
+    val usedOn: String = "",
+    /** The user account created when it was redeemed. */
+    val userId: String = "",
+    val revoked: Boolean = false
+)
+
 @Serializable
 data class TeacherAssignment(
     val id: String,
@@ -590,6 +612,7 @@ data class SchoolData(
     val students: List<Student> = emptyList(),
     val enrollments: List<Enrollment> = emptyList(),
     val teachers: List<Teacher> = emptyList(),
+    val adminInvites: List<AdminInvite> = emptyList(),
     val assignments: List<TeacherAssignment> = emptyList(),
     val timetable: List<TimetablePeriod> = emptyList(),
     val timetableSheet: TimetableSheet? = null,
