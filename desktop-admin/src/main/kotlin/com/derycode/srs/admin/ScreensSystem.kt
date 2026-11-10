@@ -817,14 +817,17 @@ fun BackupHistoryScreen(state: AppState) {
                 items(backups) { b ->
                     val stamp = b.fileName.toString().removePrefix("backup-").removeSuffix(".json").toLongOrNull() ?: 0L
                     val size = runCatching { Files.size(b) }.getOrDefault(0L)
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    fun restoreThis() {
+                        val ok = runCatching { state.repo.restore(b) }.getOrDefault(false)
+                        msg = if (ok) "Restored ${state.data.school.name.ifBlank { "the school" }} — ${state.data.students.size} learners and ${state.data.classes.size} classes are back (a safety backup was taken first)"
+                        else "Restore failed — that file could not be read"
+                        state.refresh()
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable { restoreThis() }.padding(vertical = 2.dp)) {
                         Text(fmt.format(Date(stamp)), color = Theme.TEXT, fontSize = 14.sp, modifier = Modifier.width(220.dp))
                         Text(String.format("%.1f KB", size / 1024.0), color = Theme.MUTED, fontSize = 14.sp, modifier = Modifier.width(100.dp))
-                        if (stamp > 0) Btn("Restore", primary = false, onClick = {
-                            val ok = runCatching { state.repo.restore(b) }.getOrDefault(false)
-                            msg = if (ok) "Restored ✓ (a safety backup was taken first)" else "Restore failed — file unreadable"
-                            state.refresh()
-                        })
+                        Btn("Restore this backup", primary = false) { restoreThis() }
                     }
                 }
                 if (backups.isEmpty()) item { Text("No backups yet — one is created automatically after every change.", color = Theme.MUTED, fontSize = 14.sp) }

@@ -1,12 +1,12 @@
 {
-  "console": "2.3.36",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.36.msi",
+  "console": "2.3.37",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.37.msi",
   "teacher": "1.20.14",
   "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.14.apk",
   "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.14.apk",
   "teacherDesktop": "1.0.0",
   "teacherDesktopDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMakerTeacher-1.0.0.msi",
   "released": "2026-11-10",
-  "notes": "Console 2.3.36, teacher 1.20.14, teacher laptop 1.0.0.\n- Fixed: the Backup screen could freeze or close the console. The found-copies scan no longer runs on the drawing thread, never reads a folder it cannot open (OneDrive, a disconnected drive), skips files that are not school files or are too large, and caps how many files it looks at\n- Backup History no longer crashes on a file it cannot read: it shows the row and says the restore failed\n- If a crash ever does happen, the message is written to crash-log.txt in the SchoolReportMaker folder",
-  "consoleVersion": "2.3.36"
+  "notes": "Console 2.3.37, teacher 1.20.14, teacher laptop 1.0.0.\n- Restoring a saved school is now one tap: every found copy is a clickable row, plus a highlighted 'Restore <school name>' row for the newest full copy\n- A restore brings back everything in that file: school profile, classes, students, subjects, marks, fees, comments, users and settings, and leaves first-run setup\n- Backup History rows also restore on tap, with the button always visible\n- A restored school can no longer be dropped back into the setup wizard",
+  "consoleVersion": "2.3.37"
 }

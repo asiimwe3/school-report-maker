@@ -231,7 +231,7 @@ private fun StepWelcome(state: AppState, next: () -> Unit) {
         // the setup can look "lost" when a fresh file was opened on a machine that still
         // holds every backup. Offer the way back here, not only on the Backup screen.
         Spacer(Modifier.height(26.dp))
-        Box(Modifier.fillMaxWidth().widthIn(max = 640.dp).background(Theme.CARD, RoundedCornerShape(12.dp)).padding(16.dp)) {
+        Box(Modifier.fillMaxWidth().background(Theme.CARD, RoundedCornerShape(12.dp)).padding(16.dp)) {
             Column {
                 Text("Already have a school on this computer?", color = Theme.TEXT, fontSize = 15.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(4.dp))

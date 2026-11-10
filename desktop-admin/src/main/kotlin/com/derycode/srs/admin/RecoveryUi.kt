@@ -1,29 +1,32 @@
 package com.derycode.srs.admin
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.derycode.srs.core.store.SchoolRecovery
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.nio.file.Files
 import java.nio.file.Path
 import java.text.SimpleDateFormat
 import java.util.Date
 
 /**
- * "My school setup is gone" — find it again.
+ * "My school setup is gone" — find it again, and bring back everything in it.
  *
- * Everything the console has ever saved lives as JSON on this machine: the data
- * folder, its rotating backups, the laptop teacher app, and any file copied off a
- * USB stick. This panel reads them all and offers back the newest one that still
- * holds learners, so a head teacher never has to retype a school.
+ * A restore replaces the whole database: school profile, classes, students,
+ * subjects, marks, fees, comments, users, settings. Each saved copy is one
+ * clickable row, so a head teacher taps the copy that still has their school and
+ * is done — no typing, no rebuilding.
  */
 @Composable
 fun RestoreSchoolPanel(state: AppState, onRestored: (String) -> Unit = {}) {
@@ -39,74 +42,94 @@ fun RestoreSchoolPanel(state: AppState, onRestored: (String) -> Unit = {}) {
         home.resolve("Downloads")
     ).filter { isDir(it) }
 
-    // Never read a folder on the drawing thread: a big folder or an unreadable
-    // OneDrive placeholder made the console look frozen. Scan in the background.
     var candidates by remember { mutableStateOf<List<SchoolRecovery.Candidate>>(emptyList()) }
     var scanning by remember { mutableStateOf(true) }
     var rescan by remember { mutableStateOf(0) }
     var msg by remember { mutableStateOf("") }
-    LaunchedEffect(state.refreshTick, rescan) {
-        scanning = true
-        candidates = withContext(Dispatchers.IO) { runCatching { SchoolRecovery.scan(roots, setOf(dataFile)) }.getOrDefault(emptyList()) }
-        scanning = false
-    }
     val fmt = SimpleDateFormat("MMM d, yyyy HH:mm")
     val hint = state.data.school.name.takeIf { it.isNotBlank() && it != "Your School" } ?: ""
 
-    fun restore(file: Path) {
-        val ok = state.repo.restore(file)
-        if (ok) {
-            state.refresh()
-            state.refresh()
-            rescan++
-            val name = state.data.school.name.ifBlank { "your school" }
-            msg = "Restored $name. Check Students and Classes to confirm everything is back."
-            onRestored(name)
-        } else {
-            msg = "That file could not be read. Try the one above or below it."
+    LaunchedEffect(state.refreshTick, rescan) {
+        scanning = true
+        candidates = withContext(Dispatchers.IO) {
+            runCatching { SchoolRecovery.scan(roots, setOf(dataFile)) }.getOrDefault(emptyList())
         }
+        scanning = false
+    }
+
+    fun restore(file: Path) {
+        msg = "Restoring…"
+        val ok = runCatching { state.repo.restore(file) }.getOrDefault(false)
+        if (!ok) { msg = "That copy could not be read. Try the next one."; return }
+        // A restored school must not land back in first-run setup: the file carries
+        // the school profile, so treat it as set up once it has a name.
+        if (!state.data.settings.setupComplete && state.data.school.name.isNotBlank()) {
+            state.repo.mutate("SCHOOL_RESTORED", "School", state.data.school.id) { dd ->
+                dd.copy(settings = dd.settings.copy(setupComplete = true))
+            }
+        }
+        state.refresh()
+        rescan++
+        val restored = state.data
+        msg = "Restored ${restored.school.name.ifBlank { "the school" }}: " +
+            "${restored.students.size} learners, ${restored.classes.size} classes, ${restored.marks.size} marks, " +
+            "${restored.teachers.size} users. Everything came back, not just the profile."
+        onRestored(restored.school.name)
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(if (scanning) "Searching this computer for saved copies…" else
-                 "Found ${candidates.size} saved cop${if (candidates.size == 1) "y" else "ies"} on this computer",
+            Text(
+                if (scanning) "Searching this computer for saved copies…"
+                else "Found ${candidates.size} saved cop${if (candidates.size == 1) "y" else "ies"} on this computer",
                 color = if (scanning) Theme.MUTED else if (candidates.isEmpty()) Theme.WARN else Theme.GOOD,
-                fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                fontSize = 14.sp, fontWeight = FontWeight.Bold
+            )
             Btn("Look again", primary = false) { rescan++ }
         }
-        SchoolRecovery.best(candidates, hint)?.let { best ->
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("Newest full copy: ${best.school}, ${best.classes} classes, ${best.students} learners, saved ${fmt.format(Date(best.savedAt))}",
-                    color = Theme.TEXT, fontSize = 13.sp)
-                Btn("Restore this copy") { restore(best.file) }
+
+        val best = SchoolRecovery.best(candidates, hint)
+        if (best != null) {
+            Box(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp))
+                    .background(Theme.ACCENT_SOFT).clickable { restore(best.file) }
+                    .padding(horizontal = 14.dp, vertical = 12.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Restore ${best.school}", color = Theme.TEXT, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                        Text("${best.classes} classes · ${best.students} learners · ${best.marks} marks · saved ${fmt.format(Date(best.savedAt))} · tap to bring everything back",
+                            color = Theme.MUTED, fontSize = 12.sp)
+                    }
+                    Btn("Restore") { restore(best.file) }
+                }
             }
         }
+
         if (candidates.isNotEmpty()) {
-            Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                Text("School", color = Theme.MUTED, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(190.dp))
-                Text("Classes", color = Theme.MUTED, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(70.dp))
-                Text("Learners", color = Theme.MUTED, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(75.dp))
-                Text("Marks", color = Theme.MUTED, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(65.dp))
-                Text("Saved", color = Theme.MUTED, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(160.dp))
-                Text("From", color = Theme.MUTED, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-            }
-            candidates.take(12).forEach { c ->
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(24.dp),
-                    modifier = Modifier.padding(vertical = 2.dp)) {
-                    Text(c.school, color = Theme.TEXT, fontSize = 13.sp, modifier = Modifier.width(190.dp))
-                    Text(c.classes.toString(), color = Theme.TEXT, fontSize = 13.sp, modifier = Modifier.width(70.dp))
-                    Text(c.students.toString(), color = Theme.TEXT, fontSize = 13.sp, modifier = Modifier.width(75.dp))
-                    Text(c.marks.toString(), color = Theme.TEXT, fontSize = 13.sp, modifier = Modifier.width(65.dp))
-                    Text(fmt.format(Date(c.savedAt)), color = Theme.MUTED, fontSize = 12.sp, modifier = Modifier.width(160.dp))
-                    Text(c.origin, color = Theme.MUTED, fontSize = 12.sp, modifier = Modifier.width(120.dp))
-                    Btn("Restore", primary = false) { restore(c.file) }
+            Text("Every copy found, newest first. Tap a row to restore it.",
+                color = Theme.MUTED, fontSize = 12.sp)
+            candidates.take(15).forEach { c ->
+                Box(
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(9.dp))
+                        .background(Theme.CARD).clickable { restore(c.file) }
+                        .padding(horizontal = 12.dp, vertical = 10.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Column(Modifier.weight(1f)) {
+                            Text(c.school, color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                            Text("${c.classes} classes · ${c.students} learners · ${c.marks} marks · ${fmt.format(Date(c.savedAt))} · ${c.origin}",
+                                color = Theme.MUTED, fontSize = 12.sp)
+                        }
+                        Btn("Restore", primary = false) { restore(c.file) }
+                    }
                 }
             }
         } else if (!scanning) {
-            Text("No saved copy with learners was found here. On the school's own computer, a copy is created after every change; if this is a new machine, copy the school-data.json (or a backup) from the old one into ${dataDir} and press Look again.",
+            Text("No saved copy with learners was found here. On the school's own computer a copy is written after every change; if this is a new machine, copy ${dataFile.fileName} (or a file from the backups folder) from the old one into ${dataDir}, then press Look again.",
                 color = Theme.MUTED, fontSize = 12.sp)
         }
+
         if (msg.isNotBlank()) Text(msg, color = Theme.GOOD, fontSize = 13.sp)
     }
 }
