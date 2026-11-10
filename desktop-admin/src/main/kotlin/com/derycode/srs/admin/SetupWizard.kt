@@ -227,6 +227,20 @@ private fun StepWelcome(state: AppState, next: () -> Unit) {
         Spacer(Modifier.height(10.dp))
         Text("Only the online account needs internet. School profile, PIN and licence can be changed later in Settings.",
             color = Theme.MUTED, fontSize = 11.sp, modifier = Modifier.widthIn(max = 640.dp))
+        // A head teacher who already has a school must never be trapped in first-run setup:
+        // the setup can look "lost" when a fresh file was opened on a machine that still
+        // holds every backup. Offer the way back here, not only on the Backup screen.
+        Spacer(Modifier.height(26.dp))
+        Box(Modifier.fillMaxWidth().widthIn(max = 640.dp).background(Theme.CARD, RoundedCornerShape(12.dp)).padding(16.dp)) {
+            Column {
+                Text("Already have a school on this computer?", color = Theme.TEXT, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(4.dp))
+                Text("If the console opened as a brand-new install but your school was working here before, restore the saved copy instead of setting up again.",
+                    color = Theme.MUTED, fontSize = 12.sp)
+                Spacer(Modifier.height(10.dp))
+                RestoreSchoolPanel(state)
+            }
+        }
     }
 }
 

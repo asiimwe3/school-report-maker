@@ -1,12 +1,12 @@
 {
-  "console": "2.3.34",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.34.msi",
+  "console": "2.3.35",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.35.msi",
   "teacher": "1.20.14",
   "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.14.apk",
   "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.14.apk",
   "teacherDesktop": "1.0.0",
   "teacherDesktopDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMakerTeacher-1.0.0.msi",
   "released": "2026-11-10",
-  "notes": "Console 2.3.34, teacher 1.20.14, teacher laptop 1.0.0.\n- New: invite a school admin. The head teacher creates a code in User Management (name, phone, role, days), copies it or shows the QR, and the colleague redeems it once to create their own admin account with a username and PIN\n- Invite codes are listed with their state (Active, Used, Expired, Revoked), can be copied or cancelled, and every invite and redemption is written to the audit log\n- A code only works on a console that holds this school's data, so a leaked code cannot open another school",
-  "consoleVersion": "2.3.34"
+  "notes": "Console 2.3.35, teacher 1.20.14, teacher laptop 1.0.0.\n- New: find a school that looks lost. The Setup screen and Backup History now scan this computer (data folder, backups, laptop teacher app, Desktop, Documents, Downloads) and list every saved copy with its school name, classes, learners, marks and date, with a one-click Restore\n- The setup wizard can no longer trap a school that already exists on the machine: it offers the saved copy instead of forcing a fresh setup\n- Restores always take a safety backup of the current file first",
+  "consoleVersion": "2.3.35"
 }

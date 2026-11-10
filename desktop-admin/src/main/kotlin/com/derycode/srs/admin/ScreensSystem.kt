@@ -789,6 +789,13 @@ fun BackupHistoryScreen(state: AppState) {
     ScreenTitle("Backup History", "Rotating automatic backups of the whole database. A safety backup is taken before any restore.")
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         CardBox {
+            Text("Find a school that looks lost", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(4.dp))
+            Text("Searches this computer's data folder, its backups, the laptop teacher app, and Desktop, Documents and Downloads.", color = Theme.MUTED, fontSize = 13.sp)
+            Spacer(Modifier.height(10.dp))
+            RestoreSchoolPanel(state)
+        }
+        CardBox {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Btn("Create backup now") {
                     state.repo.store.backup(dataFile)
