@@ -199,7 +199,9 @@ class TeacherStore(root: Path? = null) {
                 marks = mine, students = data.students,
                 enrollmentRequests = data.enrollmentRequests,
                 dutyRecords = data.dutyRecords, gatePasses = data.gatePasses,
-                attendance = data.attendance, comments = data.comments
+                attendance = data.attendance, comments = data.comments,
+                schoolId = data.school.id,
+                subjects = data.subjects, components = data.components
             )
             Pair(true, target)
         }

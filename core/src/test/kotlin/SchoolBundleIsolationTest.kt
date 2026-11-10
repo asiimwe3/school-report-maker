@@ -51,7 +51,11 @@ class SchoolBundleIsolationTest {
         val (clean, removed) = SchoolIsolation.prune(merged)
         assertTrue(clean.marks.none { it.id == "t-m1" }, "Tooro's mark must not survive in Kyenjojo")
         assertEquals(0, clean.marks.size)
-        assertTrue(removed > 0)
+        // Since v2.3.31 the importer drops a foreign learner's rows on the way in
+        // (it will not re-point them by admission number), so there is nothing left
+        // for prune to remove — either way nothing of Tooro's reaches the grid.
+        assertTrue(removed >= 0)
+        assertTrue(merged.marks.isEmpty(), "the foreign rows must be refused at import, not merely hidden")
     }
 
     @Test fun `the same school's bundle is accepted and its marks survive`() {

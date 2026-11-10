@@ -1,6 +1,8 @@
 package com.derycode.srs.core.store
 
 import com.derycode.srs.core.model.AttendanceRecord
+import com.derycode.srs.core.model.AssessmentComponent
+import com.derycode.srs.core.model.Subject
 import com.derycode.srs.core.entry.MarkLedger
 import com.derycode.srs.core.model.AuditEntry
 import com.derycode.srs.core.model.DutyRecord
@@ -12,6 +14,7 @@ import com.derycode.srs.core.model.GatePass
 import com.derycode.srs.core.model.Mark
 import com.derycode.srs.core.model.MarkType
 import com.derycode.srs.core.model.SchoolData
+import com.derycode.srs.core.model.SchoolIsolation
 import com.derycode.srs.core.model.Student
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -89,7 +92,13 @@ class JsonStore(
         val attendance: List<AttendanceRecord> = emptyList(),
         /** Class-teacher remarks typed on a phone or laptop. Added in v2.3.30;
          *  older bundles simply arrive without them. */
-        val comments: List<Comment> = emptyList()
+        val comments: List<Comment> = emptyList(),
+        /** The phone's own subject and assessment records, so incoming marks can be
+         *  re-pointed by code when the console has rebuilt its ids. */
+        /** Which school this bundle came from, so ids are only re-pointed within it. */
+        val schoolId: String = "",
+        val subjects: List<Subject> = emptyList(),
+        val components: List<AssessmentComponent> = emptyList()
     )
 
     /** Teacher exports their marks + duty data as a small bundle file (USB / Bluetooth). */
@@ -99,7 +108,10 @@ class JsonStore(
                      dutyRecords: List<DutyRecord> = emptyList(),
                      gatePasses: List<GatePass> = emptyList(),
                      attendance: List<AttendanceRecord> = emptyList(),
-                     comments: List<Comment> = emptyList()) {
+                     comments: List<Comment> = emptyList(),
+                     schoolId: String = "",
+                     subjects: List<Subject> = emptyList(),
+                     components: List<AssessmentComponent> = emptyList()) {
         val bundle = Bundle(
             schoolName = schoolName, deviceId = deviceId,
             createdAt = System.currentTimeMillis(), marks = marks,
@@ -135,7 +147,25 @@ class JsonStore(
             if (bundle.format != "DERYCODE-SRS-BUNDLE") {
                 return BundleMergeReport(success = false, message = "Not a School Report Maker bundle")
             }
-            val merged = mergeMarks(data, bundle.marks)
+            // Sent marks are pinned to this console's own learner, subject, assessment
+            // and term ids first, so they show up on the grid instead of hiding
+            // behind ids the console no longer uses.
+            // Only the same school's own bundle may have ids re-pointed by admission
+            // number, subject code or term: two schools both have a learner 1042.
+            val sameSchool = SchoolIsolation.sameSchool(
+                SchoolData(school = com.derycode.srs.core.model.School(
+                    id = bundle.schoolId, name = bundle.schoolName
+                )),
+                data
+            )
+            val adopted = MarkAdoption.adopt(
+                data, bundle.marks,
+                incomingStudents = bundle.students,
+                incomingSubjects = bundle.subjects,
+                incomingComponents = bundle.components,
+                sameSchool = sameSchool
+            )
+            val merged = mergeMarks(data, adopted.marks)
             // students: replace same-id, add new
             val mergedStudents = data.students.filter { s -> bundle.students.none { it.id == s.id } } + bundle.students
             // pending enrollment requests: approve + create enrollments
@@ -157,6 +187,8 @@ class JsonStore(
             val mergedComments = mergeComments(data.comments, bundle.comments)
             val bits = mutableListOf<String>()
             if (bundle.marks.isNotEmpty()) bits.add("${bundle.marks.size} marks")
+            if (adopted.remapped > 0) bits.add("${adopted.remapped} marks matched to this school's records")
+            if (adopted.dropped > 0) bits.add("${adopted.dropped} marks for learners not in this school were left out")
             if (newReqs.isNotEmpty()) bits.add("${newReqs.size} new students enrolled")
             if (bundle.dutyRecords.isNotEmpty()) bits.add("${bundle.dutyRecords.size} duty records")
             if (bundle.gatePasses.isNotEmpty()) bits.add("${bundle.gatePasses.size} gate passes")

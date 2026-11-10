@@ -282,7 +282,9 @@ class TeacherState(private val context: Context) {
             if (mine.isEmpty()) return null
             store.exportBundle(target.toPath(), data.school.name, deviceId = "teacher-cloud", marks = mine,
                 students = data.students, enrollmentRequests = data.enrollmentRequests,
-                dutyRecords = data.dutyRecords, gatePasses = data.gatePasses, attendance = data.attendance)
+                dutyRecords = data.dutyRecords, gatePasses = data.gatePasses, attendance = data.attendance,
+                comments = data.comments, schoolId = data.school.id,
+            subjects = data.subjects, components = data.components)
             target.readText().also { target.delete() }
         } catch (_: Exception) { null }
     }
@@ -467,7 +469,7 @@ class TeacherState(private val context: Context) {
         store.exportBundle(target, data.school.name, deviceId = "teacher-phone", marks = data.marks,
             students = data.students, enrollmentRequests = data.enrollmentRequests,
             dutyRecords = data.dutyRecords, gatePasses = data.gatePasses, attendance = data.attendance,
-            comments = data.comments)
+            comments = data.comments, subjects = data.subjects, components = data.components)
         return target.toString()
     }
 

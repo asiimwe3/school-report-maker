@@ -1,12 +1,12 @@
 {
-  "console": "2.3.30",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.30.msi",
-  "teacher": "1.20.12",
-  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.12.apk",
-  "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.12.apk",
+  "console": "2.3.31",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.31.msi",
+  "teacher": "1.20.13",
+  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.13.apk",
+  "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.13.apk",
   "teacherDesktop": "1.0.0",
   "teacherDesktopDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMakerTeacher-1.0.0.msi",
   "released": "2026-11-10",
-  "notes": "Teacher 1.20.12, console 2.3.30, teacher laptop 1.0.0.\n- The comment box now takes real text: it used to open a number keypad, so a teacher could not type a sentence\n- Tapping a learner shows the remark already saved, and saving again edits it instead of adding a second copy\n- Remarks now travel to the head teacher in the bundle, on the phone and the laptop\n- A learner with a saved remark is ticked in the list\n- Marks fix from 1.20.11 still holds: the newest entry is the one that shows, saves and prints",
-  "consoleVersion": "2.3.30"
+  "notes": "Teacher 1.20.13, console 2.3.31, teacher laptop 1.0.0.\n- Marks sent from a phone now land on the marks grid: each sent mark is matched to the console's own learner (by admission number), subject and assessment (by code) and the term now running\n- The import message says how many marks had to be matched and how many belonged to learners this school does not have\n- Another school's bundle is never matched onto your learners, even when admission numbers are the same\n- Sent bundles also carry your remarks, subjects and assessment setup\n- Carries the newest-wins marks fix and the text comment box",
+  "consoleVersion": "2.3.31"
 }
