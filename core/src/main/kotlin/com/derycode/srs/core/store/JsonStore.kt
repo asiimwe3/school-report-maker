@@ -4,6 +4,8 @@ import com.derycode.srs.core.model.AttendanceRecord
 import com.derycode.srs.core.entry.MarkLedger
 import com.derycode.srs.core.model.AuditEntry
 import com.derycode.srs.core.model.DutyRecord
+import com.derycode.srs.core.model.CommentType
+import com.derycode.srs.core.model.Comment
 import com.derycode.srs.core.model.Enrollment
 import com.derycode.srs.core.model.EnrollmentRequest
 import com.derycode.srs.core.model.GatePass
@@ -84,7 +86,10 @@ class JsonStore(
         val enrollmentRequests: List<EnrollmentRequest> = emptyList(),
         val dutyRecords: List<DutyRecord> = emptyList(),
         val gatePasses: List<GatePass> = emptyList(),
-        val attendance: List<AttendanceRecord> = emptyList()
+        val attendance: List<AttendanceRecord> = emptyList(),
+        /** Class-teacher remarks typed on a phone or laptop. Added in v2.3.30;
+         *  older bundles simply arrive without them. */
+        val comments: List<Comment> = emptyList()
     )
 
     /** Teacher exports their marks + duty data as a small bundle file (USB / Bluetooth). */
@@ -93,12 +98,14 @@ class JsonStore(
                      enrollmentRequests: List<EnrollmentRequest> = emptyList(),
                      dutyRecords: List<DutyRecord> = emptyList(),
                      gatePasses: List<GatePass> = emptyList(),
-                     attendance: List<AttendanceRecord> = emptyList()) {
+                     attendance: List<AttendanceRecord> = emptyList(),
+                     comments: List<Comment> = emptyList()) {
         val bundle = Bundle(
             schoolName = schoolName, deviceId = deviceId,
             createdAt = System.currentTimeMillis(), marks = marks,
             students = students, enrollmentRequests = enrollmentRequests,
-            dutyRecords = dutyRecords, gatePasses = gatePasses, attendance = attendance
+            dutyRecords = dutyRecords, gatePasses = gatePasses, attendance = attendance,
+            comments = comments
         )
         Files.createDirectories(path.toAbsolutePath().parent)
         Files.writeString(path, json.encodeToString(Bundle.serializer(), bundle))
@@ -118,6 +125,9 @@ class JsonStore(
     fun peekBundleSchool(bundleFile: Path): String = try {
         json.decodeFromString<Bundle>(Files.readString(bundleFile)).schoolName.trim()
     } catch (_: Exception) { "" }
+
+    /** Read a bundle without touching a school file (used by tests and the importer). */
+    fun readBundle(path: Path): Bundle = json.decodeFromString(Files.readString(path))
 
     fun importBundle(data: SchoolData, bundleFile: Path): BundleMergeReport {
         return try {
@@ -143,19 +153,37 @@ class JsonStore(
             val mergedDuty = data.dutyRecords.filter { r -> bundle.dutyRecords.none { it.id == r.id } } + bundle.dutyRecords
             val mergedPasses = data.gatePasses.filter { g -> bundle.gatePasses.none { it.id == g.id } } + bundle.gatePasses
             val mergedAttendance = data.attendance.filter { a -> bundle.attendance.none { it.id == a.id } } + bundle.attendance
+            // remarks: the teacher's latest text for a learner+term+type wins
+            val mergedComments = mergeComments(data.comments, bundle.comments)
             val bits = mutableListOf<String>()
             if (bundle.marks.isNotEmpty()) bits.add("${bundle.marks.size} marks")
             if (newReqs.isNotEmpty()) bits.add("${newReqs.size} new students enrolled")
             if (bundle.dutyRecords.isNotEmpty()) bits.add("${bundle.dutyRecords.size} duty records")
             if (bundle.gatePasses.isNotEmpty()) bits.add("${bundle.gatePasses.size} gate passes")
             if (bundle.attendance.isNotEmpty()) bits.add("${bundle.attendance.size} attendance records")
+            if (bundle.comments.isNotEmpty()) bits.add("${bundle.comments.size} comments")
             val msg = "Imported: " + (if (bits.isEmpty()) "no new data" else bits.joinToString(", "))
             BundleMergeReport(success = true, message = msg, merged = merged, mergedStudents = mergedStudents,
                 mergedEnrollments = mergedEnrollments, mergedRequests = mergedRequests,
-                mergedDutyRecords = mergedDuty, mergedGatePasses = mergedPasses, mergedAttendance = mergedAttendance)
+                mergedDutyRecords = mergedDuty, mergedGatePasses = mergedPasses, mergedAttendance = mergedAttendance,
+                mergedComments = mergedComments)
         } catch (e: Exception) {
             BundleMergeReport(success = false, message = "Bundle could not be read: ${e.message}")
         }
+    }
+
+    /**
+     * Class-teacher remarks: one text per learner, term and comment type.
+     * The incoming (teacher's) text replaces the local one — the person who wrote
+     * it last is the person who typed it — and remarks for other learners, terms
+     * or types are kept.
+     */
+    fun mergeComments(existing: List<Comment>, incoming: List<Comment>): List<Comment> {
+        if (incoming.isEmpty()) return existing
+        val key = { c: Comment -> "${c.studentId}|${c.termId}|${c.type}|${c.subjectId.orEmpty()}" }
+        val incomingByKey = incoming.associateBy(key)
+        val kept = existing.filter { key(it) !in incomingByKey.keys }
+        return kept + incomingByKey.values
     }
 
     /** Merge marks into data, newest-wins, both versions kept on conflict. */
@@ -224,7 +252,8 @@ data class BundleMergeReport(
     val mergedDutyRecords: List<DutyRecord> = emptyList(),
     val mergedGatePasses: List<GatePass> = emptyList(),
     val mergedAttendance: List<AttendanceRecord> = emptyList(),
-    val merged: List<Mark> = emptyList()
+    val merged: List<Mark> = emptyList(),
+    val mergedComments: List<Comment> = emptyList()
 )
 
 // ─────────────────────────────────────────────────────────────────────────────

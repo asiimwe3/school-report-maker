@@ -447,13 +447,27 @@ class TeacherState(private val context: Context) {
         save()
     }
 
+    /**
+     * One remark per learner, term and type: writing again replaces the old text
+     * instead of stacking a second copy the report card has to choose between.
+     */
+    fun upsertComment(c: Comment) {
+        val key = "${c.studentId}|${c.termId}|${c.type}|${c.subjectId.orEmpty()}"
+        val rest = data.comments.filter {
+            "${it.studentId}|${it.termId}|${it.type}|${it.subjectId.orEmpty()}" != key
+        }
+        data = data.copy(comments = rest + c)
+        save()
+    }
+
     /** Bundle file for USB / Bluetooth transfer to the admin console. */
     fun exportBundle(fileName: String = "teacher-bundle.json"): String? {
         val dir = exportDir ?: return null
         val target = dir.toPath().resolve(fileName)
         store.exportBundle(target, data.school.name, deviceId = "teacher-phone", marks = data.marks,
             students = data.students, enrollmentRequests = data.enrollmentRequests,
-            dutyRecords = data.dutyRecords, gatePasses = data.gatePasses, attendance = data.attendance)
+            dutyRecords = data.dutyRecords, gatePasses = data.gatePasses, attendance = data.attendance,
+            comments = data.comments)
         return target.toString()
     }
 

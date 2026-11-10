@@ -649,7 +649,8 @@ fun SyncScreen(state: AppState) {
                                     enrollmentRequests = (dd.enrollmentRequests.filter { r -> report.mergedRequests.none { it.id == r.id } } + report.mergedRequests),
                                     dutyRecords = (dd.dutyRecords.filter { r -> report.mergedDutyRecords.none { it.id == r.id } } + report.mergedDutyRecords),
                                     gatePasses = (dd.gatePasses.filter { g -> report.mergedGatePasses.none { it.id == g.id } } + report.mergedGatePasses),
-                                    attendance = (dd.attendance.filter { a -> report.mergedAttendance.none { it.id == a.id } } + report.mergedAttendance))
+                                    attendance = (dd.attendance.filter { a -> report.mergedAttendance.none { it.id == a.id } } + report.mergedAttendance),
+                                    comments = if (report.mergedComments.isEmpty()) dd.comments else report.mergedComments)
                             }
                         }
                         message = report.message

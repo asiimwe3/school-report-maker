@@ -230,6 +230,27 @@ internal fun DarkTextField(value: String, onChange: (String) -> Unit) {
     )
 }
 
+/**
+ * Remarks box. The old code reused DarkTextField, which is a NUMBER field: a
+ * teacher tapping the comment box got a numeric keypad and could not type a
+ * sentence at all. This one is a proper multi-line text field.
+ */
+@Composable
+internal fun CommentTextField(value: String, onChange: (String) -> Unit) {
+    androidx.compose.foundation.text.BasicTextField(
+        value = value, onValueChange = onChange,
+        singleLine = false, minLines = 4, maxLines = 8,
+        textStyle = androidx.compose.ui.text.TextStyle(color = NAVY, fontSize = 17.sp),
+        cursorBrush = androidx.compose.ui.graphics.SolidColor(BLUE),
+        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+            keyboardType = androidx.compose.ui.text.input.KeyboardType.Text,
+            capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Sentences,
+            imeAction = androidx.compose.ui.text.input.ImeAction.Default
+        ),
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(CARD_ALT).padding(horizontal = 12.dp, vertical = 12.dp)
+    )
+}
+
 @Composable
 internal fun DarkTextFieldSmall(value: String, onChange: (String) -> Unit, enabled: Boolean = true) {
     androidx.compose.foundation.text.BasicTextField(

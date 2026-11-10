@@ -794,7 +794,8 @@ fun CloudScreen(state: AppState) {
                         state.repo.mutate("TEACHER_MARKS_IMPORTED", "Marks", new = report.message) { d ->
                             val merged = d.copy(marks = report.merged, students = report.mergedStudents, enrollments = report.mergedEnrollments,
                                 enrollmentRequests = report.mergedRequests, dutyRecords = report.mergedDutyRecords,
-                                gatePasses = report.mergedGatePasses, attendance = report.mergedAttendance)
+                                gatePasses = report.mergedGatePasses, attendance = report.mergedAttendance,
+                                comments = if (report.mergedComments.isEmpty()) d.comments else report.mergedComments)
                             // any row pointing at a learner this school does not have
                             // is another school's information: drop it, never show it
                             val (clean, dropped) = SchoolIsolation.prune(merged)

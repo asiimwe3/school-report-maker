@@ -128,6 +128,14 @@ fun CommentsScreen(state: TeacherState) {
     var text by remember { mutableStateOf("") }
     var msg by remember { mutableStateOf("") }
     val termId = state.currentTermId
+    // Load the remark this learner already has, so the box edits it instead of
+    // starting blank and saving a second copy underneath.
+    LaunchedEffect(studentId, termId) {
+        text = state.data.comments
+            .firstOrNull { it.studentId == studentId && it.termId == termId && it.type == CommentType.CLASS_TEACHER }
+            ?.text ?: ""
+        msg = ""
+    }
 
     LazyColumn(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item {
@@ -146,7 +154,9 @@ fun CommentsScreen(state: TeacherState) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text((if (studentId == s.id) "\u25CF " else "\u25CB "), color = if (studentId == s.id) BLUE else MUTED)
-                        Text(s.fullName, color = if (studentId == s.id) BLUE else NAVY, fontSize = 17.sp)
+                        Text(s.fullName, color = if (studentId == s.id) BLUE else NAVY, fontSize = 17.sp, modifier = Modifier.weight(1f))
+                        val has = state.data.comments.any { it.studentId == s.id && it.termId == termId && it.type == CommentType.CLASS_TEACHER }
+                        if (has) Text("\u2713", color = GREEN, fontSize = 15.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -155,7 +165,7 @@ fun CommentsScreen(state: TeacherState) {
             CardBox {
                 Cell("Comment", MUTED, true)
                 Spacer(Modifier.height(6.dp))
-                DarkTextField(text) { text = it }
+                CommentTextField(text) { text = it }
                 Spacer(Modifier.height(8.dp))
                 Cell("Comment bank \u2014 tap to insert", MUTED)
                 Spacer(Modifier.height(4.dp))
@@ -169,17 +179,18 @@ fun CommentsScreen(state: TeacherState) {
                 Button(
                     onClick = {
                         if (studentId.isBlank() || text.isBlank()) { msg = "Pick a student and write a comment first."; return@Button }
-                        state.addComment(Comment(
-                            id = "c-${studentId}-$termId-${System.currentTimeMillis()}",
+                        state.upsertComment(Comment(
+                            id = "c-${studentId}-$termId",
                             studentId = studentId, termId = termId, type = CommentType.CLASS_TEACHER,
                             text = text.trim()
                         ))
-                        text = ""
                         msg = "Saved \u2713"
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = BLUE),
                     modifier = Modifier.fillMaxWidth()
                 ) { Text("Save comment") }
+                Spacer(Modifier.height(6.dp))
+                Cell("Type the remark in your own words \u2014 the bank above only fills the box.", MUTED)
                 if (msg.isNotEmpty()) { Spacer(Modifier.height(6.dp)); Cell(msg, GREEN) }
             }
         }
