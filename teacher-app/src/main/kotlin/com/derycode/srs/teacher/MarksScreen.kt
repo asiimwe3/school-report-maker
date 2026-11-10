@@ -131,7 +131,8 @@ fun EnterMarksScreen(state: TeacherState, classId: String, initialSubjectId: Str
                     val max = maxMarks.toIntOrNull() ?: 100
                     students.forEach { s ->
                         val key = "${s.id}|$subjectId|$termId|$componentId"
-                        val existing = d.marks.firstOrNull { "${it.studentId}|${it.subjectId}|${it.termId}|${it.componentId}" == key }
+                        val existing = com.derycode.srs.core.entry.MarkLedger
+                            .get(d.marks, s.id, subjectId, termId, componentId)
                         val field = edits[key] ?: (existing?.let {
                             when (it.type) {
                                 MarkType.ABS -> "ABS"; MarkType.EXEMPT -> "EXEMPT"
@@ -145,9 +146,9 @@ fun EnterMarksScreen(state: TeacherState, classId: String, initialSubjectId: Str
                             val rowMarks = components.filter { it.code.equals("A2", true) || it.code.equals("A3", true) }
                                 .mapNotNull { c ->
                                     val k = "${s.id}|$subjectId|$termId|${c.id}"
-                                    val txt = edits[k] ?: d.marks.firstOrNull {
-                                        it.studentId == s.id && it.subjectId == subjectId && it.termId == termId && it.componentId == c.id
-                                    }?.takeIf { it.type == MarkType.VALUE }?.let { fmt1(it.score) } ?: ""
+                                    val txt = edits[k] ?: com.derycode.srs.core.entry.MarkLedger
+                                        .get(d.marks, s.id, subjectId, termId, c.id)
+                                        ?.takeIf { it.type == MarkType.VALUE }?.let { fmt1(it.score) } ?: ""
                                     val v = com.derycode.srs.core.results.AssessmentWeighting.sanitize(txt) ?: return@mapNotNull null
                                     Mark(id = "row-${s.id}-${c.id}", studentId = s.id, subjectId = subjectId, termId = termId,
                                         componentId = c.id, score = v, maxScore = 100)

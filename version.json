@@ -1,12 +1,12 @@
 {
-  "console": "2.3.28",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.28.msi",
-  "teacher": "1.20.10",
-  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.10.apk",
-  "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.10.apk",
+  "console": "2.3.29",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.29.msi",
+  "teacher": "1.20.11",
+  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.11.apk",
+  "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.11.apk",
   "teacherDesktop": "1.0.0",
   "teacherDesktopDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMakerTeacher-1.0.0.msi",
   "released": "2026-11-10",
-  "notes": "Teacher 1.20.10, console 2.3.28, teacher laptop 1.0.0.\n- Installs on Android 7.0 and newer (1.20.9 required Android 8 and was rejected as an invalid package on older phones)\n- APK now carries both the v2 and v3 signatures, so strict phone installers accept it\n- Classes open the way teachers know them: your class list, then the learners, then their marks\n- A teacher is never left with an empty app: unmatched phones see the school's classes with a clear banner and Find my classes\n- Learners still appear after a class is recreated for a new year\n- Sending marks works without a cloud account (file/WhatsApp bundle for the head teacher)",
-  "consoleVersion": "2.3.28"
+  "notes": "Teacher 1.20.11, console 2.3.29, teacher laptop 1.0.0.\n- The marks grid now keeps your latest entry. A mark you retype is the one that shows, the one that saves and the one that prints\n- Old duplicate copies of the same mark are collapsed to the newest on load, so a stale score can never come back\n- Reports print the newest mark too, on the phone and on the console\n- Class list, students and marks work the way they did in 1.20.10",
+  "consoleVersion": "2.3.29"
 }

@@ -368,7 +368,8 @@ object DocxReport {
         val subjectRows = result.subjectResults.map { r ->
                 val s = data.subjects.firstOrNull { it.id == r.subjectId }
                 val perComp = compList.map { c ->
-                    val m = data.marks.firstOrNull { mm -> mm.studentId == student.id && mm.subjectId == r.subjectId && mm.termId == result.termId && mm.componentId == c.id }
+                    val m = com.derycode.srs.core.entry.MarkLedger
+                        .get(data.marks, student.id, r.subjectId, result.termId, c.id)
                     when {
                         m == null -> "—"
                         m.type == com.derycode.srs.core.model.MarkType.ABS -> "ABS"

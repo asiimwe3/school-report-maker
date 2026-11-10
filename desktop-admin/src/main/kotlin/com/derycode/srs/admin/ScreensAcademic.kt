@@ -1,6 +1,7 @@
 package com.derycode.srs.admin
 
 import androidx.compose.foundation.Canvas
+import com.derycode.srs.core.entry.MarkLedger
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -140,7 +141,7 @@ fun MarksScreen(state: AppState) {
                             Box(Modifier.weight(2f)) { Cell(s.fullName, bold = true) }
                             levelComponents.forEach { comp ->
                                 val markKey = "${s.id}|$subjectId|${term.id}|${comp.id}"
-                                val existing = d.marks.firstOrNull { "${it.studentId}|${it.subjectId}|${it.termId}|${it.componentId}" == markKey }
+                                val existing = MarkLedger.get(d.marks, s.id, subjectId, term.id, comp.id)
                                 val field = edits[markKey] ?: (existing?.let {
                                     when (it.type) {
                                         MarkType.ABS -> "ABS"; MarkType.EXEMPT -> "EXEMPT"
@@ -159,9 +160,9 @@ fun MarksScreen(state: AppState) {
                             // boxes right now, so it updates as soon as either changes.
                             val typed = levelComponents.mapNotNull { comp ->
                                 val k = "${s.id}|$subjectId|${term.id}|${comp.id}"
-                                val txt = edits[k] ?: d.marks.firstOrNull {
-                                    it.studentId == s.id && it.subjectId == subjectId && it.termId == term.id && it.componentId == comp.id
-                                }?.takeIf { it.type == MarkType.VALUE }?.score?.let { v -> if (v == v.toLong().toDouble()) v.toLong().toString() else v.toString() } ?: ""
+                                val txt = edits[k] ?: MarkLedger
+                                    .get(d.marks, s.id, subjectId, term.id, comp.id)
+                                    ?.takeIf { it.type == MarkType.VALUE }?.score?.let { v -> if (v == v.toLong().toDouble()) v.toLong().toString() else v.toString() } ?: ""
                                 val v = com.derycode.srs.core.results.AssessmentWeighting.sanitize(txt) ?: return@mapNotNull null
                                 Mark(
                                     id = "row-${s.id}-${comp.id}", studentId = s.id, subjectId = subjectId,

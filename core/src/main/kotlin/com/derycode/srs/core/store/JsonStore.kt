@@ -1,6 +1,7 @@
 package com.derycode.srs.core.store
 
 import com.derycode.srs.core.model.AttendanceRecord
+import com.derycode.srs.core.entry.MarkLedger
 import com.derycode.srs.core.model.AuditEntry
 import com.derycode.srs.core.model.DutyRecord
 import com.derycode.srs.core.model.Enrollment
@@ -30,7 +31,11 @@ class JsonStore(
 
     fun load(path: Path): SchoolData {
         if (!Files.exists(path)) return SchoolData()
-        return json.decodeFromString(Files.readString(path))
+        val data: SchoolData = json.decodeFromString(Files.readString(path))
+        // Files written before the newest-wins fix carry duplicate mark rows.
+        // Collapse them on the way in so nothing can read a stale score again.
+        return if (MarkLedger.hasDuplicates(data.marks))
+            data.copy(marks = MarkLedger.newestPerKey(data.marks)) else data
     }
 
     fun save(path: Path, data: SchoolData) {
@@ -165,7 +170,8 @@ class JsonStore(
             if (inc != null && inc.updatedAt >= ex.updatedAt) inc else ex
         }
         val existingKeys = data.marks.map(key).toSet()
-        return updatedExisting + incoming.filter { key(it) !in existingKeys }
+        // and duplicates already sitting in the file collapse to their newest row
+        return MarkLedger.newestPerKey(updatedExisting + incoming.filter { key(it) !in existingKeys })
     }
     private val cfgJson = Json { ignoreUnknownKeys = true }
 
@@ -393,13 +399,12 @@ class SchoolRepository(
     // ── Marks helpers with audit trail (Rules 4–5) ───────────────────────────
 
     fun upsertMark(mark: Mark): Mark {
-        val key = "${mark.studentId}|${mark.subjectId}|${mark.termId}|${mark.componentId}"
-        val existing = data.marks.firstOrNull {
-            "${it.studentId}|${it.subjectId}|${it.termId}|${it.componentId}" == key
-        }
+        val key = MarkLedger.key(mark)
+        val existing = MarkLedger.get(data.marks, mark.studentId, mark.subjectId, mark.termId, mark.componentId)
         val stamped = mark.copy(updatedAt = System.currentTimeMillis())
-        val newMarks = if (existing == null) data.marks + stamped
-        else data.marks.map { if (it === existing) stamped else it }
+        // v2.3.29: every row sharing this key is replaced, so a leftover duplicate
+        // can never shadow the edit (the "old marks come back" bug).
+        val newMarks = MarkLedger.upsert(data.marks, mark, stamped.updatedAt)
         mutate(
             action = if (existing == null) "MARK_ENTERED" else "MARK_CHANGED",
             entity = "Mark", entityId = key,

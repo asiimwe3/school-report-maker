@@ -92,10 +92,7 @@ class TeacherStore(root: Path? = null) {
     fun myMarks(): List<Mark> = SchoolIsolation.scopedMarks(data)
 
     fun markFor(studentId: String, subjectId: String, termId: String, componentId: String): Mark? =
-        data.marks.firstOrNull {
-            it.studentId == studentId && it.subjectId == subjectId &&
-                it.termId == termId && it.componentId == componentId
-        }
+        com.derycode.srs.core.entry.MarkLedger.get(data.marks, studentId, subjectId, termId, componentId)
 
     init {
         data = if (Files.exists(file)) {
@@ -128,13 +125,8 @@ class TeacherStore(root: Path? = null) {
 
     /** Newest-wins per learner/subject/term/component, exactly like the phone. */
     fun upsertMark(m: Mark) {
-        val key = "${m.studentId}|${m.subjectId}|${m.termId}|${m.componentId}"
-        val existing = data.marks.firstOrNull {
-            "${it.studentId}|${it.subjectId}|${it.termId}|${it.componentId}" == key
-        }
         val stamped = m.copy(updatedAt = System.currentTimeMillis())
-        data = if (existing == null) data.copy(marks = data.marks + stamped)
-        else data.copy(marks = data.marks.map { if (it.id == existing.id) stamped else it })
+        data = data.copy(marks = com.derycode.srs.core.entry.MarkLedger.upsert(data.marks, m, stamped.updatedAt))
         save()
     }
 

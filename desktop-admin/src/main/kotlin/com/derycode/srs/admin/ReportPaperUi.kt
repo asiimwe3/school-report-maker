@@ -193,7 +193,8 @@ private fun PaperContent(
             result.subjectResults.map { r ->
                 val sub = d.subjects.firstOrNull { it.id == r.subjectId }
                 val perComp = comps.map { c ->
-                    val m = d.marks.firstOrNull { mm -> mm.studentId == (student?.id ?: "") && mm.subjectId == r.subjectId && mm.termId == result.termId && mm.componentId == c.id }
+                    val m = com.derycode.srs.core.entry.MarkLedger
+                        .get(d.marks, student?.id ?: "", r.subjectId, result.termId, c.id)
                     when {
                         m == null -> "—"
                         m.type == MarkType.ABS -> "ABS"

@@ -436,11 +436,9 @@ class TeacherState(private val context: Context) {
     }
 
     fun upsertMark(m: Mark) {
-        val key = "${m.studentId}|${m.subjectId}|${m.termId}|${m.componentId}"
-        val existing = data.marks.firstOrNull { "${it.studentId}|${it.subjectId}|${it.termId}|${it.componentId}" == key }
+        // newest-wins: every row with this key is replaced, never left beside the edit
         val stamped = m.copy(updatedAt = System.currentTimeMillis())
-        data = if (existing == null) data.copy(marks = data.marks + stamped)
-        else data.copy(marks = data.marks.map { if (it === existing) stamped else it })
+        data = data.copy(marks = com.derycode.srs.core.entry.MarkLedger.upsert(data.marks, m, stamped.updatedAt))
         save()
     }
 
