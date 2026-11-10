@@ -116,11 +116,19 @@ class TeacherState(private val context: Context) {
     val scope: com.derycode.srs.core.model.SchoolScope
         get() = com.derycode.srs.core.model.SchoolScope.of(data.school)
 
-    val myClasses: List<SchoolClass>
-        get() = (if (meId == null) data.classes.filter { it.active }
-                else data.assignments.filter { it.teacherId == meId }
-                    .mapNotNull { a -> data.classes.firstOrNull { c -> c.id == a.classId && c.active } }
-                    .distinctBy { it.id }).filter { scope.allows(it.level) }
+    /**
+     * Where the class list came from, and whether we actually matched this teacher.
+     * Roster never hands back an empty list while the school has classes, because
+     * "no classes" on a teacher's phone is almost always an id mismatch, not a
+     * school without classes.
+     */
+    val classLoad: com.derycode.srs.core.model.Roster.Load
+        get() = com.derycode.srs.core.model.Roster.classesFor(data, meId, scope)
+
+    val myClasses: List<SchoolClass> get() = classLoad.classes
+
+    /** True when assignments (or a class-teacher slot) name this teacher. */
+    val classesMatched: Boolean get() = classLoad.matched
 
     /** Subjects this teacher teaches in a given class (null subject assignment = class teacher → all). */
     fun mySubjectsFor(classId: String): List<Subject> {
@@ -134,9 +142,7 @@ class TeacherState(private val context: Context) {
     }
 
     fun studentsIn(classId: String): List<Student> =
-        data.enrollments.filter { it.classId == classId }
-            .mapNotNull { e -> data.students.firstOrNull { s -> s.id == e.studentId && s.status == StudentStatus.ACTIVE } }
-            .sortedBy { it.admissionNo }
+        com.derycode.srs.core.model.Roster.studentsFor(data, classId)
 
     fun classOf(studentId: String): SchoolClass? {
         val e = data.enrollments.lastOrNull { it.studentId == studentId } ?: return null
@@ -757,7 +763,8 @@ fun TeacherApp(state: TeacherState) {
                     is Route.Timetable -> TimetableScreen(state)
                     is Route.ClassDetail -> ClassDetailScreen(state, r.classId,
                         onEnterMarks = { subj -> push(Route.EnterMarks(r.classId, subj)) },
-                        onViewStudents = { push(Route.Students(r.classId)) })
+                        onViewStudents = { push(Route.Students(r.classId)) },
+                        onOpenStudent = { push(Route.StudentDetail(it)) })
                     is Route.EnterMarks -> EnterMarksScreen(state, r.classId, r.subjectId, onDone = { pop() })
                     is Route.Assessments -> AssessmentsOverviewScreen(state, onOpenClass = { push(Route.ClassDetail(it)) })
                     is Route.Students -> StudentsListScreen(state, r.classId, onOpenStudent = { push(Route.StudentDetail(it)) })

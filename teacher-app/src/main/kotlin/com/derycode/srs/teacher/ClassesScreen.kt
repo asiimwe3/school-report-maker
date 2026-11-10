@@ -39,40 +39,49 @@ fun ClassesListScreen(state: TeacherState, onOpenClass: (String) -> Unit) {
     val filters = listOf("All") + classes.map { classShort(it) }.distinct()
     val shown = classes.filter { c ->
         (filter == "All" || classShort(c) == filter) &&
-        (query.isBlank() || classLabel(c).contains(query, ignoreCase = true))
+            (query.isBlank() || classLabel(c).contains(query, ignoreCase = true))
     }
+    val learners = classes.sumOf { state.studentsIn(it.id).size }
 
     Column {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("Your teaching load", color = NAVY, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                Text("${classes.size} active class${if (classes.size == 1) "" else "es"} · ${classes.sumOf { state.studentsIn(it.id).size }} students", color = MUTED, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                Text("My classes", color = NAVY, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    "${classes.size} class${if (classes.size == 1) "" else "es"} \u00b7 $learners learner${if (learners == 1) "" else "s"}",
+                    color = MUTED, fontSize = 15.sp, fontWeight = FontWeight.SemiBold
+                )
             }
-            Box(Modifier.clip(RoundedCornerShape(20.dp)).background(BLUE.copy(alpha = 0.12f)).padding(horizontal = 11.dp, vertical = 6.dp)) {
-                Text("Offline ready", color = BLUE, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Box(Modifier.clip(RoundedCornerShape(20.dp)).background(GREEN.copy(alpha = 0.14f)).padding(horizontal = 11.dp, vertical = 6.dp)) {
+                Text("Works offline", color = GREEN, fontSize = 13.sp, fontWeight = FontWeight.Bold)
             }
         }
         Spacer(Modifier.height(12.dp))
-        SearchField(query, { query = it }, "Search class...")
+        SearchField(query, { query = it }, "Search your classes")
         Spacer(Modifier.height(10.dp))
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            items(filters) { f ->
-                FilterChipPill(f, selected = filter == f) { filter = f }
-            }
+
+        // The honest banner: this phone is showing the whole school because we could
+        // not tie it to a staff record yet.
+        if (!state.classesMatched && classes.isNotEmpty()) {
+            UnmatchedBanner(onFind = { state.resolveMe() })
+            Spacer(Modifier.height(10.dp))
         }
-        Spacer(Modifier.height(10.dp))
+
+        if (filters.size > 2) {
+            ChipRow {
+                filters.forEach { f -> FilterChipPill(f, selected = filter == f) { filter = f } }
+            }
+            Spacer(Modifier.height(10.dp))
+        }
+
         if (shown.isEmpty()) {
             if (classes.isEmpty()) {
                 Column(Modifier.fillMaxWidth()) {
-                    EmptyHint("No classes assigned to you yet.\nImport school data from More \u2192 Sync, or let the app find your staff record again.")
-                    Spacer(Modifier.height(10.dp))
-                    Button(
-                        onClick = { state.resolveMe() },
-                        colors = ButtonDefaults.buttonColors(containerColor = BLUE),
-                        modifier = Modifier.fillMaxWidth()
-                    ) { Text("Find my classes", color = Color.White, fontSize = 15.sp) }
+                    EmptyHint("No classes in this school yet.\nImport the school setup from More \u2192 Sync.")
                 }
-            } else EmptyHint("No classes match your search.")
+            } else {
+                EmptyHint("No class matches \u201c$query\u201d.")
+            }
         } else {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 items(shown) { c -> ClassCard(state, c) { onOpenClass(c.id) } }
@@ -82,40 +91,124 @@ fun ClassesListScreen(state: TeacherState, onOpenClass: (String) -> Unit) {
     }
 }
 
+/** Zeraki-style: a teacher must always be able to get back to their own classes. */
+@Composable
+private fun UnmatchedBanner(onFind: () -> Unit) {
+    Column(
+        Modifier.fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(ORANGE.copy(alpha = 0.12f))
+            .border(BorderStroke(1.dp, ORANGE.copy(alpha = 0.35f)), RoundedCornerShape(14.dp))
+            .padding(14.dp)
+    ) {
+        Text("Showing every class in the school", color = NAVY, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(3.dp))
+        Text(
+            "This phone is not linked to your staff record yet, so you are seeing all classes. Tap below and the app will find you.",
+            color = MUTED, fontSize = 14.sp
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "Find my classes",
+            color = BLUE, fontSize = 16.sp, fontWeight = FontWeight.Bold,
+            modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable(onClick = onFind).padding(vertical = 4.dp)
+        )
+    }
+}
+
 @Composable
 private fun ClassCard(state: TeacherState, c: SchoolClass, onClick: () -> Unit) {
     val students = state.studentsIn(c.id)
     val subjects = state.mySubjectsFor(c.id)
     val color = when (c.level) { Level.PRIMARY -> TEAL; Level.A_LEVEL -> PURPLE; else -> BLUE }
-    Row(
+    val total = students.size
+    val entered = marksEntered(state, c.id, students.map { it.id }, subjects.map { it.id })
+    val pct = if (total == 0) 0f else (entered.toFloat() / total).coerceIn(0f, 1f)
+
+    Column(
         Modifier.fillMaxWidth()
             .shadow(2.dp, RoundedCornerShape(16.dp), ambientColor = STROKE, spotColor = STROKE)
             .clip(RoundedCornerShape(16.dp))
             .background(CARD)
             .border(BorderStroke(1.dp, STROKE), RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
-            .padding(14.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(14.dp)
     ) {
-        Box(Modifier.size(44.dp).clip(RoundedCornerShape(12.dp)).background(color.copy(alpha = 0.20f)), contentAlignment = Alignment.Center) {
-            Icon(Icons.Filled.School, contentDescription = null, tint = color, modifier = Modifier.size(22.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            // Class monogram, the thing teachers recognise first on a Zeraki card
+            Box(
+                Modifier.size(48.dp).clip(RoundedCornerShape(13.dp)).background(color.copy(alpha = 0.16f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    classMonogram(c),
+                    color = color, fontSize = 15.sp, fontWeight = FontWeight.Bold
+                )
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(classLabel(c), color = NAVY, fontSize = 19.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    if (total == 0) "No learners in this class yet" else "$total learner${if (total == 1) "" else "s"} \u00b7 ${subjects.size} subject${if (subjects.size == 1) "" else "s"}",
+                    color = MUTED, fontSize = 14.sp, fontWeight = FontWeight.SemiBold
+                )
+            }
+            Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = MUTED)
         }
-        Spacer(Modifier.width(12.dp))
-        Column(Modifier.weight(1f)) {
-            Text(classLabel(c), color = NAVY, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Filled.People, contentDescription = null, tint = MUTED, modifier = Modifier.size(12.dp))
-                Spacer(Modifier.width(3.dp))
-                Text("${students.size} students", color = MUTED, fontSize = 15.sp)
+
+        if (total > 0) {
+            Spacer(Modifier.height(12.dp))
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("Marks this term", color = MUTED, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                Text("$entered of $total", color = if (entered >= total) GREEN else ORANGE, fontSize = 13.sp, fontWeight = FontWeight.Bold)
             }
             Spacer(Modifier.height(6.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                subjects.take(2).forEach { s -> SubjectPill(s.name) }
-                if (subjects.size > 2) SubjectPill("+${subjects.size - 2}")
+            Box(Modifier.fillMaxWidth().height(7.dp).clip(RoundedCornerShape(4.dp)).background(STROKE)) {
+                Box(Modifier.fillMaxWidth(pct).fillMaxHeight().clip(RoundedCornerShape(4.dp))
+                    .background(if (entered >= total) GREEN else color))
             }
         }
-        Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = MUTED)
+
+        if (subjects.isNotEmpty()) {
+            Spacer(Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                subjects.take(3).forEach { s -> SubjectPill(s.name) }
+                if (subjects.size > 3) SubjectPill("+${subjects.size - 3}")
+            }
+        }
+
+        if (total == 0) {
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "Ask the head teacher for a fresh school setup (More \u2192 Sync) if learners are missing.",
+                color = MUTED, fontSize = 13.sp
+            )
+        }
     }
+}
+
+/** "Senior 3" + "West" -> "S3W": short enough for a 48dp tile. */
+internal fun classMonogram(c: SchoolClass): String {
+    val words = c.name.trim().split(" ").filter { it.isNotBlank() }
+    val head = words.take(2).joinToString("") { it.first().uppercase() }
+    val number = words.lastOrNull { w -> w.any { it.isDigit() } }?.filter { it.isDigit() } ?: ""
+    val base = if (number.isNotEmpty()) "${head.firstOrNull() ?: 'C'}$number" else head.take(2)
+    val stream = c.stream.trim().firstOrNull()?.uppercase() ?: ""
+    return (base + stream).take(4)
+}
+
+/** How many learners already have a mark this term in any subject the teacher handles. */
+private fun marksEntered(state: TeacherState, classId: String, studentIds: List<String>, subjectIds: List<String>): Int {
+    if (studentIds.isEmpty() || subjectIds.isEmpty()) return 0
+    val termId = state.currentTermId
+    val ids = studentIds.toSet()
+    val subjects = subjectIds.toSet()
+    return state.data.marks
+        .filter { it.termId == termId && it.studentId in ids && it.subjectId in subjects }
+        .map { it.studentId }
+        .distinct()
+        .size
 }
 
 @Composable
@@ -201,15 +294,22 @@ internal fun EmptyHint(text: String) {
 // Class Detail — tabs: Marks / Assignments / Resources
 // ─────────────────────────────────────────────────────────────────────────────
 
-private enum class ClassTab { MARKS, ASSIGNMENTS, RESOURCES }
+private enum class ClassTab { STUDENTS, MARKS, REPORTS }
 
 @Composable
-fun ClassDetailScreen(state: TeacherState, classId: String, onEnterMarks: (String?) -> Unit, onViewStudents: () -> Unit) {
+fun ClassDetailScreen(
+    state: TeacherState,
+    classId: String,
+    onEnterMarks: (String?) -> Unit,
+    onViewStudents: () -> Unit,
+    onOpenStudent: (String) -> Unit = {}
+) {
+    var studentQuery by remember { mutableStateOf("") }
     val d = state.data
     val cls = d.classes.firstOrNull { it.id == classId }
     val subjects = state.mySubjectsFor(classId)
     var subjectId by remember { mutableStateOf(subjects.firstOrNull()?.id ?: "") }
-    var tab by remember { mutableStateOf(ClassTab.MARKS) }
+    var tab by remember { mutableStateOf(ClassTab.STUDENTS) }
     val students = state.studentsIn(classId)
     val termId = state.currentTermId
 
@@ -232,7 +332,7 @@ fun ClassDetailScreen(state: TeacherState, classId: String, onEnterMarks: (Strin
         }
         item {
             Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(CARD).padding(4.dp)) {
-                listOf(ClassTab.MARKS to "Marks", ClassTab.ASSIGNMENTS to "Assignments", ClassTab.RESOURCES to "Resources").forEach { (t, label) ->
+                listOf(ClassTab.STUDENTS to "Students", ClassTab.MARKS to "Marks", ClassTab.REPORTS to "Reports").forEach { (t, label) ->
                     val selected = tab == t
                     Box(
                         Modifier.weight(1f).clip(RoundedCornerShape(9.dp))
@@ -244,6 +344,49 @@ fun ClassDetailScreen(state: TeacherState, classId: String, onEnterMarks: (Strin
             }
         }
         when (tab) {
+            ClassTab.STUDENTS -> {
+                val shown = students.filter {
+                    studentQuery.isBlank() ||
+                        it.fullName.contains(studentQuery, true) ||
+                        it.admissionNo.contains(studentQuery, true)
+                }
+                item { SearchField(studentQuery, { studentQuery = it }, "Search learners in this class") }
+                if (students.isEmpty()) {
+                    item {
+                        EmptyHint(
+                            "No learners in this class yet.\nThey arrive with the school setup \u2014 More \u2192 Sync, or ask the head teacher to send a fresh one."
+                        )
+                    }
+                } else if (shown.isEmpty()) {
+                    item { EmptyHint("No learner matches \u201c$studentQuery\u201d.") }
+                } else {
+                    items(shown) { st -> StudentRow(st) { onOpenStudent(st.id) } }
+                }
+                item {
+                    TextButton(onClick = onViewStudents, modifier = Modifier.fillMaxWidth()) {
+                        Text("Open the full marks view", color = BLUE, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+            ClassTab.REPORTS -> {
+                item {
+                    CardBox {
+                        Cell("Report cards", MUTED, true)
+                        Spacer(Modifier.height(6.dp))
+                        Cell(
+                            "Your class list is what the head teacher needs: marks first, then the console builds and prints the cards. " +
+                                "Send the marksheet as Word from Marks so nothing is retyped.",
+                            MUTED
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        Row(Modifier.fillMaxWidth()) {
+                            MiniStat(Modifier.weight(1f), students.size.toString(), "Learners", BLUE)
+                            MiniStat(Modifier.weight(1f), entered.toString(), "Entered", GREEN)
+                            MiniStat(Modifier.weight(1f), pending.toString(), "Pending", ORANGE)
+                        }
+                    }
+                }
+            }
             ClassTab.MARKS -> {
                 item {
                     CardBox {
@@ -280,8 +423,6 @@ fun ClassDetailScreen(state: TeacherState, classId: String, onEnterMarks: (Strin
                     }
                 }
             }
-            ClassTab.ASSIGNMENTS -> item { ComingSoonCard("Assignments", "Set homework and track submissions here \u2014 coming in a future update.") }
-            ClassTab.RESOURCES -> item { ComingSoonCard("Resources", "Share notes and past papers with your class \u2014 coming in a future update.") }
         }
         item { Spacer(Modifier.height(4.dp)) }
     }
@@ -316,6 +457,36 @@ private fun ComingSoonCard(title: String, body: String) {
         Cell(body, MUTED)
     }
 }
+
+/** One learner in the class list — initials, name, admission number, chevron. */
+@Composable
+private fun StudentRow(student: Student, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(CARD)
+            .border(BorderStroke(1.dp, STROKE), RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            Modifier.size(38.dp).clip(CircleShape).background(avatarColor(student.id).copy(alpha = 0.20f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(initialsOf(student), color = avatarColor(student.id), fontSize = 14.sp, fontWeight = FontWeight.Bold)
+        }
+        Spacer(Modifier.width(11.dp))
+        Column(Modifier.weight(1f)) {
+            Text(student.fullName, color = NAVY, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text("Adm ${student.admissionNo}", color = MUTED, fontSize = 13.sp)
+        }
+        Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = MUTED, modifier = Modifier.size(18.dp))
+    }
+}
+
+private fun initialsOf(s: Student): String =
+    listOf(s.firstName, s.lastName).mapNotNull { it.trim().firstOrNull()?.uppercase() }.joinToString("")
 
 private fun todayLabel(): String =
     java.text.SimpleDateFormat("d MMM yyyy").format(java.util.Date())
