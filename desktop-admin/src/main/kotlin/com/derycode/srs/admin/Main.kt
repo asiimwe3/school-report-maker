@@ -330,6 +330,10 @@ fun App(state: AppState) {
                         Text(upd.releaseNotes.take(400), color = Theme.MUTED, fontSize = 12.sp)
                     }
                     Text("Your school data stays exactly as it is.", color = Theme.MUTED, fontSize = 12.sp)
+                    com.derycode.srs.admin.DesktopUpdateChecker.lastUpdateResult()?.let {
+                        Spacer(Modifier.height(6.dp))
+                        Text(it, color = Theme.WARN, fontSize = 12.sp)
+                    }
                     if (updateMsg.isNotBlank()) {
                         Spacer(Modifier.height(8.dp))
                         Text(updateMsg, color = Theme.ACCENT, fontSize = 12.sp, fontWeight = FontWeight.Bold)

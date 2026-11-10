@@ -147,19 +147,63 @@ object UpdateChecker {
         } finally { conn.disconnect() }
     } catch (_: Exception) { null }
 
+    /** Why the last download/install attempt failed, shown to the teacher instead of nothing. */
+    var lastProblem: String = ""
+
     fun downloadApkBlocking(context: Context, url: String): File? = try {
         val dir = File(context.filesDir, "updates").apply { mkdirs() }
         val out = File(dir, "srs-teacher-update.apk")
-        java.net.URL(url).openStream().use { input -> out.outputStream().use { input.copyTo(it) } }
+        File(dir, "srs-teacher-update.apk.part").let { part ->
+            java.net.URL(url).openStream().use { input -> part.outputStream().use { input.copyTo(it) } }
+            // An APK is a zip: it must start with PK and be big enough to be the real app.
+            val head = part.inputStream().use { r -> ByteArray(2).also { r.read(it) } }
+            if (part.length() < 2_000_000 || head[0] != 'P'.code.toByte() || head[1] != 'K'.code.toByte()) {
+                part.delete()
+                lastProblem = "The download was not a complete app file (${part.length() / 1024} KB). Try again on a stronger network."
+                return null
+            }
+            if (out.exists()) out.delete()
+            if (!part.renameTo(out)) { lastProblem = "Could not save the update on this phone (storage full?)."; return null }
+        }
         out
-    } catch (_: Exception) { null }
+    } catch (e: Exception) {
+        lastProblem = "Download failed: ${e.message?.take(60) ?: "check your internet"}"
+        null
+    }
+
+    fun canInstall(context: Context): Boolean =
+        android.os.Build.VERSION.SDK_INT < 26 || context.packageManager.canRequestPackageInstalls()
+
+    /** Sends the teacher to the one Android setting that lets this app install its own update. */
+    fun askInstallPermission(context: Context) {
+        try {
+            context.startActivity(Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                Uri.parse("package:${context.packageName}")).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            })
+            lastProblem = "Allow \"SRS Teacher\" to install apps, then tap Download & install again."
+        } catch (e: Exception) {
+            lastProblem = "Open Settings > Apps > SRS Teacher > Install unknown apps, allow it, then try again."
+        }
+    }
 
     fun installPrompt(context: Context, apk: File) {
-        val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", apk)
-        context.startActivity(Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(uri, "application/vnd.android.package-archive")
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
-        })
+        try {
+            val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", apk)
+            context.startActivity(Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "application/vnd.android.package-archive")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+            })
+        } catch (e: Exception) {
+            // No installer on the phone, or the old install was signed differently.
+            lastProblem = "Android could not start the installer. If it says \"App not installed\", send your marks to the head teacher, uninstall the old app, then install the new file."
+            try {
+                context.startActivity(Intent(Intent.ACTION_VIEW,
+                    Uri.parse(com.derycode.srs.core.support.Support.RELEASES_PAGE)).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                })
+            } catch (_: Exception) { }
+        }
     }
 }
 
@@ -214,11 +258,19 @@ fun SupportScreen(state: TeacherState) {
                 Spacer(Modifier.height(6.dp))
                 Button(
                     onClick = {
+                        if (!UpdateChecker.canInstall(context)) {
+                            UpdateChecker.askInstallPermission(context)
+                            downloadMsg = UpdateChecker.lastProblem
+                            return@Button
+                        }
                         downloadMsg = "Downloading…"
+                        UpdateChecker.lastProblem = ""
                         scope.launch(Dispatchers.IO) {
                             val apk = UpdateChecker.downloadApkBlocking(context, u.teacherApkUrl)
-                            downloadMsg = if (apk != null) "Downloaded ✓ — install when prompted" else "Download failed — check internet"
+                            downloadMsg = if (apk != null) "Downloaded ✓ — install when prompted" else
+                                UpdateChecker.lastProblem.ifBlank { "Download failed — check internet" }
                             if (apk != null) UpdateChecker.installPrompt(context, apk)
+                            if (UpdateChecker.lastProblem.isNotBlank()) downloadMsg = UpdateChecker.lastProblem
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = GOOD)

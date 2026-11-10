@@ -82,6 +82,7 @@ object DesktopUpdateChecker {
             Files.createDirectories(dir)
             val out = dir.resolve("SchoolReportMaker-update.msi")
             Files.deleteIfExists(out)
+            Files.deleteIfExists(dir.resolve("update-status.txt"))
 
             val conn = URL(url).openConnection()
             conn.connectTimeout = 20000
@@ -99,11 +100,7 @@ object DesktopUpdateChecker {
                         fos.write(buf, 0, n)
                         got += n
                         val mb = (got / 1048576).toInt()
-                        if (mb != lastShown) {
-                            lastShown = mb
-                            onProgress(if (total > 0) "Downloading… $mb of ${total / 1048576} MB"
-                                       else "Downloading… $mb MB")
-                        }
+                        if (mb != lastShown) { lastShown = mb; onProgress(if (total > 0) "Downloading… $mb of ${total / 1048576} MB" else "Downloading… $mb MB") }
                     }
                 }
             }
@@ -113,24 +110,82 @@ object DesktopUpdateChecker {
                 return "Download was incomplete. The releases page is open — download the .msi there."
             }
 
-            // Run the installer, then close this console so Windows can replace files
-            // that are locked while the app is running.
-            if (System.getProperty("os.name").lowercase().contains("win")) {
-                ProcessBuilder("msiexec", "/i", out.toAbsolutePath().toString()).start()
-                onProgress("Installer started — the console is closing so Windows can finish. Your data is safe.")
-                Thread {
-                    Thread.sleep(1500)
-                    Runtime.getRuntime().halt(0)
-                }.start()
-                "Installer launched — this console is closing. Follow the setup wizard; your data is safe."
-            } else {
-                try { Desktop.getDesktop().open(out.toFile()); "Installer downloaded — close this app, then follow the setup wizard." }
-                catch (_: Exception) { "Downloaded to ${out.toAbsolutePath()}. Run it to update." }
+            if (!System.getProperty("os.name").lowercase().contains("win")) {
+                return try {
+                    Desktop.getDesktop().open(out.toFile())
+                    "Installer downloaded — close this app, then follow the setup wizard."
+                } catch (_: Exception) { "Downloaded to ${out.toAbsolutePath()}. Run it to update." }
             }
+
+            // Windows Installer cannot replace files this console is running, so hand the
+            // job to a small script that waits for us to exit, installs, and — if Windows
+            // refuses because an older product registration is still there — removes that
+            // registration and installs again. It then reopens the console for the admin.
+            val script = dir.resolve("apply-update.bat")
+            val msi = out.toAbsolutePath().toString()
+            val log = dir.resolve("update-install.log").toAbsolutePath().toString()
+            val status = dir.resolve("update-status.txt").toAbsolutePath().toString()
+            val product = installedProductCode()
+            val exe = System.getProperty("jpackage.app-path") ?: ""
+            val batText =
+                "@echo off\r\n" +
+                "timeout /t 3 /nobreak >nul\r\n" +
+                "msiexec /i \"$msi\" /qb /norestart /l*v \"$log\"\r\n" +
+                "if not errorlevel 1 goto ok\r\n" +
+                (if (product.isNullOrBlank()) "" else
+                    "msiexec /x $product /qb /norestart >>\"$log\" 2>&1\r\n" +
+                    "msiexec /i \"$msi\" /qb /norestart /l*v \"$log\"\r\n") +
+                "if not errorlevel 1 goto ok\r\n" +
+                "echo FAILED>\"$status\"\r\n" +
+                "goto reopen\r\n" +
+                ":ok\r\n" +
+                "echo OK>\"$status\"\r\n" +
+                ":reopen\r\n" +
+                (if (exe.isBlank()) "" else "start \"\" \"$exe\"\r\n")
+            Files.writeString(script, batText)
+            ProcessBuilder("cmd", "/c", script.toAbsolutePath().toString())
+                .redirectErrorStream(true).start()
+            onProgress("Installing… the console closes now and reopens by itself. Your data is safe.")
+            Thread {
+                Thread.sleep(1200)
+                Runtime.getRuntime().halt(0)
+            }.start()
+            "Installing — this console closes and reopens automatically. Your data is safe."
         } catch (e: Exception) {
+            System.err.println("update failed: ${e.message}")
             openReleasesPage()
             "Could not download the update (${e.message?.take(60) ?: "network"}). The releases page is open — get the .msi there."
         }
+    }
+
+    /** The product code Windows has registered for this app, if any (used when an upgrade is refused). */
+    fun installedProductCode(): String? = try {
+        val roots = listOf(
+            "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall",
+            "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall",
+            "HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall"
+        )
+        for (root in roots) {
+            val p = ProcessBuilder("reg", "query", root, "/s", "/f", "SchoolReportMaker")
+                .redirectErrorStream(true).start()
+            val text = p.inputStream.bufferedReader().readText()
+            p.waitFor()
+            text.lineSequence().map { it.trim() }
+                .firstOrNull { it.startsWith("HKEY") && it.contains("\\Uninstall\\{") }
+                ?.substringAfterLast("\\")?.takeIf { it.startsWith("{") }?.let { return it }
+        }
+        null
+    } catch (_: Exception) { null }
+
+    /** What the last update attempt did, so a refusal is never silent. */
+    fun lastUpdateResult(): String? {
+        val status = dataDir.resolve("updates").resolve("update-status.txt")
+        if (!Files.exists(status)) return null
+        return try {
+            val v = Files.readString(status).trim()
+            if (v.startsWith("OK")) null else
+                "The last update did not finish. Installer log: ${dataDir.resolve("updates").resolve("update-install.log")}"
+        } catch (_: Exception) { null }
     }
 
     /** Fallback so an admin is never stuck: opens the download page in their browser. */

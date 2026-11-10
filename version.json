@@ -1,12 +1,12 @@
 {
-  "console": "2.3.32",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.32.msi",
-  "teacher": "1.20.13",
-  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.13.apk",
-  "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.13.apk",
+  "console": "2.3.33",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.33.msi",
+  "teacher": "1.20.14",
+  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.14.apk",
+  "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.14.apk",
   "teacherDesktop": "1.0.0",
   "teacherDesktopDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMakerTeacher-1.0.0.msi",
   "released": "2026-11-10",
-  "notes": "Console 2.3.32, teacher 1.20.13, teacher laptop 1.0.0.\n- New: statement of school fees for a whole class, printed from School Fees (every learner, not only defaulters)\n- New: official fee receipt for money received, with receipt number, amount, method, reference and balance\n- New: audit log exports to CSV so the head teacher can file or inspect every change\n- Carries the marks and comment fixes from teacher 1.20.11 to 1.20.13",
-  "consoleVersion": "2.3.32"
+  "notes": "Console 2.3.33, teacher 1.20.14, teacher laptop 1.0.0.\n- Updates no longer fail silently: the console installs via a small script that waits for the app to close, and if Windows refuses because an old copy is registered it removes that copy and installs again\n- If an update still fails, the console now says so and points at the installer log\n- Phone: asks for the install permission instead of doing nothing when Android blocks installs, checks the download is a complete APK before offering it, and explains what to do if Android says App not installed",
+  "consoleVersion": "2.3.33"
 }
