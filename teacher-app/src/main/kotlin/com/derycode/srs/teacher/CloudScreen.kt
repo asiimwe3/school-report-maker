@@ -642,6 +642,33 @@ fun CloudScreen(state: TeacherState, onScan: () -> Unit = {}) {
             }
         }
 
+        // Recovery: if the office computer is lost, this phone still holds the
+        // school's classes and learners. Send them back in one small file.
+        CardBox {
+            Cell("Send the school setup to the office", MUTED, true)
+            Spacer(Modifier.height(4.dp))
+            Cell("If the office computer is lost or was wiped, this phone can hand back the classes, learners, subjects and terms. It does not include anybody's marks; send those separately.", MUTED)
+            Spacer(Modifier.height(10.dp))
+            Button(onClick = {
+                val file = state.setupFile()
+                if (file == null) { report(false, "This phone has no school setup yet"); return@Button }
+                val ok = runCatching {
+                    val uri = androidx.core.content.FileProvider.getUriForFile(ctx, ctx.packageName + ".fileprovider", file)
+                    val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                        type = "application/json"
+                        putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                        putExtra(android.content.Intent.EXTRA_SUBJECT, file.name)
+                        addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    ctx.startActivity(android.content.Intent.createChooser(send, "Send school setup to the head teacher").addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+                    true
+                }.getOrDefault(false)
+                report(ok, if (ok) "Setup file ready: " + file.name else "Could not share the setup file")
+            }, colors = ButtonDefaults.buttonColors(containerColor = ACCENT)) {
+                Text("Send school setup", color = Color.White, fontSize = 15.sp)
+            }
+        }
+
         // Works with no account at all: the file goes to WhatsApp, and the head
         // teacher imports it on the console. This is the route for the teachers who
         // could not send their marks because their phone never joined the cloud.

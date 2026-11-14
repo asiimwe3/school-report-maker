@@ -1,12 +1,12 @@
 {
-  "console": "2.3.37",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.37.msi",
-  "teacher": "1.20.14",
-  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.14.apk",
-  "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.14.apk",
+  "console": "2.3.38",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.38.msi",
+  "teacher": "1.20.15",
+  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.15.apk",
+  "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.15.apk",
   "teacherDesktop": "1.0.0",
   "teacherDesktopDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMakerTeacher-1.0.0.msi",
-  "released": "2026-11-10",
-  "notes": "Console 2.3.37, teacher 1.20.14, teacher laptop 1.0.0.\n- Restoring a saved school is now one tap: every found copy is a clickable row, plus a highlighted 'Restore <school name>' row for the newest full copy\n- A restore brings back everything in that file: school profile, classes, students, subjects, marks, fees, comments, users and settings, and leaves first-run setup\n- Backup History rows also restore on tap, with the button always visible\n- A restored school can no longer be dropped back into the setup wizard",
-  "consoleVersion": "2.3.37"
+  "released": "2026-11-14",
+  "notes": "Console 2.3.38, teacher 1.20.15, teacher laptop 1.0.0.\n- New on the phone: \"Send the school setup to the office\". Any phone that joined the school can hand back its classes, learners, subjects and terms as one small file\n- New on the console: \"Rebuild from a file you already have\". Load that setup file, or a teacher's marks file from WhatsApp, on a new or wiped computer\n- Rebuild restores the school profile, classes, learners, subjects, marks, comments, attendance and duty records, then opens the dashboard\n- Carries every fix from 2.3.37 and teacher 1.20.14",
+  "consoleVersion": "2.3.38"
 }

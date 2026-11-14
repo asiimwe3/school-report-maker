@@ -42,6 +42,8 @@ fun RestoreSchoolPanel(state: AppState, onRestored: (String) -> Unit = {}) {
         home.resolve("Downloads")
     ).filter { isDir(it) }
 
+    var filePath by remember { mutableStateOf("") }
+    var fileMsg by remember { mutableStateOf("") }
     var candidates by remember { mutableStateOf<List<SchoolRecovery.Candidate>>(emptyList()) }
     var scanning by remember { mutableStateOf(true) }
     var rescan by remember { mutableStateOf(0) }
@@ -131,5 +133,83 @@ fun RestoreSchoolPanel(state: AppState, onRestored: (String) -> Unit = {}) {
         }
 
         if (msg.isNotBlank()) Text(msg, color = Theme.GOOD, fontSize = 13.sp)
+
+        CardBox {
+            Text("Rebuild from a file you already have", color = Theme.TEXT, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(4.dp))
+            Text("A setup file a phone or laptop received (its name starts school-setup-), or a teacher's marks file sent on WhatsApp (marks-...). Use this when the console computer is new or was wiped.",
+                color = Theme.MUTED, fontSize = 12.sp)
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                TextField(filePath, { filePath = it }, Modifier.weight(1f), "path to the .json file")
+                Btn("Browse", primary = false) {
+                    val chooser = javax.swing.JFileChooser()
+                    chooser.fileFilter = javax.swing.filechooser.FileNameExtensionFilter("School files (*.json)", "json")
+                    if (chooser.showOpenDialog(null) == javax.swing.JFileChooser.APPROVE_OPTION) filePath = chooser.selectedFile.absolutePath
+                }
+                Btn("Load file") {
+                    fileMsg = runCatching { rebuildFromFile(state, Path.of(filePath.trim())) }
+                        .getOrElse { "Could not load that file: " + (it.message ?: "unknown") }
+                    rescan++
+                }
+            }
+            if (fileMsg.isNotBlank()) {
+                Spacer(Modifier.height(8.dp))
+                Text(fileMsg,
+                    color = if (fileMsg.startsWith("School restored") || fileMsg.startsWith("Loaded the marks")) Theme.GOOD else Theme.WARN,
+                    fontSize = 12.5.sp)
+            }
+        }
     }
+}
+
+/**
+ * Rebuild the school from a file the school already has: the setup file a phone or
+ * laptop received, or a marks bundle a teacher sent on WhatsApp. This is the route
+ * when the console computer is gone and no local backup survived.
+ */
+fun rebuildFromFile(state: AppState, path: java.nio.file.Path): String {
+    if (!java.nio.file.Files.exists(path)) return "That file is not there: " + path.fileName
+    val text = runCatching { java.nio.file.Files.readString(path) }.getOrNull()
+        ?: return "That file could not be read. Copy it to this computer first and try again."
+
+    if (text.contains("DERYCODE-SRS-BUNDLE")) {
+        val who = state.repo.store.peekBundleSchool(path)
+        val report = state.repo.store.importBundle(state.data, path)
+        if (!report.success) return report.message
+        return try {
+            state.repo.mutate("SCHOOL_REBUILT", "Bundle", path.fileName.toString(), new = report.message) { dd ->
+                dd.copy(
+                    marks = state.repo.store.mergeMarks(dd, report.merged.ifEmpty { dd.marks }),
+                    students = (dd.students.filter { s -> report.mergedStudents.none { it.id == s.id } } + report.mergedStudents),
+                    comments = if (report.mergedComments.isEmpty()) dd.comments else report.mergedComments,
+                    attendance = (dd.attendance.filter { a -> report.mergedAttendance.none { it.id == a.id } } + report.mergedAttendance),
+                    dutyRecords = (dd.dutyRecords.filter { r -> report.mergedDutyRecords.none { it.id == r.id } } + report.mergedDutyRecords),
+                    gatePasses = (dd.gatePasses.filter { g -> report.mergedGatePasses.none { it.id == g.id } } + report.mergedGatePasses),
+                    school = if (dd.school.name.isBlank() && who.isNotBlank()) dd.school.copy(name = who) else dd.school
+                )
+            }
+            state.refresh()
+            "Loaded the marks file from " + (if (who.isBlank()) "a teacher" else who) + ": " +
+                report.mergedStudents.size + " learners, " + report.merged.size +
+                " marks. Classes still need a setup file from a phone: ask any phone that joined this school."
+        } catch (e: Exception) {
+            "The marks could not be saved: " + e.message
+        }
+    }
+
+    return runCatching {
+        val file = state.repo.store.loadSchoolConfig(path, state.data)
+        if (file.school.name.isBlank()) {
+            "That JSON file is not a school setup and not a teacher marks file."
+        } else {
+            val ready = if (file.classes.isNotEmpty() || file.students.isNotEmpty())
+                file.copy(settings = file.settings.copy(setupComplete = true)) else file
+            state.repo.mutate("SCHOOL_REBUILT", "School", path.fileName.toString()) { ready }
+            state.refresh()
+            "School restored: " + ready.school.name + ", " + ready.classes.size + " classes, " +
+                ready.students.size + " learners, " + ready.subjects.size +
+                " subjects. Now import each teacher's marks file."
+        }
+    }.getOrElse { "That file could not be used: " + (it.message ?: it.javaClass.simpleName) }
 }

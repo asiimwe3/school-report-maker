@@ -273,6 +273,24 @@ class TeacherState(private val context: Context) {
         return f
     }
 
+    /**
+     * The school's structure (classes, learners, subjects, terms) as a setup file.
+     * When the office computer is lost, any phone that joined this school can send
+     * this back and the console rebuilds everything except marks.
+     */
+    fun setupFile(): File? {
+        if (data.school.name.isBlank() && data.students.isEmpty()) return null
+        val dir = File(context.cacheDir, "reports").apply { mkdirs() }
+        val who = data.school.name.ifBlank { "school" }.replace(Regex("[^A-Za-z0-9]+"), "-")
+        val f = File(dir, "school-setup-" + who + ".json")
+        return try {
+            store.exportSchoolConfig(f.toPath(), data)
+            f
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     /** Build the same marks bundle the USB export creates, as a JSON string for the cloud. */
     fun buildMarksBundle(): String? {
         val dir = exportDir ?: return null
