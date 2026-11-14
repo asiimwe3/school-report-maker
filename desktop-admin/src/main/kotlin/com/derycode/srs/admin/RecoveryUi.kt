@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -77,6 +78,37 @@ fun RestoreSchoolPanel(state: AppState, onRestored: (String) -> Unit = {}) {
             "${restored.students.size} learners, ${restored.classes.size} classes, ${restored.marks.size} marks, " +
             "${restored.teachers.size} users. Everything came back, not just the profile."
         onRestored(restored.school.name)
+    }
+
+    var askPin by remember { mutableStateOf(false) }
+    var newPin by remember { mutableStateOf("") }
+    LaunchedEffect(state.refreshTick) {
+        if (state.data.settings.adminPinHash.isBlank() && state.data.school.name.isNotBlank() &&
+            (state.data.students.isNotEmpty() || state.data.classes.isNotEmpty())
+        ) askPin = true
+    }
+    if (askPin) {
+        AlertDialog(
+            onDismissRequest = { },
+            title = { Text("Set the school PIN", color = Theme.TEXT, fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    Text("This copy came without a PIN, so the console is open. Choose the 4 digits the school will use to open it.", color = Theme.MUTED, fontSize = 13.sp)
+                    Spacer(Modifier.height(8.dp))
+                    TextField(newPin, { newPin = it.filter { c -> c.isDigit() }.take(4) }, Modifier.fillMaxWidth(), "4 digits")
+                }
+            },
+            confirmButton = {
+                Btn("Save PIN") {
+                    if (newPin.length == 4) {
+                        state.repo.mutate("PIN_RESET", "Settings") { dd ->
+                            dd.copy(settings = dd.settings.copy(adminPinHash = com.derycode.srs.core.support.LicenseKeys.hash("pin|$newPin")))
+                        }
+                        askPin = false; newPin = ""; state.refresh()
+                    }
+                }
+            }
+        )
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {

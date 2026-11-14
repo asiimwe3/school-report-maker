@@ -245,7 +245,12 @@ class JsonStore(
         Files.createDirectories(path.toAbsolutePath().parent)
         // A teacher's phone sends this file back to the office, so it must not carry
         // other people's sign-in secrets: the office re-issues PINs on arrival.
-        val safe = if (stripCredentials) config.copy(teachers = config.teachers.map { it.copy(pinHash = "") }) else config
+        val safe = if (stripCredentials) config.copy(
+            teachers = config.teachers.map { it.copy(pinHash = "") },
+            // The console's own PIN hash must not travel either: a 4-digit PIN hash is
+            // trivial to reverse, and the office sets a fresh one after a rebuild.
+            settings = config.settings.copy(adminPinHash = "")
+        ) else config
         Files.writeString(path, cfgJson.encodeToString(SchoolData.serializer(), safe))
     }
 

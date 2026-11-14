@@ -1,12 +1,12 @@
 {
-  "console": "2.3.38",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.38.msi",
-  "teacher": "1.20.17",
-  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.17.apk",
-  "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.17.apk",
+  "console": "2.3.39",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.39.msi",
+  "teacher": "1.20.18",
+  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.18.apk",
+  "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.18.apk",
   "teacherDesktop": "1.0.0",
   "teacherDesktopDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMakerTeacher-1.0.0.msi",
   "released": "2026-11-14",
-  "notes": "Teacher app 1.20.17, console 2.3.38, teacher laptop 1.0.0.\n- After updating, the app asks once whether to keep a copy of the school setup with DeryCode support on WhatsApp (0762306675), with Later and Don't ask again\n- Cloud also has Send to support 0762306675 for schools whose office computer is gone\n- The setup file holds classes, learners, subjects and terms, never marks or teacher PINs",
-  "consoleVersion": "2.3.38"
+  "notes": "Console 2.3.39, teacher 1.20.18, teacher laptop 1.0.0.\n- A school rebuilt from a teacher's phone now asks for a fresh school PIN instead of opening without one\n- A teacher's setup file no longer carries the console PIN hash, only the school structure and accounts\n- Marks, fee payments received and the audit log still come from each teacher and the office's own records",
+  "consoleVersion": "2.3.39"
 }
