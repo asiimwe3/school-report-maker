@@ -1,12 +1,12 @@
 {
   "console": "2.3.38",
   "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.38.msi",
-  "teacher": "1.20.15",
-  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.15.apk",
-  "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.15.apk",
+  "teacher": "1.20.16",
+  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.16.apk",
+  "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.16.apk",
   "teacherDesktop": "1.0.0",
   "teacherDesktopDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMakerTeacher-1.0.0.msi",
   "released": "2026-11-14",
-  "notes": "Console 2.3.38, teacher 1.20.15, teacher laptop 1.0.0.\n- New on the phone: \"Send the school setup to the office\". Any phone that joined the school can hand back its classes, learners, subjects and terms as one small file\n- New on the console: \"Rebuild from a file you already have\". Load that setup file, or a teacher's marks file from WhatsApp, on a new or wiped computer\n- Rebuild restores the school profile, classes, learners, subjects, marks, comments, attendance and duty records, then opens the dashboard\n- Carries every fix from 2.3.37 and teacher 1.20.14",
+  "notes": "Teacher 1.20.16, console 2.3.38, teacher laptop 1.0.0.\n- A phone that sends the school setup back to the office no longer carries other teachers' PINs; the office issues fresh ones on arrival\n- Everything else in that file returns: profile, years and terms, classes and streams, subjects and assessments, learners, enrollments, teacher accounts, fee structure and the imported timetable sheet",
   "consoleVersion": "2.3.38"
 }

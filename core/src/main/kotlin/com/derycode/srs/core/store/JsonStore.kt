@@ -235,7 +235,7 @@ class JsonStore(
     }
     private val cfgJson = Json { ignoreUnknownKeys = true }
 
-    fun exportSchoolConfig(path: Path, data: SchoolData) {
+    fun exportSchoolConfig(path: Path, data: SchoolData, stripCredentials: Boolean = false) {
         val config = data.copy(
             marks = emptyList(), termResults = emptyList(),
             comments = emptyList(), reports = emptyList(), auditLog = emptyList(),
@@ -243,7 +243,10 @@ class JsonStore(
             attendance = emptyList(), gatePasses = emptyList(), dutyRecords = emptyList()
         )
         Files.createDirectories(path.toAbsolutePath().parent)
-        Files.writeString(path, cfgJson.encodeToString(SchoolData.serializer(), config))
+        // A teacher's phone sends this file back to the office, so it must not carry
+        // other people's sign-in secrets: the office re-issues PINs on arrival.
+        val safe = if (stripCredentials) config.copy(teachers = config.teachers.map { it.copy(pinHash = "") }) else config
+        Files.writeString(path, cfgJson.encodeToString(SchoolData.serializer(), safe))
     }
 
     /** Peek at the school identity inside an exported config without importing it. */

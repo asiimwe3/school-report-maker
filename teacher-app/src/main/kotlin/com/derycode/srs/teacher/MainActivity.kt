@@ -284,7 +284,7 @@ class TeacherState(private val context: Context) {
         val who = data.school.name.ifBlank { "school" }.replace(Regex("[^A-Za-z0-9]+"), "-")
         val f = File(dir, "school-setup-" + who + ".json")
         return try {
-            store.exportSchoolConfig(f.toPath(), data)
+            store.exportSchoolConfig(f.toPath(), data, stripCredentials = true)
             f
         } catch (e: Exception) {
             null
