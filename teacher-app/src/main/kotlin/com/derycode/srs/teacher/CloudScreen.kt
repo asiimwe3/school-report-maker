@@ -667,6 +667,15 @@ fun CloudScreen(state: TeacherState, onScan: () -> Unit = {}) {
             }, colors = ButtonDefaults.buttonColors(containerColor = ACCENT)) {
                 Text("Send school setup", color = Color.White, fontSize = 15.sp)
             }
+            Spacer(Modifier.height(8.dp))
+            Cell("If the office computer is gone for good, send it to DeryCode support instead: 0762306675. They can rebuild the school from this file and send it back.", MUTED)
+            Spacer(Modifier.height(8.dp))
+            Button(onClick = {
+                val ok = state.sendSetupToSupport()
+                report(!ok.startsWith("This phone"), ok)
+            }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1F7A4D))) {
+                Text("Send to support 0762306675", color = Color.White, fontSize = 15.sp)
+            }
         }
 
         // Works with no account at all: the file goes to WhatsApp, and the head

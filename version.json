@@ -1,12 +1,12 @@
 {
   "console": "2.3.38",
   "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.38.msi",
-  "teacher": "1.20.16",
-  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.16.apk",
-  "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.16.apk",
+  "teacher": "1.20.17",
+  "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.17.apk",
+  "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.17.apk",
   "teacherDesktop": "1.0.0",
   "teacherDesktopDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMakerTeacher-1.0.0.msi",
   "released": "2026-11-14",
-  "notes": "Teacher 1.20.16, console 2.3.38, teacher laptop 1.0.0.\n- A phone that sends the school setup back to the office no longer carries other teachers' PINs; the office issues fresh ones on arrival\n- Everything else in that file returns: profile, years and terms, classes and streams, subjects and assessments, learners, enrollments, teacher accounts, fee structure and the imported timetable sheet",
+  "notes": "Teacher app 1.20.17, console 2.3.38, teacher laptop 1.0.0.\n- After updating, the app asks once whether to keep a copy of the school setup with DeryCode support on WhatsApp (0762306675), with Later and Don't ask again\n- Cloud also has Send to support 0762306675 for schools whose office computer is gone\n- The setup file holds classes, learners, subjects and terms, never marks or teacher PINs",
   "consoleVersion": "2.3.38"
 }

@@ -56,7 +56,10 @@ class MainActivity : ComponentActivity() {
                         onSurface = NAVY, onSurfaceVariant = MUTED, primary = BLUE, onPrimary = Color.White,
                         outline = STROKE, error = RED, secondary = TEAL, tertiary = ORANGE),
                 typography = AppTypography
-            ) { TeacherApp(state) }
+            ) {
+                TeacherApp(state)
+                RecoveryPrompt(state)
+            }
         }
     }
 }
@@ -271,6 +274,53 @@ class TeacherState(private val context: Context) {
         val f = File(dir, "marks-$who-$stamp.json")
         f.writeText(payload)
         return f
+    }
+
+    /**
+     * A one-shot offer to send the school setup to DeryCode support. A phone that still
+     * holds the school can hand the whole setup back after a lost or wiped console, so
+     * every teacher is asked once per update, and can refuse for good.
+     */
+    private val promptFile = File(context.filesDir, "setup-prompt.txt")
+    fun recoveryPromptDue(): Boolean {
+        val has = data.students.isNotEmpty() || data.classes.isNotEmpty()
+        if (!has) return false
+        val seen = if (promptFile.exists()) promptFile.readText().trim() else ""
+        return seen != "off" && seen != BuildConfig.VERSION_NAME
+    }
+    fun dismissRecoveryPrompt(forever: Boolean) {
+        runCatching { promptFile.writeText(if (forever) "off" else BuildConfig.VERSION_NAME) }
+    }
+
+    /** Share the setup file to WhatsApp, addressed to the support number when possible. */
+    fun sendSetupToSupport(whatsappOnly: Boolean = true): String {
+        val file = setupFile() ?: return "This phone has no school setup yet"
+        val uri = androidx.core.content.FileProvider.getUriForFile(context, context.packageName + ".fileprovider", file)
+        val note = "School setup for recovery: " + data.school.name.ifBlank { "unnamed school" }
+        val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+            type = "application/json"
+            putExtra(android.content.Intent.EXTRA_STREAM, uri)
+            putExtra(android.content.Intent.EXTRA_SUBJECT, file.name)
+            putExtra("jid", SUPPORT_NUMBER.replace("+", "") + "@s.whatsapp.net")
+            putExtra(android.content.Intent.EXTRA_TEXT, note + " — please deliver to " + SUPPORT_DISPLAY)
+            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            if (whatsappOnly) setPackage("com.whatsapp")
+        }
+        return try {
+            context.startActivity(send)
+            "Choose " + SUPPORT_DISPLAY + " in WhatsApp and send"
+        } catch (e: Exception) {
+            // WhatsApp not installed, or the picked target refused: fall back to the chooser
+            val chooser = android.content.Intent.createChooser(send.apply { setPackage(null) }, "Send the school setup")
+                .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            runCatching { context.startActivity(chooser) }
+            "Send this file to " + SUPPORT_DISPLAY + " on WhatsApp"
+        }
+    }
+
+    companion object {
+        const val SUPPORT_NUMBER = "+256762306675"
+        const val SUPPORT_DISPLAY = "0762306675"
     }
 
     /**
@@ -987,3 +1037,51 @@ internal fun ScoreBadge(pct: Double) {
 }
 
 internal fun fmt1(d: Double): String = if (d == d.toLong().toDouble()) d.toLong().toString() else String.format("%.1f", d)
+
+/**
+ * Asked once per update, on any phone that holds a school: send the setup to support
+ * so a class can be rebuilt if the office computer is lost. Nothing goes anywhere
+ * unless the teacher taps send, and "Don't ask again" is honoured for good.
+ */
+@androidx.compose.runtime.Composable
+fun RecoveryPrompt(state: TeacherState) {
+    var due by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(state.recoveryPromptDue()) }
+    var msg by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("") }
+    if (!due) return
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = { },
+        title = {
+            androidx.compose.material3.Text("Keep a copy with DeryCode support?", color = NAVY, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+        },
+        text = {
+            androidx.compose.foundation.layout.Column {
+                androidx.compose.material3.Text(
+                    "This phone holds the setup of " + (state.data.school.name.ifBlank { "your school" }) +
+                        ": classes, learners, subjects and terms, without anybody's marks. If the office computer is ever lost, that copy can rebuild the school.",
+                    color = MUTED, fontSize = 14.sp
+                )
+                if (msg.isNotBlank()) {
+                    androidx.compose.foundation.layout.Spacer(androidx.compose.ui.Modifier.height(8.dp))
+                    androidx.compose.material3.Text(msg, color = GOOD, fontSize = 13.sp)
+                }
+            }
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton({
+                msg = state.sendSetupToSupport()
+                state.dismissRecoveryPrompt(forever = false)
+                due = false
+            }) { androidx.compose.material3.Text("Send on WhatsApp to 0762306675", color = BLUE) }
+        },
+        dismissButton = {
+            androidx.compose.foundation.layout.Row {
+                androidx.compose.material3.TextButton({
+                    state.dismissRecoveryPrompt(forever = false); due = false
+                }) { androidx.compose.material3.Text("Later", color = MUTED) }
+                androidx.compose.material3.TextButton({
+                    state.dismissRecoveryPrompt(forever = true); due = false
+                }) { androidx.compose.material3.Text("Don't ask again", color = MUTED) }
+            }
+        }
+    )
+}
