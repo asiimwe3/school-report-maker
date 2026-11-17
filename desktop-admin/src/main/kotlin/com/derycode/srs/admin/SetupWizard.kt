@@ -820,7 +820,12 @@ fun CloudScreen(state: AppState) {
                     }
                 }
                 tmp.delete()
-                if (imported > 0) CloudApi.consumeTeacherBundles(CloudSync.url(st), CloudSync.key(st), state.repo.data.settings.cloudAccessToken, st.cloudSchoolId)
+                // Only clear the cloud queue when every submission really landed.
+                // Consuming on a partial import used to destroy marks the console had
+                // skipped (another school's bundle, or one that failed to read).
+                if (imported > 0 && imported == bundles.size) {
+                    CloudApi.consumeTeacherBundles(CloudSync.url(st), CloudSync.key(st), state.repo.data.settings.cloudAccessToken, st.cloudSchoolId)
+                }
                 busy = false
                 val extra = buildString {
                     if (foreign > 0) append(" Skipped $foreign submission(s) that belong to another school.")

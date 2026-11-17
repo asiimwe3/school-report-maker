@@ -37,7 +37,12 @@ import java.nio.file.Path
 fun MarksScreen(state: AppState) {
     val d = state.data
     val year = d.academicYears.firstOrNull { it.currentTermId != null } ?: d.academicYears.firstOrNull()
-    val term = year?.terms?.firstOrNull { it.id == year.currentTermId } ?: year?.terms?.firstOrNull()
+    // The term is chosen here, not assumed. Marks a teacher sent for another term used
+    // to be invisible on this grid with no way to switch to them.
+    var termId by remember(state.level) {
+        mutableStateOf(year?.currentTermId ?: year?.terms?.firstOrNull()?.id ?: "")
+    }
+    val term = year?.terms?.firstOrNull { it.id == termId } ?: year?.terms?.firstOrNull()
 
     var classId by remember(state.level) { mutableStateOf(d.classes.firstOrNull { it.active && it.level == state.level }?.id ?: "") }
     var subjectId by remember { mutableStateOf(d.subjects.firstOrNull { it.active }?.id ?: "") }
@@ -60,6 +65,14 @@ fun MarksScreen(state: AppState) {
         }
         if (d.classes.isNotEmpty()) {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(Modifier.width(200.dp)) {
+                    FieldLabel("Term")
+                    year?.terms?.forEach { t ->
+                        Text((if (termId == t.id) "● " else "○ ") + "Term ${t.number}",
+                            color = if (termId == t.id) Theme.ACCENT else Theme.TEXT, fontSize = 14.sp,
+                            modifier = Modifier.fillMaxWidth().clickable { termId = t.id }.padding(vertical = 3.dp))
+                    }
+                }
                 Column(Modifier.width(200.dp)) {
                     FieldLabel("Class")
                     Level.entries.filter { it == state.level }.forEach { lvl ->

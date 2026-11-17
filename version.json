@@ -1,12 +1,12 @@
 {
-  "console": "2.3.39",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.39.msi",
+  "console": "2.3.40",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.40.msi",
   "teacher": "1.20.18",
   "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.18.apk",
   "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.18.apk",
   "teacherDesktop": "1.0.0",
   "teacherDesktopDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMakerTeacher-1.0.0.msi",
-  "released": "2026-11-14",
-  "notes": "Console 2.3.39, teacher 1.20.18, teacher laptop 1.0.0.\n- A school rebuilt from a teacher's phone now asks for a fresh school PIN instead of opening without one\n- A teacher's setup file no longer carries the console PIN hash, only the school structure and accounts\n- Marks, fee payments received and the audit log still come from each teacher and the office's own records",
-  "consoleVersion": "2.3.39"
+  "released": "2026-11-17",
+  "notes": "Console 2.3.40. Teacher marks now turn up on the marks grid.\n- The grid has a Term selector: marks sent for another term were saved but never shown, so this was the usual reason. They are now one tap away\n- Marks a teacher sends are matched to this school's own learners, subjects, assessments and terms before saving, so a phone whose term or subject was recreated no longer sends marks into ids the console never uses\n- Teacher submissions are only cleared from the cloud when every one of them imported; a partial import used to delete the rest\n- Anything that cannot be matched is reported instead of being silently stored",
+  "consoleVersion": "2.3.40"
 }
