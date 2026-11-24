@@ -300,14 +300,51 @@ private fun schoolLogo(school: School, modifier: Modifier, size: androidx.compos
     else Box(modifier.size(size))   // no logo — invisible spacer keeps the header symmetric
 }
 
-/** Loads a photo from disk for the screen, or null when there is none. */
+/**
+ * Loads a photo from disk for the screen, or null when there is none.
+ * A scanned signature can be several megabytes, so the decode is cached per
+ * path (never repeated on every recomposition) and a decode failure of ANY
+ * kind — including running out of memory on a huge scan — degrades to "no
+ * signature" instead of taking the whole console down.
+ */
+private val bitmapCache = java.util.concurrent.ConcurrentHashMap<String, androidx.compose.ui.graphics.ImageBitmap?>()
+
 private fun loadBitmap(path: String?): androidx.compose.ui.graphics.ImageBitmap? {
     if (path.isNullOrBlank()) return null
-    return try {
-        val p = Path.of(path)
-        if (Files.exists(p)) org.jetbrains.skia.Image.makeFromEncoded(Files.readAllBytes(p)).toComposeImageBitmap() else null
-    } catch (_: Exception) { null }
+    return bitmapCache.getOrPut(path) {
+        try {
+            val p = Path.of(path)
+            if (!Files.exists(p)) null else {
+                val bytes = Files.readAllBytes(p)
+                // Decode through ImageIO first so a 4000px scan is scaled down
+                // before Skia sees it; a raw makeFromEncoded on a phone-camera
+                // scan is what runs the heap out.
+                val scaled = shrinkForScreen(bytes)
+                org.jetbrains.skia.Image.makeFromEncoded(scaled).toComposeImageBitmap()
+            }
+        } catch (t: Throwable) {
+            null
+        }
+    }
 }
+
+/** Scales a decoded image down to at most 900px wide, returning encoded PNG bytes. */
+private fun shrinkForScreen(bytes: ByteArray): ByteArray = try {
+    val src = javax.imageio.ImageIO.read(java.io.ByteArrayInputStream(bytes)) ?: return bytes
+    val maxW = 900
+    if (src.width <= maxW) bytes else {
+        val h = (src.height * (maxW.toDouble() / src.width)).toInt().coerceAtLeast(1)
+        val dst = java.awt.image.BufferedImage(maxW, h, java.awt.image.BufferedImage.TYPE_INT_ARGB)
+        val g = dst.createGraphics()
+        g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR)
+        g.drawImage(src, 0, 0, maxW, h, null)
+        g.dispose()
+        java.io.ByteArrayOutputStream().use { out ->
+            javax.imageio.ImageIO.write(dst, "png", out)
+            out.toByteArray()
+        }
+    }
+} catch (t: Throwable) { bytes }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Summary sheet ("Standard"): the school's blue summary card. A1-A3 assessments,

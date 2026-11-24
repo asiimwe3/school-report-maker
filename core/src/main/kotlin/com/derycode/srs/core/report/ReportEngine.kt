@@ -42,7 +42,9 @@ object ReportEngine {
      * embedded as a data URI so it prints the same from the desktop console and from
      * a phone preview, with no dependency on the file still sitting in that folder.
      */
-    internal fun sigImg(path: String?, maxHeightPx: Int = 30): String {
+    internal fun sigImg(path: String?, maxHeightPx: Int = 30): String = try { sigImg0(path, maxHeightPx) } catch (t: Throwable) { "" }
+
+    private fun sigImg0(path: String?, maxHeightPx: Int = 30): String {
         if (path.isNullOrBlank()) return ""
         val f = java.io.File(path)
         if (!f.isFile) return ""
@@ -54,7 +56,24 @@ object ReportEngine {
                 "gif" -> "image/gif"
                 else -> "image/png"
             }
-            val b64 = java.util.Base64.getEncoder().encodeToString(f.readBytes())
+            // A phone-camera "scan" can be 8 MB; scale it before it goes into
+            // every printed page, otherwise the HTML is enormous and slow.
+            val raw = f.readBytes()
+            val bytes = try {
+                val src = javax.imageio.ImageIO.read(java.io.ByteArrayInputStream(raw))
+                if (src == null || src.width <= 600) raw else {
+                    val w = 600
+                    val h = (src.height * (w.toDouble() / src.width)).toInt().coerceAtLeast(1)
+                    val dst = java.awt.image.BufferedImage(w, h, java.awt.image.BufferedImage.TYPE_INT_ARGB)
+                    val g = dst.createGraphics()
+                    g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR)
+                    g.drawImage(src, 0, 0, w, h, null); g.dispose()
+                    java.io.ByteArrayOutputStream().use { out ->
+                        javax.imageio.ImageIO.write(dst, "png", out); out.toByteArray()
+                    }
+                }
+            } catch (t: Throwable) { raw }
+            val b64 = java.util.Base64.getEncoder().encodeToString(bytes)
             "<img class=\"sigimg\" alt=\"signature\" style=\"max-height:${maxHeightPx}px\" src=\"data:$mime;base64,$b64\"/>"
         } catch (e: Exception) { "" }
     }

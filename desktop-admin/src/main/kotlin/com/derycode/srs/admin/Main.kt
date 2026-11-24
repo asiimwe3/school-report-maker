@@ -1409,6 +1409,7 @@ private fun TermDetailsEditor(state: AppState, yearId: String, term: Term) {
         Spacer(Modifier.height(8.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
             Btn("Save term details") {
+                try {
                 state.repo.mutate("TERM_DETAILS_SAVED", "AcademicYear", yearId, new = "Term ${term.number}") { dd ->
                     dd.copy(academicYears = dd.academicYears.map { y ->
                         if (y.id != yearId) y else y.copy(terms = y.terms.map { t ->
@@ -1423,6 +1424,7 @@ private fun TermDetailsEditor(state: AppState, yearId: String, term: Term) {
                     })
                 }
                 state.refresh()
+                } catch (e: Throwable) { /* a failed save must not close the console */ }
             }
             Text("Saved remarks print on every report in this term unless a learner has their own.",
                 color = Theme.MUTED, fontSize = 11.sp)

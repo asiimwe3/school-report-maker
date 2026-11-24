@@ -1,12 +1,12 @@
 {
-  "console": "2.3.41",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.41.msi",
+  "console": "2.3.42",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.42.msi",
   "teacher": "1.20.18",
   "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.18.apk",
   "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.18.apk",
   "teacherDesktop": "1.0.0",
   "teacherDesktopDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMakerTeacher-1.0.0.msi",
   "released": "2026-11-24",
-  "notes": "Console 2.3.41. Reports now carry the term's comments, both term dates and a scanned signature.\n- One remark can be typed once per term and every report in that term prints it, class teacher and head teacher both. A learner with their own comment keeps it\n- The standard card now prints Term Began, the closing date and the next term's opening date. Type the dates under Academic Years, then Term dates and closing remarks\n- A scanned signature picked under Staff prints above the signature line and inside the comment box, on screen and in the printout\n- Placeholder content is gone from the standard report: no invented subject rows, no blank date slashes and no default motto when the school has none\n- The same remarks and dates appear in the Word export",
-  "consoleVersion": "2.3.41"
+  "notes": "Console 2.3.42. Fixes the crash after 2.3.41 when a scanned signature was on file.\n- A phone-camera scan is several megapixels; the report screen decoded it again on every redraw, which ran the console out of memory and closed it. The image is now decoded once, scaled down and reused\n- The same scan is scaled to 600px before it is embedded in a printed report, so cards no longer carry a multi-megabyte image\n- A failed file picker or a failed save can no longer close the console\n- If anything still stops the console, the reason is written to SchoolReportMaker\\crash-log.txt next to your data",
+  "consoleVersion": "2.3.42"
 }

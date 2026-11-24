@@ -98,20 +98,27 @@ fun TeacherAdminPanel(state: AppState, t: Teacher, onClose: () -> Unit) {
                 color = Theme.TEXT, fontSize = 12.sp
             )
             Btn("Choose scanned signature", primary = false) {
-                val dialog = java.awt.FileDialog(
-                    null as java.awt.Frame?, "Pick the scanned signature", java.awt.FileDialog.LOAD
-                )
-                dialog.setFilenameFilter { _, name ->
-                    val n = name.lowercase()
-                    n.endsWith(".png") || n.endsWith(".jpg") || n.endsWith(".jpeg")
+                // AWT dialogs are the one place a desktop app can die on a
+                // platform quirk, so the pick is wrapped and reported in the UI.
+                val picked = try {
+                    val dialog = java.awt.FileDialog(
+                        null as java.awt.Frame?, "Pick the scanned signature", java.awt.FileDialog.LOAD
+                    )
+                    dialog.setFilenameFilter { _, name ->
+                        val n = name.lowercase()
+                        n.endsWith(".png") || n.endsWith(".jpg") || n.endsWith(".jpeg")
+                    }
+                    dialog.isVisible = true
+                    val dir = dialog.directory
+                    val file = dialog.file
+                    if (dir != null && file != null) java.io.File(dir, file).absolutePath else null
+                } catch (e: Throwable) {
+                    null
                 }
-                dialog.isVisible = true
-                val dir = dialog.directory
-                val file = dialog.file
-                if (dir != null && file != null) {
+                if (picked != null) {
                     update("TEACHER_SIGNATURE_SET", t.name) { dd ->
                         dd.copy(teachers = dd.teachers.map {
-                            if (it.id == t.id) it.copy(signaturePath = java.io.File(dir, file).absolutePath) else it
+                            if (it.id == t.id) it.copy(signaturePath = picked) else it
                         })
                     }
                 }
