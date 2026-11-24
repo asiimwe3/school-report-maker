@@ -486,9 +486,11 @@ object DocxReport {
                     it.studentId == student.id && it.termId == result.termId &&
                         it.subjectId == r.subjectId && it.type == com.derycode.srs.core.model.CommentType.SUBJECT
                 }?.text.orEmpty()
-                val initialsOf = data.teachers.firstOrNull { t ->
+                // printed initials: the subject's own first, then the assigned teacher's
+                val teacherInitials = data.teachers.firstOrNull { t ->
                     data.assignments.any { asg -> asg.teacherId == t.id && asg.subjectId == r.subjectId && asg.classId == cls?.id }
                 }?.let { initials(it.name) }.orEmpty()
+                val printedInitials = s?.initials?.trim()?.uppercase().orEmpty().ifBlank { teacherInitials }
                 listOf(
                     s?.name?.uppercase() ?: r.subjectId,
                     a.getOrElse(0) { -1.0 }.let(::cell),
@@ -499,7 +501,7 @@ object DocxReport {
                     fmt(r.percentage),
                     r.grade,
                     comment,
-                    initialsOf
+                    printedInitials
                 )
             } + listOf(listOf("AVERAGE SCORE", "", "", "", "", "", fmt(result.averagePercent), "", "", ""))
             doc.table(

@@ -218,7 +218,11 @@ data class Subject(
     val principal: Boolean = false,        // A-level principal subject
     val subsidiary: Boolean = false,       // A-level subsidiary
     val maxMarks: Int = 100,
-    val active: Boolean = true
+    val active: Boolean = true,
+    /** Initials printed in the card's INITIALS column, e.g. "MD". Falls back to the
+     *  assigned teacher's initials when blank. Kept last so existing positional
+     *  constructor calls stay valid. */
+    val initials: String = ""
 )
 
 /** Assessment components (Section 13): configurable per school/level/subject. */

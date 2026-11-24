@@ -1,12 +1,12 @@
 {
-  "console": "2.3.43",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.43.msi",
+  "console": "2.3.44",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.44.msi",
   "teacher": "1.20.18",
   "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.18.apk",
   "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.18.apk",
   "teacherDesktop": "1.0.0",
   "teacherDesktopDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMakerTeacher-1.0.0.msi",
   "released": "2026-11-24",
-  "notes": "Console 2.3.43. Every learner who has sat all the compulsory subjects now gets a result.\n- Grade, aggregate and division are worked out from the compulsory subjects when the electives are still blank, and the card says Provisional so it is never mistaken for a finished result\n- A learner with nothing marked still shows no division, as before\n- Includes the 2.3.42 crash fix: the scanned signature is decoded once and scaled down instead of being re-decoded on every redraw",
-  "consoleVersion": "2.3.43"
+  "notes": "Console 2.3.44. The INITIALS column now prints a sign-off per subject.\n- Every subject carries its own initials, edited on the Subjects screen, so a card prints MD, MF, AKD and the rest even when no teacher record is assigned to that subject\n- When a subject has no initials of its own, the assigned teacher's initials are used exactly as before\n- New schools start with the standard O-Level subject set already signed: Mathematics MD, English MF, Physics LD, Chemistry CA, Biology CA, History GD, Geography KL, Agriculture KL, Entrepreneurship AKD, ICT SJ, Art and Design KJ, Runyoro Rutooro MF, Kiswahili A, CRE AK, Physical Education K",
+  "consoleVersion": "2.3.44"
 }

@@ -626,6 +626,7 @@ fun SubjectsScreen(state: AppState) {
     var code by remember { mutableStateOf("") }
     val level = state.level
     var compulsory by remember { mutableStateOf(true) }
+    var initials by remember { mutableStateOf("") }
     var error by remember { mutableStateOf("") }
     val subs = d.subjects.filter { it.level == level && it.active }
     val nCompulsory = subs.count { it.compulsory }
@@ -645,6 +646,7 @@ fun SubjectsScreen(state: AppState) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Bottom) {
                 Column(Modifier.weight(2f)) { FieldLabel("Subject name"); TextField(name, { name = it }, Modifier.fillMaxWidth(), "Further Mathematics") }
                 Column(Modifier.weight(1f)) { FieldLabel("Code"); TextField(code, { code = it }, Modifier.fillMaxWidth(), "F/MATH") }
+                Column(Modifier.weight(1f)) { FieldLabel("Initials"); TextField(initials, { initials = it.uppercase().take(4) }, Modifier.fillMaxWidth(), "MD") }
                 Column(Modifier.weight(1f)) {
                     FieldLabel("Compulsory?")
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -656,9 +658,9 @@ fun SubjectsScreen(state: AppState) {
                     if (name.isBlank()) { error = "Type the subject name first."; return@Btn }
                     val id = state.repo.nextId()
                     state.repo.mutate("SUBJECT_ADDED", "Subject", id, new = name) { dd ->
-                        dd.copy(subjects = dd.subjects + Subject(id = id, name = name, code = code, level = level, compulsory = compulsory))
+                        dd.copy(subjects = dd.subjects + Subject(id = id, name = name, code = code, initials = initials, level = level, compulsory = compulsory))
                     }
-                    name = ""; code = ""; error = ""; state.refresh()
+                    name = ""; code = ""; initials = ""; error = ""; state.refresh()
                 }
             }
             if (error.isNotBlank()) { Spacer(Modifier.height(6.dp)); ErrorText(error) }
@@ -689,6 +691,18 @@ fun SubjectsScreen(state: AppState) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Pill(if (sItem.compulsory) "Compulsory" else "Optional", if (sItem.compulsory) "teal" else "gold")
                                 if (teachers.isNotEmpty()) Text(teachers.joinToString(", "), color = Theme.MUTED, fontSize = 12.sp)
+                            }
+                            Spacer(Modifier.height(10.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text("Initials", color = Theme.MUTED, fontSize = 12.sp)
+                                var ini by remember(sItem.id, sItem.initials) { mutableStateOf(sItem.initials) }
+                                TextField(ini, { typed ->
+                                    ini = typed.take(4).uppercase()
+                                    state.repo.mutate("SUBJECT_INITIALS", "Subject", sItem.id, old = sItem.initials, new = ini) { dd ->
+                                        dd.copy(subjects = dd.subjects.map { if (it.id == sItem.id) it.copy(initials = ini) else it })
+                                    }
+                                    state.refresh()
+                                }, Modifier.width(96.dp), "MD")
                             }
                             Spacer(Modifier.height(10.dp))
                             Text("Remove", color = Theme.RUST, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,

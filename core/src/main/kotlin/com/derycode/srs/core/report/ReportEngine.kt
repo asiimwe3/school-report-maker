@@ -4,6 +4,7 @@ import com.derycode.srs.core.model.CommentType
 import com.derycode.srs.core.model.School
 import com.derycode.srs.core.model.SchoolData
 import com.derycode.srs.core.model.Student
+import com.derycode.srs.core.model.Subject
 import com.derycode.srs.core.model.TemplateLayout
 import com.derycode.srs.core.model.TermResult
 
@@ -222,6 +223,11 @@ object ReportEngine {
             return t?.let { initialsOf(it.name) } ?: ""
         }
 
+        /** Printed initials: the subject's own first, then the assigned teacher's. */
+        fun subjectInitials(subj: Subject): String =
+            subj.initials.trim().uppercase().ifBlank { teacherFor(subj.id) }
+
+
         fun subjectComment(subjectId: String): String =
             data.comments.firstOrNull {
                 it.studentId == result.studentId && it.termId == result.termId &&
@@ -245,7 +251,7 @@ object ReportEngine {
               <td class="total">${fmt(r.percentage)}</td>
               <td class="grade">${r.grade}</td>
               <td class="cmt">${escape(subjectComment(subj.id))}</td>
-              <td>${teacherFor(subj.id)}</td>
+              <td>${escape(subjectInitials(subj))}</td>
             </tr>
             """.trimIndent()
         }

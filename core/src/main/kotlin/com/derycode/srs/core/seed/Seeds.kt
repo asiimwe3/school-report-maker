@@ -35,11 +35,27 @@ object Seeds {
             "Mathematics" to "MATH", "English" to "ENG", "Science" to "SCI",
             "Social Studies" to "SST", "Integrated Science" to "ISC", "Religious Education" to "CRE"
         ).map { (n, c) -> Subject(id = "sub-${level.tag()}-${c.lowercase()}", name = n, code = c, level = level, maxMarks = 100) }
+        // O-Level: the UNEB subject set most Ugandan schools offer. Initials are the
+        // default sign-off for each subject; a school can change them on the Subjects
+        // screen, and the card falls back to the assigned teacher's initials if blank.
         Level.O_LEVEL -> listOf(
-            "Mathematics" to "MATH", "English" to "ENG", "Physics" to "PHY", "Chemistry" to "CHE",
-            "Biology" to "BIO", "History" to "HIST", "Geography" to "GEO", "Agriculture" to "AGRI",
-            "Entrepreneurship" to "ENT", "Luganda" to "LUG"
-        ).map { (n, c) -> Subject(id = "sub-${level.tag()}-${c.lowercase()}", name = n, code = c, level = level, maxMarks = 100) }
+            Triple("Mathematics", "MATH", "MD"),
+            Triple("English", "ENG", "MF"),
+            Triple("Physics", "PHY", "LD"),
+            Triple("Chemistry", "CHE", "CA"),
+            Triple("Biology", "BIO", "CA"),
+            Triple("History", "HIST", "GD"),
+            Triple("Geography", "GEO", "KL"),
+            Triple("Agriculture", "AGRI", "KL"),
+            Triple("Entrepreneurship", "ENT", "AKD"),
+            Triple("Information and Communication Technology", "ICT", "SJ"),
+            Triple("Art and Design", "ART", "KJ"),
+            Triple("Runyoro Rutooro", "RUN", "MF"),
+            Triple("Kiswahili", "KIS", "A"),
+            Triple("Christian Religious Education", "CRE", "AK"),
+            Triple("Physical Education", "PE", "K"),
+            Triple("Luganda", "LUG", "")
+        ).map { (n, c, ini) -> Subject(id = "sub-${level.tag()}-${c.lowercase()}", name = n, code = c, initials = ini, level = level, maxMarks = 100) }
         Level.A_LEVEL -> listOf(
             "Mathematics" to "MATH", "Physics" to "PHY", "Chemistry" to "CHE", "Biology" to "BIO",
             "Economics" to "ECON", "Geography" to "GEO", "History" to "HIST", "Divinity" to "DIV",
