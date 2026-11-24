@@ -178,6 +178,13 @@ object ResultEngine {
         // actually exist for it.
         val attempted = subjectResults.filter { !it.incomplete }
         val avg = if (attempted.isNotEmpty()) attempted.map { it.percentage }.average() else 0.0
+        // A learner who has sat every compulsory subject has a result, even if
+        // the electives are still unmarked. The result is flagged provisional
+        // so nobody mistakes it for a complete one.
+        val compulsoryMarked = subjectResults.filter { it.subjectId in compulsorySubjectIds && !it.incomplete }
+        val compulsoryComplete = compulsorySubjectIds.isNotEmpty() &&
+            compulsorySubjectIds.all { cid -> subjectResults.any { it.subjectId == cid && !it.incomplete } }
+        var provisional = false
         var aggregate: Int? = null
         var division: String? = null
         var uce: String? = null
@@ -192,6 +199,13 @@ object ResultEngine {
                     val best = attempted.sortedBy { it.points }.take(scheme.aggregateBestSubjects)
                     aggregate = best.sumOf { it.points }
                     division = GradingEngine.divisionForAggregate(scheme, aggregate)
+                } else if (compulsoryComplete && compulsoryMarked.isNotEmpty()) {
+                    // Electives missing: aggregate and division come from the
+                    // compulsory subjects the learner actually sat.
+                    val best = compulsoryMarked.sortedBy { it.points }.take(scheme.aggregateBestSubjects)
+                    aggregate = best.sumOf { it.points }
+                    division = GradingEngine.divisionForAggregate(scheme, aggregate)
+                    provisional = true
                 }
             }
             AggregateRule.UCE_INDICATOR -> {
@@ -202,10 +216,14 @@ object ResultEngine {
             }
             AggregateRule.UACE_POINTS -> {
                 // 3 principals + subsidiary point if grade better than threshold.
-                val principals = subjectResults.sortedByDescending { it.points }.take(scheme.principalCount)
+                val markedPrincipals = subjectResults.filter { !it.incomplete }
+                val principals = markedPrincipals.sortedByDescending { it.points }.take(scheme.principalCount)
                 val principalPoints = principals.sumOf { it.points }
                 uacePoints = principalPoints
                 uce = null
+                // Fewer principals marked than the course needs: still a result,
+                // but marked provisional rather than hidden.
+                if (principals.size < scheme.principalCount && markedPrincipals.isNotEmpty()) provisional = true
             }
             AggregateRule.CUSTOM -> { /* school-defined; average only */ }
         }
@@ -220,7 +238,8 @@ object ResultEngine {
             uceResult = uce,
             uacePoints = uacePoints,
             schemeId = scheme.id,
-            schemeVersion = scheme.version
+            schemeVersion = scheme.version,
+            provisional = provisional
         )
     }
 

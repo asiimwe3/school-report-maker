@@ -341,7 +341,13 @@ data class TermResult(
     val streamPosition: Int = 0,
     val state: MarkSheetState = MarkSheetState.DRAFT,
     val schemeId: String = "",
-    val schemeVersion: Int = 1
+    val schemeVersion: Int = 1,
+    /**
+     * True when the grade, aggregate or division was worked out from the
+     * compulsory subjects alone because the electives have no marks yet.
+     * The learner still gets a result instead of a blank card.
+     */
+    val provisional: Boolean = false
 )
 
 // ─────────────────────────────────────────────────────────────────────────────

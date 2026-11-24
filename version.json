@@ -1,12 +1,12 @@
 {
-  "console": "2.3.42",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.42.msi",
+  "console": "2.3.43",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.43.msi",
   "teacher": "1.20.18",
   "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.18.apk",
   "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.18.apk",
   "teacherDesktop": "1.0.0",
   "teacherDesktopDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMakerTeacher-1.0.0.msi",
   "released": "2026-11-24",
-  "notes": "Console 2.3.42. Fixes the crash after 2.3.41 when a scanned signature was on file.\n- A phone-camera scan is several megapixels; the report screen decoded it again on every redraw, which ran the console out of memory and closed it. The image is now decoded once, scaled down and reused\n- The same scan is scaled to 600px before it is embedded in a printed report, so cards no longer carry a multi-megabyte image\n- A failed file picker or a failed save can no longer close the console\n- If anything still stops the console, the reason is written to SchoolReportMaker\\crash-log.txt next to your data",
-  "consoleVersion": "2.3.42"
+  "notes": "Console 2.3.43. Every learner who has sat all the compulsory subjects now gets a result.\n- Grade, aggregate and division are worked out from the compulsory subjects when the electives are still blank, and the card says Provisional so it is never mistaken for a finished result\n- A learner with nothing marked still shows no division, as before\n- Includes the 2.3.42 crash fix: the scanned signature is decoded once and scaled down instead of being re-decoded on every redraw",
+  "consoleVersion": "2.3.43"
 }

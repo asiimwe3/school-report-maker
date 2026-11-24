@@ -462,7 +462,8 @@ fun ReportsScreen(state: AppState) {
                                 shown.division?.let { "Division $it" },
                                 shown.uceResult?.let { "UCE $it" },
                                 shown.uacePoints?.let { "$it points" },
-                                "Average ${"%.1f".format(shown.averagePercent)}%"
+                                "Average ${"%.1f".format(shown.averagePercent)}%",
+                                if (shown.provisional) "Provisional — compulsory subjects only" else null
                             ).joinToString("  ·  "),
                             color = Theme.MUTED, fontSize = 13.sp
                         )
