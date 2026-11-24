@@ -580,12 +580,8 @@ object DocxReport {
         }
 
         // ── comments & signatures ──
-        val classComments = data.comments
-            .filter { it.studentId == student.id && it.termId == result.termId && it.type == com.derycode.srs.core.model.CommentType.CLASS_TEACHER }
-            .joinToString("\n") { it.text }
-        val headComments = data.comments
-            .filter { it.studentId == student.id && it.termId == result.termId && it.type == com.derycode.srs.core.model.CommentType.HEAD_TEACHER }
-            .joinToString("\n") { it.text }
+        val classComments = ReportEngine.classCommentFor(data, student.id, result.termId)
+        val headComments = ReportEngine.headCommentFor(data, student.id, result.termId)
         doc.p("Class Teacher's Comments", bold = true, size = 20, color = accent, spacingAfter = 20)
         doc.p(classComments.ifBlank { " " }, size = 18, spacingAfter = 40)
 

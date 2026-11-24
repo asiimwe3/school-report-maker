@@ -14,6 +14,51 @@ import com.derycode.srs.core.model.TermResult
  */
 object ReportEngine {
 
+
+    /** The student's own class-teacher remark, else the term-wide remark every card shares. */
+    fun classCommentFor(data: SchoolData, studentId: String, termId: String): String {
+        val own = data.comments
+            .filter { it.studentId == studentId && it.termId == termId && it.type == CommentType.CLASS_TEACHER }
+            .joinToString("\n") { it.text.trim() }.trim()
+        if (own.isNotEmpty()) return own
+        return termOf(data, termId)?.classTeacherComment?.trim() ?: ""
+    }
+
+    /** Same for the head teacher's remark. */
+    fun headCommentFor(data: SchoolData, studentId: String, termId: String): String {
+        val own = data.comments
+            .filter { it.studentId == studentId && it.termId == termId && it.type == CommentType.HEAD_TEACHER }
+            .joinToString("\n") { it.text.trim() }.trim()
+        if (own.isNotEmpty()) return own
+        return termOf(data, termId)?.headTeacherComment?.trim() ?: ""
+    }
+
+    private fun termOf(data: SchoolData, termId: String) = data.academicYears
+        .asSequence().flatMap { y -> y.terms.asSequence() }
+        .firstOrNull { it.id == termId }
+
+    /**
+     * A signature scanned on a printer or photographed with a phone, saved as a file,
+     * embedded as a data URI so it prints the same from the desktop console and from
+     * a phone preview, with no dependency on the file still sitting in that folder.
+     */
+    internal fun sigImg(path: String?, maxHeightPx: Int = 30): String {
+        if (path.isNullOrBlank()) return ""
+        val f = java.io.File(path)
+        if (!f.isFile) return ""
+        return try {
+            val mime = when (f.extension.lowercase()) {
+                "png" -> "image/png"
+                "jpg", "jpeg" -> "image/jpeg"
+                "webp" -> "image/webp"
+                "gif" -> "image/gif"
+                else -> "image/png"
+            }
+            val b64 = java.util.Base64.getEncoder().encodeToString(f.readBytes())
+            "<img class=\"sigimg\" alt=\"signature\" style=\"max-height:${maxHeightPx}px\" src=\"data:$mime;base64,$b64\"/>"
+        } catch (e: Exception) { "" }
+    }
+
     /** One student's full report card as standalone HTML. */
     fun studentReport(
         data: SchoolData,
@@ -53,12 +98,8 @@ object ReportEngine {
             if (isEmpty()) append("Average ${fmt(result.averagePercent)}%")
         }
 
-        val classComments = data.comments
-            .filter { it.studentId == student.id && it.termId == result.termId && it.type == CommentType.CLASS_TEACHER }
-            .joinToString("<br/>") { escape(it.text) }
-        val headComments = data.comments
-            .filter { it.studentId == student.id && it.termId == result.termId && it.type == CommentType.HEAD_TEACHER }
-            .joinToString("<br/>") { escape(it.text) }
+        val classComments = escape(classCommentFor(data, student.id, result.termId)).replace("\n", "<br/>")
+        val headComments = escape(headCommentFor(data, student.id, result.termId)).replace("\n", "<br/>")
 
         val head = data.teachers.firstOrNull { it.role == com.derycode.srs.core.model.Role.HEAD_TEACHER }
         val classTeacher = data.classes.firstOrNull { c ->
@@ -204,12 +245,8 @@ object ReportEngine {
             if (isEmpty()) append("Average ${fmt(result.averagePercent)}%")
         }
 
-        val classComment = data.comments
-            .filter { it.studentId == student.id && it.termId == result.termId && it.type == CommentType.CLASS_TEACHER }
-            .joinToString(" ") { it.text }
-        val headComment = data.comments
-            .filter { it.studentId == student.id && it.termId == result.termId && it.type == CommentType.HEAD_TEACHER }
-            .joinToString(" ") { it.text }
+        val classComment = escape(classCommentFor(data, student.id, result.termId)).replace("\n", "<br/>")
+        val headComment = escape(headCommentFor(data, student.id, result.termId)).replace("\n", "<br/>")
         val head = data.teachers.firstOrNull { it.role == com.derycode.srs.core.model.Role.HEAD_TEACHER }
         val classTeacher = cls?.classTeacherId?.let { id -> data.teachers.firstOrNull { it.id == id } }
 
@@ -260,7 +297,9 @@ object ReportEngine {
             .box .label b { color: #0b2a4a; margin-left: 4px; }
             .box .body { padding: 6px 8px; font-size: 10px; min-height: 48px; line-height: 1.45; color: #0b2a4a; }
             .box .sigline { padding: 2px 8px 8px 8px; font-size: 10px; font-weight: 800; color: $blue; display: flex; align-items: flex-end; gap: 6px; }
-            .box .sigline span { flex: 1; border-bottom: 1px solid $blue; height: 14px; }
+            .box .sigline span { flex: 1; border-bottom: 1px solid $blue; height: 14px; display: flex; align-items: flex-end; }
+            .box .sigline span img { max-height: 24px; max-width: 110px; object-fit: contain; }
+            .sigs .sig .line img { max-height: 28px; max-width: 150px; object-fit: contain; }
             .dates { margin: 8px 10px 8px 10px; border: 1.5px solid $blue; }
             .dates td { border: 1px solid $blueLine; text-align: center; font-size: 10.5px; padding: 5px 6px; color: #0b2a4a; }
             .dates td.h { background: $blueSoft; color: $blue; font-weight: 800; }
@@ -340,24 +379,24 @@ object ReportEngine {
             <div class="box">
               <div class="label">Class Teacher:<b>${escape(classTeacher?.name ?: "")}</b></div>
               <div class="body">${if (classComment.isBlank()) "&nbsp;" else escape(classComment)}</div>
-              <div class="sigline">Signature:<span></span></div>
+              <div class="sigline">Signature:<span>${sigImg(classTeacher?.signaturePath, 24)}</span></div>
             </div>
             <div class="box">
               <div class="label">Head Teacher Remarks:<b>${escape(head?.name ?: school.headTeacher)}</b></div>
               <div class="body">${if (headComment.isBlank()) "&nbsp;" else escape(headComment)}</div>
-              <div class="sigline">Signature:<span></span></div>
+              <div class="sigline">Signature:<span>${sigImg(head?.signaturePath, 24)}</span></div>
             </div>
           </div>
 
           <div class="bar center">Fees and term dates</div>
           <table class="dates">
-            <tr><td class="h">Current Term Closing Date</td><td class="h">Next Term Opening Date</td></tr>
-            <tr><td class="v">${escape(term?.endDate ?: "")}</td><td class="v">${escape(term?.nextTermBegins ?: "")}</td></tr>
+            <tr><td class="h">Term Began</td><td class="h">Current Term Closing Date</td><td class="h">Next Term Opening Date</td></tr>
+            <tr><td class="v">${escape(term?.startDate ?: "")}</td><td class="v">${escape(term?.endDate ?: "")}</td><td class="v">${escape(term?.nextTermBegins ?: "")}</td></tr>
           </table>
 
           <div class="sigs">
-            <div class="sig"><div class="line"></div>Class Teacher</div>
-            <div class="sig"><div class="line"></div>Head Teacher</div>
+            <div class="sig"><div class="line">${sigImg(classTeacher?.signaturePath, 28)}</div>Class Teacher</div>
+            <div class="sig"><div class="line">${sigImg(head?.signaturePath, 28)}</div>Head Teacher</div>
             <div class="stampwrap"><div class="stamp"></div>School Stamp</div>
           </div>
 
@@ -421,6 +460,9 @@ object ReportEngine {
         .comments .body { border: 1px solid #ccc; min-height: 46px; padding: 6px 8px; font-size: 12px; }
         .signatures { display: flex; justify-content: space-between; margin-top: 26px; font-size: 11px; color: #333; text-align: center; }
         .sig .line { border-bottom: 1px solid #444; width: 170px; height: 34px; margin-bottom: 3px; }
+        .sigimg { max-width: 100%; object-fit: contain; display: block; margin: 0 auto; }
+        .sig .line .sigimg { max-height: 32px; }
+        .box .sigline .sigimg { max-height: 24px; }
         .grading-key { margin-top: 16px; font-size: 9px; color: #999; text-align: center; }
         .page-break { page-break-after: always; }
         /* ── A4 fit: never spill onto a second sheet ── */

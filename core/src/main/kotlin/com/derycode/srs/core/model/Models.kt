@@ -77,7 +77,15 @@ data class Term(
     val startDate: String = "",
     val endDate: String = "",
     val nextTermBegins: String = "",
-    val status: String = "OPEN"      // OPEN / CLOSED
+    val status: String = "OPEN",     // OPEN / CLOSED
+    /**
+     * Remark used for every student in this term who has no individual
+     * class-teacher comment of their own, so a whole class prints the same
+     * closing remark without typing it student by student.
+     */
+    val classTeacherComment: String = "",
+    /** Same idea for the head teacher's closing remark. */
+    val headTeacherComment: String = ""
 )
 
 @Serializable

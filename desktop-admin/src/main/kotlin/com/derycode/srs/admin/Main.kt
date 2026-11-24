@@ -1004,6 +1004,10 @@ fun AcademicYearsSection(state: AppState) {
                         ) { Text("Term ${term.number}", fontSize = 13.sp) }
                     }
                 }
+                // Dates and the closing remarks every report in this term shares.
+                year.terms.firstOrNull { it.id == year.currentTermId }?.let { cur ->
+                    TermDetailsEditor(state, year.id, cur)
+                }
             }
         }
         Spacer(Modifier.height(10.dp))
@@ -1372,6 +1376,56 @@ fun PinLockScreen(state: AppState) {
             if (err) Text("Wrong PIN — try again.", color = Color(0xFFFF6B6B), fontSize = 12.sp)
             Spacer(Modifier.height(12.dp))
             Text("Forgot the PIN? Restore a backup made before the PIN was set, or use factory reset.", color = Theme.MUTED, fontSize = 10.sp)
+        }
+    }
+}
+
+/**
+ * Term dates plus the closing remarks that every report in the term prints.
+ * A learner with their own comment still keeps it; everyone else falls back
+ * to the text saved here, so a whole class prints the same remark.
+ */
+@Composable
+private fun TermDetailsEditor(state: AppState, yearId: String, term: Term) {
+    var began by remember(term.id, term.startDate) { mutableStateOf(term.startDate) }
+    var ends by remember(term.id, term.endDate) { mutableStateOf(term.endDate) }
+    var nextOpens by remember(term.id, term.nextTermBegins) { mutableStateOf(term.nextTermBegins) }
+    var classRemark by remember(term.id, term.classTeacherComment) { mutableStateOf(term.classTeacherComment) }
+    var headRemark by remember(term.id, term.headTeacherComment) { mutableStateOf(term.headTeacherComment) }
+
+    Spacer(Modifier.height(10.dp))
+    Column(Modifier.fillMaxWidth().background(Theme.CARD, RoundedCornerShape(8.dp)).padding(12.dp)) {
+        Text("Term ${term.number} dates and closing remarks", color = Theme.TEXT, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(8.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            TextField(began, { began = it }, Modifier.width(150.dp), "Term began (dd/mm/yyyy)")
+            TextField(ends, { ends = it }, Modifier.width(150.dp), "Term ends (dd/mm/yyyy)")
+            TextField(nextOpens, { nextOpens = it }, Modifier.width(170.dp), "Next term opens")
+        }
+        Spacer(Modifier.height(8.dp))
+        TextField(classRemark, { classRemark = it }, Modifier.fillMaxWidth(), "Class teacher's remark printed on every report this term")
+        Spacer(Modifier.height(6.dp))
+        TextField(headRemark, { headRemark = it }, Modifier.fillMaxWidth(), "Head teacher's remark printed on every report this term")
+        Spacer(Modifier.height(8.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Btn("Save term details") {
+                state.repo.mutate("TERM_DETAILS_SAVED", "AcademicYear", yearId, new = "Term ${term.number}") { dd ->
+                    dd.copy(academicYears = dd.academicYears.map { y ->
+                        if (y.id != yearId) y else y.copy(terms = y.terms.map { t ->
+                            if (t.id != term.id) t else t.copy(
+                                startDate = began.trim(),
+                                endDate = ends.trim(),
+                                nextTermBegins = nextOpens.trim(),
+                                classTeacherComment = classRemark.trim(),
+                                headTeacherComment = headRemark.trim()
+                            )
+                        })
+                    })
+                }
+                state.refresh()
+            }
+            Text("Saved remarks print on every report in this term unless a learner has their own.",
+                color = Theme.MUTED, fontSize = 11.sp)
         }
     }
 }

@@ -1,12 +1,12 @@
 {
-  "console": "2.3.40",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.40.msi",
+  "console": "2.3.41",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.41.msi",
   "teacher": "1.20.18",
   "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.18.apk",
   "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.18.apk",
   "teacherDesktop": "1.0.0",
   "teacherDesktopDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMakerTeacher-1.0.0.msi",
-  "released": "2026-11-17",
-  "notes": "Console 2.3.40. Teacher marks now turn up on the marks grid.\n- The grid has a Term selector: marks sent for another term were saved but never shown, so this was the usual reason. They are now one tap away\n- Marks a teacher sends are matched to this school's own learners, subjects, assessments and terms before saving, so a phone whose term or subject was recreated no longer sends marks into ids the console never uses\n- Teacher submissions are only cleared from the cloud when every one of them imported; a partial import used to delete the rest\n- Anything that cannot be matched is reported instead of being silently stored",
-  "consoleVersion": "2.3.40"
+  "released": "2026-11-24",
+  "notes": "Console 2.3.41. Reports now carry the term's comments, both term dates and a scanned signature.\n- One remark can be typed once per term and every report in that term prints it, class teacher and head teacher both. A learner with their own comment keeps it\n- The standard card now prints Term Began, the closing date and the next term's opening date. Type the dates under Academic Years, then Term dates and closing remarks\n- A scanned signature picked under Staff prints above the signature line and inside the comment box, on screen and in the printout\n- Placeholder content is gone from the standard report: no invented subject rows, no blank date slashes and no default motto when the school has none\n- The same remarks and dates appear in the Word export",
+  "consoleVersion": "2.3.41"
 }

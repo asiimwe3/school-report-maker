@@ -1,5 +1,7 @@
 package com.derycode.srs.admin
 
+import com.derycode.srs.core.report.ReportEngine
+
 // ─────────────────────────────────────────────────────────────────────────────
 // ReportPaper — LIVE on-screen preview of a printed report card.
 // Mirrors the DocxReport engine (same layouts, same accent colors, same
@@ -210,10 +212,9 @@ private fun PaperContent(
                     r.remark)
             }
         } else {
-            val sampleSubjects = d.subjects.filter { it.active && (cls == null || it.level == cls.level) }.take(7)
-            (if (sampleSubjects.isEmpty()) listOf(null) else sampleSubjects.map { it as Subject? }).map { s ->
-                List(headers.size) { idx -> if (idx == 0) (s?.name ?: "Subject name") else "—" }
-            }
+            // No marks for this learner yet: say so once instead of printing
+            // invented subject names and dashes across the sheet.
+            listOf(List(headers.size) { idx -> if (idx == 0) "No marks recorded for this term" else "" })
         }
         rows.forEach { row ->
             Row(Modifier.fillMaxWidth().border(1.dp, line, RectangleShape)) {
@@ -441,26 +442,30 @@ private fun SummaryPaper(
         Bar("COMMENTS", StdBlue, center = true)
         Row(Modifier.fillMaxWidth().padding(6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             CommentBox("Class Teacher:", classTeacher?.name.orEmpty(),
-                d.comments.filter { it.studentId == result?.studentId && it.termId == result?.termId && it.type == CommentType.CLASS_TEACHER }
-                    .joinToString(" ") { it.text }, Modifier.weight(1f))
+                ReportEngine.classCommentFor(d, result?.studentId.orEmpty(), result?.termId.orEmpty()),
+                Modifier.weight(1f), loadBitmap(classTeacher?.signaturePath))
             CommentBox("Head Teacher Remarks:", head?.name ?: school.headTeacher,
-                d.comments.filter { it.studentId == result?.studentId && it.termId == result?.termId && it.type == CommentType.HEAD_TEACHER }
-                    .joinToString(" ") { it.text }, Modifier.weight(1f))
+                ReportEngine.headCommentFor(d, result?.studentId.orEmpty(), result?.termId.orEmpty()),
+                Modifier.weight(1f), loadBitmap(head?.signaturePath))
         }
 
         // fees and dates
         Bar("FEES AND TERM DATES", StdBlue, center = true)
         Column(Modifier.fillMaxWidth().padding(6.dp).border(1.dp, StdBlue)) {
             Row(Modifier.fillMaxWidth().background(StdBlueSoft).padding(4.dp)) {
+                Text("Term Began", color = StdBlue, fontSize = 6.sp, fontWeight = FontWeight.Black,
+                    textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
                 Text("Current Term Closing Date", color = StdBlue, fontSize = 6.sp, fontWeight = FontWeight.Black,
                     textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
                 Text("Next Term Opening Date", color = StdBlue, fontSize = 6.sp, fontWeight = FontWeight.Black,
                     textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
             }
             Row(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
-                Text(term?.second?.endDate?.ifBlank { "____ / ____ / ______" } ?: "____ / ____ / ______", color = StdText, fontSize = 8.sp,
+                Text(term?.second?.startDate?.ifBlank { "" } ?: "", color = StdText, fontSize = 8.sp,
                     fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
-                Text(term?.second?.nextTermBegins?.ifBlank { "____ / ____ / ______" } ?: "____ / ____ / ______", color = StdText, fontSize = 8.sp,
+                Text(term?.second?.endDate?.ifBlank { "" } ?: "", color = StdText, fontSize = 8.sp,
+                    fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
+                Text(term?.second?.nextTermBegins?.ifBlank { "" } ?: "", color = StdText, fontSize = 8.sp,
                     fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
             }
         }
@@ -468,8 +473,8 @@ private fun SummaryPaper(
 
         // signatures + stamp
         Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            SigBlock("Class Teacher", Modifier.weight(1f))
-            SigBlock("Head Teacher", Modifier.weight(1f))
+            SigBlock("Class Teacher", Modifier.weight(1f), loadBitmap(classTeacher?.signaturePath))
+            SigBlock("Head Teacher", Modifier.weight(1f), loadBitmap(head?.signaturePath))
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Box(Modifier.size(44.dp).border(1.dp, StdBlue, CircleShape))
                 Text("School Stamp", color = StdBlue, fontSize = 5.sp, fontWeight = FontWeight.Bold)
@@ -477,7 +482,7 @@ private fun SummaryPaper(
         }
         Spacer(Modifier.weight(1f))
         Box(Modifier.fillMaxWidth().background(StdBlue).padding(vertical = 4.dp), contentAlignment = Alignment.Center) {
-            Text(school.motto.ifBlank { "Together for a Brighter Future" }, color = Color.White, fontSize = 8.sp, fontStyle = FontStyle.Italic)
+            Text(school.motto, color = Color.White, fontSize = 8.sp, fontStyle = FontStyle.Italic)
         }
     }
 }
@@ -515,7 +520,13 @@ private fun androidx.compose.foundation.layout.RowScope.TCell(text: String, weig
 }
 
 @Composable
-private fun CommentBox(label: String, person: String, body: String, modifier: Modifier = Modifier) {
+private fun CommentBox(
+    label: String,
+    person: String,
+    body: String,
+    modifier: Modifier = Modifier,
+    signature: androidx.compose.ui.graphics.ImageBitmap? = null
+) {
     Column(modifier.border(1.dp, StdBlue)) {
         Row(Modifier.fillMaxWidth().background(StdBlueSoft).padding(horizontal = 5.dp, vertical = 3.dp)) {
             Text(label, color = StdBlue, fontSize = 6.sp, fontWeight = FontWeight.Black)
@@ -527,14 +538,31 @@ private fun CommentBox(label: String, person: String, body: String, modifier: Mo
         Row(Modifier.fillMaxWidth().padding(horizontal = 5.dp, vertical = 4.dp), verticalAlignment = Alignment.Bottom) {
             Text("Signature:", color = StdBlue, fontSize = 6.sp, fontWeight = FontWeight.Black)
             Spacer(Modifier.width(4.dp))
-            Box(Modifier.weight(1f).height(0.8.dp).background(StdBlue))
+            Box(Modifier.weight(1f).height(18.dp), contentAlignment = Alignment.BottomStart) {
+                if (signature != null) {
+                    androidx.compose.foundation.Image(
+                        bitmap = signature, contentDescription = "Signature",
+                        modifier = Modifier.height(16.dp).widthIn(max = 90.dp))
+                }
+                Box(Modifier.fillMaxWidth().height(0.8.dp).background(StdBlue))
+            }
         }
     }
 }
 
 @Composable
-private fun SigBlock(label: String, modifier: Modifier = Modifier) {
+private fun SigBlock(
+    label: String,
+    modifier: Modifier = Modifier,
+    signature: androidx.compose.ui.graphics.ImageBitmap? = null
+) {
     Column(modifier) {
+        if (signature != null) {
+            androidx.compose.foundation.Image(
+                bitmap = signature, contentDescription = "Signature",
+                modifier = Modifier.height(22.dp).fillMaxWidth())
+            Spacer(Modifier.height(1.dp))
+        }
         Box(Modifier.fillMaxWidth().height(1.dp).background(StdBlue))
         Spacer(Modifier.height(2.dp))
         Text(label, color = StdBlue, fontSize = 6.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())

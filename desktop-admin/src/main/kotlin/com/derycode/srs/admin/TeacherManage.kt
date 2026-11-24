@@ -88,6 +88,48 @@ fun TeacherAdminPanel(state: AppState, t: Teacher, onClose: () -> Unit) {
         }
 
         Spacer(Modifier.height(14.dp))
+        // ── Scanned signature ────────────────────────────────────────────────
+        Text("Scanned signature", color = Theme.MUTED, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(4.dp))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                if (t.signaturePath.isNullOrBlank()) "No signature yet — scan it, then pick the image file"
+                else "Signature on file: " + java.io.File(t.signaturePath).name,
+                color = Theme.TEXT, fontSize = 12.sp
+            )
+            Btn("Choose scanned signature", primary = false) {
+                val dialog = java.awt.FileDialog(
+                    null as java.awt.Frame?, "Pick the scanned signature", java.awt.FileDialog.LOAD
+                )
+                dialog.setFilenameFilter { _, name ->
+                    val n = name.lowercase()
+                    n.endsWith(".png") || n.endsWith(".jpg") || n.endsWith(".jpeg")
+                }
+                dialog.isVisible = true
+                val dir = dialog.directory
+                val file = dialog.file
+                if (dir != null && file != null) {
+                    update("TEACHER_SIGNATURE_SET", t.name) { dd ->
+                        dd.copy(teachers = dd.teachers.map {
+                            if (it.id == t.id) it.copy(signaturePath = java.io.File(dir, file).absolutePath) else it
+                        })
+                    }
+                }
+            }
+            if (!t.signaturePath.isNullOrBlank()) {
+                Btn("Remove", primary = false) {
+                    update("TEACHER_SIGNATURE_CLEARED", t.name) { dd ->
+                        dd.copy(teachers = dd.teachers.map {
+                            if (it.id == t.id) it.copy(signaturePath = null) else it
+                        })
+                    }
+                }
+            }
+        }
+        Text("The image prints above the signature line and inside the comment box on every report.",
+            color = Theme.MUTED, fontSize = 11.sp)
+
+        Spacer(Modifier.height(14.dp))
         // ── Class teacher of ─────────────────────────────────────────────────
         Text("Class teacher of", color = Theme.MUTED, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(4.dp))
