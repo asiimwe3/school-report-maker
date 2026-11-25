@@ -443,6 +443,9 @@ private fun SummaryPaper(
             THead("TOTAL\n(100%)", 0.8f); THead("GRADE", 0.55f)
             THead("TEACHER COMMENT", 1.7f); THead("INITIALS", 0.55f)
         }
+        // The term this sheet belongs to, even before the learner has a result:
+        // term-wide remarks and the class teacher must still print.
+        val paperTermId = result?.termId ?: term?.second?.id ?: ""
         val rows = result?.subjectResults.orEmpty()
         rows.forEach { r ->
             val name = d.subjects.firstOrNull { it.id == r.subjectId }?.name?.uppercase() ?: r.subjectId
@@ -451,9 +454,17 @@ private fun SummaryPaper(
                 it.studentId == result?.studentId && it.termId == result.termId &&
                     it.subjectId == r.subjectId && it.type == CommentType.SUBJECT
             }?.text.orEmpty()
-            val init = d.teachers.firstOrNull { t ->
+            // INITIALS: the subject teacher if one is assigned, else whoever typed
+            // the marks, else the class teacher. A school that never filled the
+            // assignment grid still gets a sign-off instead of a blank cell.
+            val enteredBy = d.marks.firstOrNull {
+                it.studentId == result?.studentId && it.termId == result?.termId && it.subjectId == r.subjectId
+            }?.enteredBy?.takeIf { it.isNotBlank() }
+            val init = (d.teachers.firstOrNull { t ->
                 d.assignments.any { a -> a.teacherId == t.id && a.subjectId == r.subjectId && a.classId == cls?.id }
-            }?.let { initialsOf(it.name) }.orEmpty()
+            } ?: enteredBy?.let { eb -> d.teachers.firstOrNull { it.id == eb || it.name == eb } }
+              ?: cls?.classTeacherId?.let { id -> d.teachers.firstOrNull { it.id == id } })
+                ?.let { initialsOf(it.name) }.orEmpty()
             Row(Modifier.fillMaxWidth().border(0.5.dp, StdBlueLine).padding(vertical = 2.dp, horizontal = 3.dp), verticalAlignment = Alignment.CenterVertically) {
                 TCell(name, 1.7f, StdBlue, bold = true, left = true)
                 TCell(r.assessments.getOrElse(0) { -1.0 }.let(::cell), 0.5f, StdText)
@@ -479,10 +490,10 @@ private fun SummaryPaper(
         Bar("COMMENTS", StdBlue, center = true)
         Row(Modifier.fillMaxWidth().padding(6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             CommentBox("Class Teacher:", classTeacher?.name.orEmpty(),
-                ReportEngine.classCommentFor(d, result?.studentId.orEmpty(), result?.termId.orEmpty()),
+                ReportEngine.classCommentFor(d, result?.studentId.orEmpty(), result?.termId ?: paperTermId),
                 Modifier.weight(1f), loadBitmap(classTeacher?.signaturePath))
             CommentBox("Head Teacher Remarks:", head?.name ?: school.headTeacher,
-                ReportEngine.headCommentFor(d, result?.studentId.orEmpty(), result?.termId.orEmpty()),
+                ReportEngine.headCommentFor(d, result?.studentId.orEmpty(), result?.termId ?: paperTermId),
                 Modifier.weight(1f), loadBitmap(head?.signaturePath))
         }
 

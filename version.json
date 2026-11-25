@@ -1,12 +1,12 @@
 {
-  "console": "2.3.44",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.44.msi",
+  "console": "2.3.45",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/download/v2.4.52/SchoolReportMaker-2.3.45.msi",
   "teacher": "1.20.18",
   "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.18.apk",
   "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.18.apk",
   "teacherDesktop": "1.0.0",
   "teacherDesktopDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMakerTeacher-1.0.0.msi",
-  "released": "2026-11-24",
-  "notes": "Console 2.3.44. The INITIALS column now prints a sign-off per subject.\n- Every subject carries its own initials, edited on the Subjects screen, so a card prints MD, MF, AKD and the rest even when no teacher record is assigned to that subject\n- When a subject has no initials of its own, the assigned teacher's initials are used exactly as before\n- New schools start with the standard O-Level subject set already signed: Mathematics MD, English MF, Physics LD, Chemistry CA, Biology CA, History GD, Geography KL, Agriculture KL, Entrepreneurship AKD, ICT SJ, Art and Design KJ, Runyoro Rutooro MF, Kiswahili A, CRE AK, Physical Education K",
-  "consoleVersion": "2.3.44"
+  "released": "2026-11-25",
+  "notes": "Console 2.3.45. Comments and initials no longer come out blank.\n- The INITIALS column prints the subject teacher, and when none is assigned it prints whoever entered the marks, then the class teacher\n- Class teacher and head teacher remarks now print even for a learner who has no result yet, because the remark belongs to the term, not to the result\n- The teacher app preview uses the same term-wide remarks, so a card is never blank there either\n- Type the remarks once under Academic Years, Term dates and closing remarks, and every card in that term carries them",
+  "consoleVersion": "2.3.45"
 }

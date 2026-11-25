@@ -179,7 +179,7 @@ fun ReportPreviewScreen(state: TeacherState) {
 
 /** The class teacher's own comment for this learner, if one was written. */
 private fun classComment(d: SchoolData, studentId: String, termId: String): String =
-    d.comments.lastOrNull { it.studentId == studentId && it.termId == termId && it.subjectId == null }?.text.orEmpty()
+    com.derycode.srs.core.report.ReportEngine.classCommentFor(d, studentId, termId)
 
 @Composable
 private fun ReportCard(

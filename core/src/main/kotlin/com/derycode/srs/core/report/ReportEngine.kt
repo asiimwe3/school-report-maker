@@ -217,9 +217,15 @@ object ReportEngine {
             .filter { it.isNotBlank() }.map { it.first().uppercaseChar() }.take(3).joinToString("")
 
         fun teacherFor(subjectId: String): String {
-            val t = data.teachers.firstOrNull { te ->
+            val assigned = data.teachers.firstOrNull { te ->
                 data.assignments.any { a -> a.teacherId == te.id && a.subjectId == subjectId && a.classId == cls?.id }
             }
+            val enteredBy = data.marks.firstOrNull {
+                it.studentId == result.studentId && it.termId == result.termId && it.subjectId == subjectId
+            }?.enteredBy?.takeIf { it.isNotBlank() }
+            val t = assigned
+                ?: enteredBy?.let { eb -> data.teachers.firstOrNull { it.id == eb || it.name == eb } }
+                ?: cls?.classTeacherId?.let { id -> data.teachers.firstOrNull { it.id == id } }
             return t?.let { initialsOf(it.name) } ?: ""
         }
 
