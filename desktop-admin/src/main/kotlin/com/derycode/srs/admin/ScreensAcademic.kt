@@ -524,7 +524,7 @@ fun ReportsScreen(state: AppState) {
                             Files.createDirectories(outDir)
                             val label = if (cls.stream.isBlank()) cls.name else "${cls.name} ${cls.stream}"
                             val f = outDir.resolve("class-${label.replace(" ", "")}-term${term.number}-cards.pdf")
-                            com.derycode.srs.core.report.PdfReport.writeClassReport(f, d, results, templateFor(d, cls)?.accentColor)
+                            com.derycode.srs.pdf.PdfReport.writeClassReport(f, d, results, templateFor(d, cls)?.accentColor)
                             state.repo.mutate("REPORTS_GENERATED", "Report", classId) { dd ->
                                 dd.copy(reports = results.map { r ->
                                     GeneratedReport(

@@ -12,4 +12,4 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "school-report-system"
-include(":core", ":desktop-admin", ":desktop-teacher", ":teacher-app")
+include(":core", ":pdf", ":desktop-admin", ":desktop-teacher", ":teacher-app")

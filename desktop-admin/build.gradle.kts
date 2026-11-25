@@ -26,7 +26,7 @@ plugins {
 
 kotlin { jvmToolchain(17) }
 
-val consoleVersion = "2.3.47"   // single source of truth — also drives packageVersion below
+val consoleVersion = "2.3.48"   // single source of truth — also drives packageVersion below
 
 // Generate AppVersion.kt so runtime code always matches the packaged version
 // (audit fix: DesktopSupport had a stale hardcoded "2.0.0")
@@ -46,6 +46,7 @@ sourceSets.main { kotlin.srcDir(layout.buildDirectory.dir("generated/versionkt")
 
 dependencies {
     implementation(project(":core"))
+    implementation(project(":pdf"))
     implementation(compose.desktop.currentOs)
     implementation(compose.material3)
     implementation("com.google.zxing:core:3.5.3")   // QR code for the teacher invite

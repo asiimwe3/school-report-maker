@@ -1,7 +1,6 @@
-package com.derycode.srs.core
+package com.derycode.srs.pdf
 
 import com.derycode.srs.core.model.*
-import com.derycode.srs.core.report.PdfReport
 import com.derycode.srs.core.results.ResultEngine
 import org.apache.pdfbox.pdmodel.PDDocument
 import org.apache.pdfbox.text.PDFTextStripper
@@ -86,4 +85,50 @@ class ClassPdfTest {
             assertTrue(text.contains("MD") && text.contains("MF"), "initials are missing: $text")
         }
     }
+
+    @Test
+    fun fifteenSubjectsAllPrintOnOneBalancedPage() {
+        val d = data()
+        // a real Senior 1 class sits about fifteen subjects
+        val many = (1..15).map { i ->
+            Subject(id = "sub$i", name = "Subject$i", code = "S$i", level = Level.O_LEVEL)
+        }
+        val withMany = d.copy(
+            subjects = many,
+            marks = many.flatMapIndexed { i, s ->
+                listOf(
+                    Mark(id = "b$i", studentId = "s1", subjectId = s.id, termId = "t1", componentId = "k-bot", score = 70.0),
+                    Mark(id = "e$i", studentId = "s1", subjectId = s.id, termId = "t1", componentId = "k-eot", score = 70.0)
+                )
+            }
+        )
+        val results = ResultEngine.classResults(withMany, "c1", "t1", "g1").filter { it.studentId == "s1" }
+        val out = Files.createTempFile("class-15", ".pdf")
+        PdfReport.writeClassReport(out, withMany, results)
+
+        PDDocument.load(out.toFile()).use { doc ->
+            assertEquals(1, doc.numberOfPages, "fifteen subjects still fit one A4 page")
+            val text = PDFTextStripper().getText(doc)
+            (1..15).forEach { i ->
+                assertTrue(text.contains("SUBJECT$i"), "subject $i was dropped from the card")
+            }
+            assertTrue(text.contains("AVERAGE SCORE"), "the average row is missing")
+            assertTrue(text.contains("CLASS TEACHER"), "the signature block is missing")
+        }
+    }
+
+    @Test
+    fun aTinyClassStillFillsThePageEvenly() {
+        val d = data().copy(subjects = listOf(Subject(id = "sub1", name = "Mathematics", code = "MATH", level = Level.O_LEVEL)))
+        val results = ResultEngine.classResults(d, "c1", "t1", "g1").take(1)
+        val out = Files.createTempFile("class-1", ".pdf")
+        PdfReport.writeClassReport(out, d, results)
+        PDDocument.load(out.toFile()).use { doc ->
+            assertEquals(1, doc.numberOfPages)
+            val text = PDFTextStripper().getText(doc)
+            assertTrue(text.contains("MATHEMATICS"))
+            assertTrue(text.contains("HEAD TEACHER"), "the footer block must still sit at the bottom")
+        }
+    }
+
 }
