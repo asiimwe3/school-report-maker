@@ -490,17 +490,18 @@ object DocxReport {
                 val teacherInitials = data.teachers.firstOrNull { t ->
                     data.assignments.any { asg -> asg.teacherId == t.id && asg.subjectId == r.subjectId && asg.classId == cls?.id }
                 }?.let { initials(it.name) }.orEmpty()
-                val printedInitials = s?.initials?.trim()?.uppercase().orEmpty().ifBlank { teacherInitials }
+                val printedInitials = s?.let { SubjectInitials.printed(it, teacherInitials) } ?: teacherInitials
+                val none = "\u2014"
                 listOf(
                     s?.name?.uppercase() ?: r.subjectId,
-                    a.getOrElse(0) { -1.0 }.let(::cell),
-                    a.getOrElse(1) { -1.0 }.let(::cell),
-                    a.getOrElse(2) { -1.0 }.let(::cell),
-                    cell(r.formativePercent),
-                    cell(r.examPercent),
-                    fmt(r.percentage),
-                    r.grade,
-                    comment,
+                    if (r.hasMarks) a.getOrElse(0) { -1.0 }.let(::cell) else none,
+                    if (r.hasMarks) a.getOrElse(1) { -1.0 }.let(::cell) else none,
+                    if (r.hasMarks) a.getOrElse(2) { -1.0 }.let(::cell) else none,
+                    if (r.hasMarks) cell(r.formativePercent) else none,
+                    if (r.hasMarks) cell(r.examPercent) else none,
+                    if (r.hasMarks) fmt(r.percentage) else none,
+                    if (r.hasMarks) r.grade else none,
+                    comment.ifBlank { if (r.hasMarks) r.remark else "" },
                     printedInitials
                 )
             } + listOf(listOf("AVERAGE SCORE", "", "", "", "", "", fmt(result.averagePercent), "", "", ""))

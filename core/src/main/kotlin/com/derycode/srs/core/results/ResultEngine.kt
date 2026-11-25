@@ -166,7 +166,8 @@ object ResultEngine {
                 grade = GradingEngine.grade(scheme, pct),
                 points = GradingEngine.points(scheme, pct),
                 remark = GradingEngine.remark(scheme, pct),
-                incomplete = incomplete || sm.isEmpty()
+                incomplete = incomplete || sm.isEmpty(),
+                hasMarks = sm.isNotEmpty()
             )
         }
         if (subjectResults.isEmpty()) {

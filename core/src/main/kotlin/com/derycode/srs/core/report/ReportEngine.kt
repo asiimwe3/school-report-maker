@@ -201,6 +201,32 @@ object ReportEngine {
      * split, totals, per-subject teacher comment and initials, both sets of
      * comments, fees and term dates, three signature blocks and the school stamp.
      */
+    /** Printed where a learner has no mark at all, so a blank subject is never read as a zero. */
+    const val NO_MARK = "&mdash;"
+
+    /**
+     * Printed when nobody typed a remark: the learner's own figures, so the box
+     * says something true instead of staying empty.
+     */
+    fun autoRemark(data: SchoolData, result: TermResult): String {
+        if (result.subjectResults.none { it.hasMarks }) return ""
+        val parts = mutableListOf<String>()
+        parts += "Average " + (Math.round(result.averagePercent * 10.0) / 10.0) + "%"
+        if (result.classPosition > 0) parts += "position " + result.classPosition + " of " + classSize(data, result)
+        result.division?.let { if (it.isNotBlank()) parts += "Division " + it }
+        result.uceResult?.let { if (it.isNotBlank()) parts += "Result " + it }
+        result.aggregate?.let { parts += "Aggregate " + it }
+        result.uacePoints?.let { parts += "Points " + it }
+        return parts.joinToString(" \u00b7 ")
+    }
+
+    private fun classSize(data: SchoolData, result: TermResult): Int {
+        val cls = data.classes.firstOrNull { c ->
+            data.enrollments.any { e -> e.studentId == result.studentId && e.classId == c.id }
+        } ?: return 0
+        return data.enrollments.count { it.classId == cls.id }
+    }
+
     fun summaryReport(data: SchoolData, result: TermResult): String {
         val student = data.students.firstOrNull { it.id == result.studentId }
             ?: return "<html><body><p>Student not found.</p></body></html>"
@@ -229,16 +255,19 @@ object ReportEngine {
             return t?.let { initialsOf(it.name) } ?: ""
         }
 
-        /** Printed initials: the subject's own first, then the assigned teacher's. */
+        /** Printed initials: the subject's own, then the assigned teacher's, then the standard sign-off. */
         fun subjectInitials(subj: Subject): String =
-            subj.initials.trim().uppercase().ifBlank { teacherFor(subj.id) }
+            SubjectInitials.printed(subj, teacherFor(subj.id))
 
 
-        fun subjectComment(subjectId: String): String =
-            data.comments.firstOrNull {
+        fun subjectComment(subjectId: String, remark: String, hasMarks: Boolean): String {
+            val own = data.comments.firstOrNull {
                 it.studentId == result.studentId && it.termId == result.termId &&
                     it.subjectId == subjectId && it.type == CommentType.SUBJECT
-            }?.text ?: ""
+            }?.text?.trim().orEmpty()
+            if (own.isNotEmpty()) return own
+            return if (hasMarks) remark.trim() else ""
+        }
 
         // Compulsory subjects first, then the electives — the order completed in
         // ResultEngine.classResults, kept by every renderer.
@@ -249,14 +278,14 @@ object ReportEngine {
             """
             <tr>
               <td class="subj">${escape(subj.name.uppercase())}</td>
-              <td>${a.getOrElse(0) { -1.0 }.let { if (it < 0) "" else fmt(it) }}</td>
-              <td>${a.getOrElse(1) { -1.0 }.let { if (it < 0) "" else fmt(it) }}</td>
-              <td>${a.getOrElse(2) { -1.0 }.let { if (it < 0) "" else fmt(it) }}</td>
-              <td>${dash(r.formativePercent)}</td>
-              <td>${dash(r.examPercent)}</td>
-              <td class="total">${fmt(r.percentage)}</td>
-              <td class="grade">${r.grade}</td>
-              <td class="cmt">${escape(subjectComment(subj.id))}</td>
+              <td>${a.getOrElse(0) { -1.0 }.let { if (!r.hasMarks || it < 0) NO_MARK else fmt(it) }}</td>
+              <td>${a.getOrElse(1) { -1.0 }.let { if (!r.hasMarks || it < 0) NO_MARK else fmt(it) }}</td>
+              <td>${a.getOrElse(2) { -1.0 }.let { if (!r.hasMarks || it < 0) NO_MARK else fmt(it) }}</td>
+              <td>${if (!r.hasMarks) NO_MARK else dash(r.formativePercent)}</td>
+              <td>${if (!r.hasMarks) NO_MARK else dash(r.examPercent)}</td>
+              <td class="total">${if (r.hasMarks) fmt(r.percentage) else NO_MARK}</td>
+              <td class="grade">${if (r.hasMarks) r.grade else NO_MARK}</td>
+              <td class="cmt">${escape(subjectComment(subj.id, r.remark, r.hasMarks))}</td>
               <td>${escape(subjectInitials(subj))}</td>
             </tr>
             """.trimIndent()
@@ -276,8 +305,9 @@ object ReportEngine {
             if (isEmpty()) append("Average ${fmt(result.averagePercent)}%")
         }
 
-        val classComment = escape(classCommentFor(data, student.id, result.termId)).replace("\n", "<br/>")
-        val headComment = escape(headCommentFor(data, student.id, result.termId)).replace("\n", "<br/>")
+        val auto = autoRemark(data, result)
+        val classComment = escape(classCommentFor(data, student.id, result.termId).ifBlank { auto }).replace("\n", "<br/>")
+        val headComment = escape(headCommentFor(data, student.id, result.termId).ifBlank { auto }).replace("\n", "<br/>")
         val head = data.teachers.firstOrNull { it.role == com.derycode.srs.core.model.Role.HEAD_TEACHER }
         val classTeacher = cls?.classTeacherId?.let { id -> data.teachers.firstOrNull { it.id == id } }
 

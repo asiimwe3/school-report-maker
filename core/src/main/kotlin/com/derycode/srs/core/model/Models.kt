@@ -327,7 +327,10 @@ data class SubjectResult(
     val points: Int,
     val remark: String,
     val positionInSubject: Int = 0,  // 0 = not ranked
-    val incomplete: Boolean = false  // missing/absent/exempt entries exist
+    val incomplete: Boolean = false, // missing/absent/exempt entries exist
+    /** False when the learner has no mark at all in this subject: the card prints a
+     *  dash instead of a zero, so an empty subject never looks like a failed one. */
+    val hasMarks: Boolean = true
 )
 
 @Serializable

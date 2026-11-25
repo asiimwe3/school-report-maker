@@ -1,12 +1,12 @@
 {
-  "console": "2.3.45",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.45.msi",
+  "console": "2.3.46",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.46.msi",
   "teacher": "1.20.18",
   "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.18.apk",
   "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.18.apk",
   "teacherDesktop": "1.0.0",
   "teacherDesktopDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMakerTeacher-1.0.0.msi",
   "released": "2026-11-25",
-  "notes": "Console 2.3.45. Comments and initials no longer come out blank.\n- The INITIALS column prints the subject teacher, and when none is assigned it prints whoever entered the marks, then the class teacher\n- Class teacher and head teacher remarks now print even for a learner who has no result yet, because the remark belongs to the term, not to the result\n- The teacher app preview uses the same term-wide remarks, so a card is never blank there either\n- Type the remarks once under Academic Years, Term dates and closing remarks, and every card in that term carries them",
-  "consoleVersion": "2.3.45"
+  "notes": "Console 2.3.46. A subject nobody sat prints a dash, not a zero.\n- An unmarked subject shows a dash in A1-A3, formative, exam, total and grade, so it never looks like a failure\n- Every marked subject prints a comment: the teacher's own, else the grade remark from the scheme\n- INITIALS always prints: the subject's own, else the assigned teacher's, else the standard sign-off (MD, MF, AKD, SJ, KJ, A, AK, K)\n- The class teacher and head teacher boxes fill with the learner's own figures (average, position, division) when nobody typed a remark\n- Word output matches the printed card",
+  "consoleVersion": "2.3.46"
 }
