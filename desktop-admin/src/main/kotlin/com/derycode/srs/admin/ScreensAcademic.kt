@@ -516,10 +516,29 @@ fun ReportsScreen(state: AppState) {
                 CardBox {
                     Text("Batch — whole class (${results.size} students)", color = Theme.TEXT, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(6.dp))
-                    Text("Each student gets one A4 card: school header, marks, grades, aggregate/division, comments, signature lines, grading key.", color = Theme.MUTED, fontSize = 14.sp)
+                    Text("One PDF for the whole class, one A4 page per learner: header, marks, grades, aggregate/division, comments, signatures. Word is still there if a school asks for it.", color = Theme.MUTED, fontSize = 14.sp)
                     Spacer(Modifier.height(10.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Btn("Generate Word documents (.docx)") {
+                        Btn("Print all as PDF") {
+                            val outDir = dataDir.resolve("reports")
+                            Files.createDirectories(outDir)
+                            val label = if (cls.stream.isBlank()) cls.name else "${cls.name} ${cls.stream}"
+                            val f = outDir.resolve("class-${label.replace(" ", "")}-term${term.number}-cards.pdf")
+                            com.derycode.srs.core.report.PdfReport.writeClassReport(f, d, results, templateFor(d, cls)?.accentColor)
+                            state.repo.mutate("REPORTS_GENERATED", "Report", classId) { dd ->
+                                dd.copy(reports = results.map { r ->
+                                    GeneratedReport(
+                                        id = state.repo.nextId(), studentId = r.studentId, termId = term.id,
+                                        templateId = layout.name, schemeId = scheme.id, schemeVersion = scheme.version,
+                                        approved = true, generatedAt = System.currentTimeMillis(),
+                                        resultSummary = r.division ?: r.uceResult ?: r.uacePoints?.let { "$it pts" } ?: "${r.averagePercent}%"
+                                    )
+                                } + dd.reports)
+                            }
+                            state.refresh()
+                            try { Desktop.getDesktop().open(f.toFile()) } catch (e: Exception) { e.printStackTrace() }
+                        }
+                        Btn("Word (.docx) instead", primary = false) {
                             val outDir = dataDir.resolve("reports")
                             Files.createDirectories(outDir)
                             val f = outDir.resolve("class-${cls.name.replace(" ", "")}-${term.number}-reports.docx")
