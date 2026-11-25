@@ -131,4 +131,35 @@ class ClassPdfTest {
         }
     }
 
+
+    @Test
+    fun theSchoolLogoIsEmbeddedAndAMissingFileNeverCrashes() {
+        // a real little logo file, like the one a school uploads
+        val logo = Files.createTempFile("logo", ".png")
+        val img = java.awt.image.BufferedImage(120, 120, java.awt.image.BufferedImage.TYPE_INT_ARGB)
+        val g = img.createGraphics()
+        g.setColor(java.awt.Color(11, 92, 173)); g.fillRect(0, 0, 120, 120)
+        g.setColor(java.awt.Color.WHITE); g.fillOval(20, 20, 80, 80); g.dispose()
+        javax.imageio.ImageIO.write(img, "png", logo.toFile())
+
+        val withLogo = data().let { d -> d.copy(school = d.school.copy(logoPath = logo.toAbsolutePath().toString())) }
+        val results = ResultEngine.classResults(withLogo, "c1", "t1", "g1").take(1)
+        val out = Files.createTempFile("class-logo", ".pdf")
+        PdfReport.writeClassReport(out, withLogo, results)
+        PDDocument.load(out.toFile()).use { doc ->
+            val page = doc.getPage(0)
+            val xobjects = page.resources.xObjectNames.toList()
+            assertTrue(xobjects.isNotEmpty(), "the school logo must be embedded in the PDF")
+        }
+
+        // a logo path that no longer exists: the card still prints, with the initials badge
+        val broken = withLogo.copy(school = withLogo.school.copy(logoPath = "/nowhere/missing-logo.png"))
+        val out2 = Files.createTempFile("class-nologo", ".pdf")
+        PdfReport.writeClassReport(out2, broken, results)
+        PDDocument.load(out2.toFile()).use { doc ->
+            assertEquals(1, doc.numberOfPages)
+            val text = PDFTextStripper().getText(doc)
+            assertTrue(text.contains("TOORO ROYAL COLLEGE"))
+        }
+    }
 }

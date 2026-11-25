@@ -44,6 +44,17 @@ object DesktopCrashTracker {
         }
     }
 
+    /** Record a failure that was caught in the UI, so it can be read back later. */
+    fun log(where: String, throwable: Throwable) {
+        try {
+            Files.createDirectories(dataDir)
+            val entry = "\n=== CAUGHT ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Date())} ===\n" +
+                "App: Admin Console $APP_VERSION\nWhere: $where\nOS: ${System.getProperty("os.name")} ${System.getProperty("os.version")}\n" +
+                throwable.stackTraceToString().take(3500) + "\n"
+            Files.writeString(logFile, (if (Files.exists(logFile)) Files.readString(logFile) else "") + entry)
+        } catch (_: Throwable) { }
+    }
+
     fun hasCrash(): Boolean = Files.exists(logFile) && Files.size(logFile) > 0
 }
 

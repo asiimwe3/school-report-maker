@@ -409,6 +409,7 @@ fun ReportsScreen(state: AppState) {
     var classId by remember(state.level) { mutableStateOf(d.classes.firstOrNull { it.active && it.level == state.level }?.id ?: "") }
     var layout by remember(classId) { mutableStateOf(templateFor(d, d.classes.firstOrNull { it.id == classId })?.layout ?: TemplateLayout.CLASSIC) }
     var previewIndex by remember(classId) { mutableStateOf(0) }
+    var printError by remember { mutableStateOf("") }
     val year = d.academicYears.firstOrNull { it.currentTermId != null } ?: d.academicYears.firstOrNull()
     val term = year?.terms?.firstOrNull { it.id == year.currentTermId } ?: year?.terms?.firstOrNull()
     val cls = d.classes.firstOrNull { it.id == classId }
@@ -524,7 +525,18 @@ fun ReportsScreen(state: AppState) {
                             Files.createDirectories(outDir)
                             val label = if (cls.stream.isBlank()) cls.name else "${cls.name} ${cls.stream}"
                             val f = outDir.resolve("class-${label.replace(" ", "")}-term${term.number}-cards.pdf")
-                            com.derycode.srs.pdf.PdfReport.writeClassReport(f, d, results, templateFor(d, cls)?.accentColor)
+                            val written = runCatching {
+                                com.derycode.srs.pdf.PdfReport.writeClassReport(f, d, results, templateFor(d, cls)?.accentColor)
+                            }.onFailure { t ->
+                                // keep the console alive and leave a trace the school can send us
+                                DesktopCrashTracker.log("PRINT ALL PDF", t)
+                            }
+                            if (written.isFailure) {
+                                printError = "The PDF could not be written: ${written.exceptionOrNull()?.message ?: "unknown error"}. " +
+                                    "Details were saved in crash-log.txt next to the school data."
+                                return@Btn
+                            }
+                            printError = ""
                             state.repo.mutate("REPORTS_GENERATED", "Report", classId) { dd ->
                                 dd.copy(reports = results.map { r ->
                                     GeneratedReport(
@@ -573,6 +585,10 @@ fun ReportsScreen(state: AppState) {
                             try { Desktop.getDesktop().open(f.toFile()) } catch (e: Exception) { e.printStackTrace() }
                         }
                     }
+                }
+                if (printError.isNotBlank()) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(printError, color = Theme.RUST, fontSize = 13.sp)
                 }
                 Spacer(Modifier.height(4.dp))
                 CardBox {

@@ -43,7 +43,7 @@ object PdfReport {
     private val INK = floatArrayOf(0.043f, 0.165f, 0.290f)
 
     // column widths, A4 width minus margins = 543 pt
-    private val COLS = floatArrayOf(118f, 26f, 26f, 26f, 40f, 40f, 40f, 30f, 92f, 38f)
+    private val COLS = floatArrayOf(132f, 30f, 30f, 30f, 44f, 44f, 44f, 34f, 110f, 45f)
     private val HEADERS = arrayOf(
         "SUBJECT", "A1", "A2", "A3", "FRNTV\n20%", "EXAM\n80%", "TOTAL\n100%", "GRADE",
         "TEACHER COMMENT", "INITIALS"
@@ -110,6 +110,7 @@ object PdfReport {
         val page = PDPage(A4)
         doc.addPage(page)
 
+        currentDoc = doc
         var y: Float
         var cs = PDPageContentStream(doc, page)
 
@@ -162,6 +163,38 @@ object PdfReport {
 
     // ── header ───────────────────────────────────────────────────────────────
 
+    private var currentDoc: PDDocument? = null
+
+    private fun docFor(cs: PDPageContentStream): PDDocument? = currentDoc
+
+    private fun drawLogo(
+        cs: PDPageContentStream, doc: PDDocument?, path: String?, x: Float, y: Float, size: Float, schoolName: String
+    ) {
+        val image = path?.takeIf { it.isNotBlank() }?.let { p ->
+            try {
+                val f = java.io.File(p)
+                if (f.exists()) javax.imageio.ImageIO.read(f) else null
+            } catch (_: Throwable) { null }
+        }
+        if (image != null && doc != null) {
+            try {
+                val pd = org.apache.pdfbox.pdmodel.graphics.image.LosslessFactory.createFromImage(doc, image)
+                cs.drawImage(pd, x, y, size, size)
+                return
+            } catch (_: Throwable) { /* fall through to the badge */ }
+        }
+        // no logo on file: a tidy badge with the school's initials, never an empty hole
+        val initials = schoolName.split(' ').filter { it.isNotBlank() }
+            .map { it.first().uppercaseChar() }.take(3).joinToString("")
+        cs.setNonStrokingColor(SOFT[0], SOFT[1], SOFT[2])
+        cs.addRect(x, y, size, size); cs.fill()
+        cs.setStrokingColor(LINE[0], LINE[1], LINE[2])
+        cs.setLineWidth(0.8f)
+        cs.addRect(x, y, size, size); cs.stroke()
+        cs.setNonStrokingColor(NAVY[0], NAVY[1], NAVY[2])
+        centered(cs, initials, BOLD, 13f, x, size, y + size / 2f - 4.5f)
+    }
+
     private fun drawHeader(
         cs: PDPageContentStream,
         school: com.derycode.srs.core.model.School,
@@ -173,8 +206,13 @@ object PdfReport {
         val width = usableWidth()
         var y = A4.height - MARGIN - 8f
 
+        // the school's own logo, left of the name — a real picture when one was uploaded
+        val logoSize = 46f
+        val logoY = y - logoSize + 12f
+        drawLogo(cs, docFor(cs), school.logoPath, MARGIN, logoY, logoSize, school.name)
+
         cs.setNonStrokingColor(NAVY[0], NAVY[1], NAVY[2])
-        centered(cs, school.name.uppercase(), BOLD, 15.5f, MARGIN, width, y)
+        centered(cs, school.name.uppercase(), BOLD, 15.5f, MARGIN + logoSize + 6f, width - logoSize - 6f, y)
         y -= 14f
 
         val contact = listOfNotNull(

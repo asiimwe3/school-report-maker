@@ -79,6 +79,21 @@ object ReportEngine {
         } catch (e: Exception) { "" }
     }
 
+
+    /**
+     * The school's logo, embedded in the card itself. A file:// reference breaks the
+     * moment the card is opened on another machine, so the picture travels with the
+     * HTML. When there is no logo, the school's initials are printed instead of an
+     * empty box.
+     */
+    internal fun schoolLogo(path: String?, schoolName: String, sizePx: Int = 78): String {
+        val img = sigImg(path, sizePx)
+        if (img.isNotEmpty()) return img
+        val initials = schoolName.split(' ').filter { it.isNotBlank() }
+            .map { it.first().uppercaseChar() }.take(3).joinToString("")
+        return """<div style="width:${sizePx}px;height:${sizePx}px;border-radius:50%;border:1.5px solid #0B5CAD;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:${sizePx / 3}px;color:#0B5CAD">$initials</div>"""
+    }
+
     /** One student's full report card as standalone HTML. */
     fun studentReport(
         data: SchoolData,
@@ -139,7 +154,7 @@ object ReportEngine {
         <body>
         <div class="card">
             <div class="header">
-                <div class="logo">${if (school.logoPath != null) """<img src="file://${school.logoPath}"/>""" else "🎓"}</div>
+                <div class="logo">${schoolLogo(school.logoPath, school.name)}</div>
                 <div class="school">
                     <h1>${escape(school.name)}</h1>
                     <div class="motto">${if (school.motto.isBlank()) "" else "“${escape(school.motto)}”"}</div>
@@ -391,7 +406,7 @@ object ReportEngine {
         <body>
         <div class="card">
           <div class="head">
-            <div class="logo">${if (school.logoPath != null) """<img src="file://${school.logoPath}"/>""" else "🎓"}</div>
+            <div class="logo">${schoolLogo(school.logoPath, school.name)}</div>
             <div class="school">
               <h1>${escape(school.name)}</h1>
               <div class="type">${escape(if (school.schoolType.isBlank()) "Secondary School" else school.schoolType)}</div>

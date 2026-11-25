@@ -1,12 +1,12 @@
 {
-  "console": "2.3.48",
-  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.48.msi",
+  "console": "2.3.49",
+  "consoleDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMaker-2.3.49.msi",
   "teacher": "1.20.18",
   "teacherDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.18.apk",
   "apkDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/srs-teacher-1.20.18.apk",
   "teacherDesktop": "1.0.0",
   "teacherDesktopDownload": "https://github.com/asiimwe3/school-report-maker/releases/latest/download/SchoolReportMakerTeacher-1.0.0.msi",
   "released": "2026-11-25",
-  "notes": "Console 2.3.48. Print all now gives a balanced, standard-looking PDF.\n- The page is measured before drawing: signatures and comment boxes are pinned to the bottom, the marks table takes the space that is left\n- Every subject fits, however many the class sits \u2014 no rows are dropped and no hole is left above the comments\n- The card matches the standard report: school header, student block, alternating subject rows, average row, the two comment boxes and three signature lines\n- A subject nobody sat still prints a dash, and comments and initials are never blank\n- PDF lives in its own module now, so the teacher APK builds again",
-  "consoleVersion": "2.3.48"
+  "notes": "Console 2.3.49. The school logo now prints, and a failed print can no longer crash the console.\n- The logo is drawn at the top left of every PDF card, embedded in the file so it travels with the report\n- The printed HTML card embeds the logo the same way, instead of pointing at a file that may have moved\n- No logo uploaded yet? The card prints the school's initials in a clean badge instead of an empty box\n- The marks table now spans the full page width, so the card is centred and balanced\n- If a print fails, the console stays open, shows the reason, and writes the detail to crash-log.txt next to the school data",
+  "consoleVersion": "2.3.49"
 }
